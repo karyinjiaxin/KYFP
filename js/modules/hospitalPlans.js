@@ -241,6 +241,35 @@ var ModuleHospitalPlans = (function () {
         ])
       ]));
 
+      // ---- GreatLink fund references, for dividend/distribution lookups ----
+      var fundRefCard = Dom.el('div', { class: 'card mb-3', style: 'background:var(--bg)' });
+      fundRefCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12.5px;margin-bottom:6px' }, ['\ud83d\udd17 GreatLink Fund References (for Dividend Yield lookups)']));
+      fundRefCard.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, [
+        'Fund distribution rates change over time \u2014 verify the current figure via the links below before using it as an assumed Dividend Yield elsewhere in the app, rather than relying on a number that may be stale.'
+      ]));
+      [
+        {
+          name: 'GreatLink US Income and Growth Fund (Dis)',
+          note: 'Invests into the Allianz Income and Growth Fund AMi3 (H2-SGD) Dis \u2014 US/Canadian equity and bond income strategy.',
+          url: 'https://www.greateasternlife.com/sg/en/personal-insurance/our-products/wealth-accumulation/great-invest-advantage/greatlink-funds-prices.html'
+        },
+        {
+          name: 'GreatLink Multi-Sector Income Fund',
+          note: 'Invests into the PIMCO GIS Income Fund Inst SGD Hedged \u2014 Underlying Fund YTM was 6.55% and management fee 1.45% p.a. (max 2.00% p.a.) as at 30 Jun 2025; verify the current figure via the link, since this will have moved since then.',
+          url: 'https://www.greateasternlife.com/content/dam/corp-site/great-eastern/sg/gels-ftrp-imc-cm/wealth-accumulation/investment-link-funds/gels-pdt-pd-gl-multisectorinc-plcmat.pdf'
+        }
+      ].forEach(function (fund) {
+        fundRefCard.appendChild(Dom.el('div', { class: 'mb-2' }, [
+          Dom.el('a', { href: fund.url, target: '_blank', rel: 'noopener', style: 'font-weight:600;font-size:12.5px;color:var(--accent)' }, [fund.name + ' \u2197']),
+          Dom.el('div', { class: 'text-tertiary' }, [fund.note])
+        ]));
+      });
+      fundRefCard.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, [
+        'Full fund list / prices: ',
+        Dom.el('a', { href: 'https://www.greateasternlife.com/sg/en/personal-insurance/our-products/wealth-accumulation/investment-linked-funds/ilp-fund-centre.html', target: '_blank', rel: 'noopener', style: 'color:var(--accent)' }, ['GE ILP Fund Centre \u2197'])
+      ]));
+      container.appendChild(fundRefCard);
+
       var hospitalPolicies = (c.hospitalPlans || []).map(function (p, idx) { return { p: p, idx: idx }; });
 
       if (hospitalPolicies.length === 0) {

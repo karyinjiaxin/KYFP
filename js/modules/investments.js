@@ -4,6 +4,7 @@
 
 var ModuleInvestments = (function () {
   var openTables = {}; // plan id -> bool, persists expand state across re-renders
+  var hideFeesAndBonuses = {}; // plan id -> bool, persists column visibility across re-renders
   var INVESTMENT_TYPES = ['Investment Policy (ILP)', 'Unit Trust', 'ETF', 'Shares', 'Bonds', 'Gold', 'Crypto', 'REIT', 'Endowment', 'Other'];
 
   function render(container) {
@@ -87,7 +88,8 @@ var ModuleInvestments = (function () {
         ]));
         card.appendChild(Dom.el('div', { class: 'input-row compact-row mt-2' }, [
           Fields.numberInput(base + 'stopAge', 'Project To Age'),
-          Fields.numberInput(base + 'expectedReturn', 'Expected Fund Return %', { step: '0.1' })
+          Fields.numberInput(base + 'expectedReturn', 'Expected Fund Return %', { step: '0.1' }),
+          Fields.numberInput(base + 'dividendYield', 'Dividend Yield % (if fund distributes)', { step: '0.1' })
         ]));
         card.appendChild(Dom.el('div', { class: 'text-tertiary mt-2', style: 'line-height:1.5' }, [
           'GREAT Wealth Advantage 4 \u2014 real product mechanics applied automatically: 100% of premium invested from day one, Welcome Bonus (up to 55% depending on plan/premium), Policy Fee (2.5%\u20131.5% early years, dropping to 0.7%), Loyalty Bonus (0.30%/year of account value from year ' + choiceYears + '), Premium Bonus (2%/year from shortly after), and the full surrender charge schedule. "Pay Premiums For" defaults to the full projection if left blank \u2014 set it to ' + choiceYears + ' to model premiums stopping at the ' + choice + ' term while the whole-of-life policy keeps compounding beyond it. Not modelled: Insurance Charge (cost of insurance), which needs mortality tables this app doesn\u2019t have \u2014 a minor drag near minimum sum assured, understated for a larger protection component. Source: Great Eastern\u2019s GWA4 Product Information Pack, 28 Jun 2024.'
@@ -97,6 +99,9 @@ var ModuleInvestments = (function () {
           Fields.moneyInput(base + 'lumpSum', 'Lump Sum Amount'),
           Fields.numberInput(base + 'stopAge', 'Project To Age'),
           Fields.numberInput(base + 'expectedReturn', 'Expected Fund Return %', { step: '0.1' })
+        ]));
+        card.appendChild(Dom.el('div', { class: 'input-row compact-row mt-2' }, [
+          Fields.numberInput(base + 'dividendYield', 'Dividend Yield % (if fund distributes)', { step: '0.1' })
         ]));
         card.appendChild(Dom.el('div', { class: 'text-tertiary mt-2', style: 'line-height:1.5' }, [
           'GREAT Flexi Advantage \u2014 a single Premium Charge is deducted upfront (3.0% under age 76, 2.5% from 76), then the balance compounds at Expected Fund Return with no ongoing Policy Fee, Insurance Charge, Fund Switch Fee, or surrender charge (all "Not Applicable" per GFA\u2019s own Product Information Pack) \u2014 Fund Management Charge is already factored into the unit price, not a separate deduction. Source: Great Eastern\u2019s GFA Product Information Pack, 1 Apr 2026.'
@@ -127,36 +132,6 @@ var ModuleInvestments = (function () {
         ]));
       }
 
-      // ---- GreatLink fund references, for dividend/distribution lookups ----
-      if (insurerProduct === 'GWA4' || insurerProduct === 'GFA' || plan.assetType === 'Investment Policy (ILP)') {
-        var fundRefCard = Dom.el('div', { class: 'card mt-2', style: 'background:var(--bg)' });
-        fundRefCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12.5px;margin-bottom:6px' }, ['\ud83d\udd17 GreatLink Fund References (for Dividend Yield lookups)']));
-        fundRefCard.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, [
-          'Fund distribution rates change over time \u2014 verify the current figure via the links below before using it as "Dividend Yield" above, rather than relying on a number that may be stale.'
-        ]));
-        [
-          {
-            name: 'GreatLink US Income and Growth Fund (Dis)',
-            note: 'Invests into the Allianz Income and Growth Fund AMi3 (H2-SGD) Dis \u2014 US/Canadian equity and bond income strategy.',
-            url: 'https://www.greateasternlife.com/sg/en/personal-insurance/our-products/wealth-accumulation/great-invest-advantage/greatlink-funds-prices.html'
-          },
-          {
-            name: 'GreatLink Multi-Sector Income Fund',
-            note: 'Invests into the PIMCO GIS Income Fund Inst SGD Hedged \u2014 Underlying Fund YTM was 6.55% and management fee 1.45% p.a. (max 2.00% p.a.) as at 30 Jun 2025; verify the current figure via the link, since this will have moved since then.',
-            url: 'https://www.greateasternlife.com/content/dam/corp-site/great-eastern/sg/gels-ftrp-imc-cm/wealth-accumulation/investment-link-funds/gels-pdt-pd-gl-multisectorinc-plcmat.pdf'
-          }
-        ].forEach(function (fund) {
-          fundRefCard.appendChild(Dom.el('div', { class: 'mb-2' }, [
-            Dom.el('a', { href: fund.url, target: '_blank', rel: 'noopener', style: 'font-weight:600;font-size:12.5px;color:var(--accent)' }, [fund.name + ' \u2197']),
-            Dom.el('div', { class: 'text-tertiary' }, [fund.note])
-          ]));
-        });
-        fundRefCard.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, [
-          'Full fund list / prices: ',
-          Dom.el('a', { href: 'https://www.greateasternlife.com/sg/en/personal-insurance/our-products/wealth-accumulation/investment-linked-funds/ilp-fund-centre.html', target: '_blank', rel: 'noopener', style: 'color:var(--accent)' }, ['GE ILP Fund Centre \u2197'])
-        ]));
-        card.appendChild(fundRefCard);
-      }
       var f6 = Dom.el('div', { class: 'input-row compact-row mt-2' }, [
         Fields.numberInput(base + 'projectionAge', 'Expected Withdrawal Age'),
         Fields.moneyInput(base + 'currentValue', 'Current Investment Value (if plan is already running)'),
@@ -186,6 +161,9 @@ var ModuleInvestments = (function () {
     }
 
     function projectionTable(plan, currentAge) {
+      if (plan.insurerProduct === 'GWA4' || plan.insurerProduct === 'GFA') {
+        return detailedProductTable(plan, currentAge);
+      }
       var rows = Calc.investmentPlanProjection(plan, plan.projectionAge);
       var startFrom = currentAge != null ? Math.max(Calc.num(plan.startAge), currentAge) : Calc.num(plan.startAge);
       rows = rows.filter(function (r) { return r.age >= startFrom; });
@@ -211,6 +189,83 @@ var ModuleInvestments = (function () {
           Dom.el('td', {}, [Dom.fmtPct(r.roi)]),
           Dom.el('td', {}, [Dom.fmtMoney(r.netCashflow)])
         ]));
+      });
+      table.appendChild(tbody);
+      tableWrap.appendChild(table);
+      wrap.appendChild(tableWrap);
+      return wrap;
+    }
+
+    // Detailed year-by-year table for GWA4/GFA plans: Year, Age,
+    // Investment Inflow (what actually gets invested), Bonuses, Fees,
+    // Investment Value, Dividend Amount, Premium in Cash (what the
+    // client actually pays, gross), and Net Amount (dividend received
+    // minus cash paid that year). Calls the dedicated product engines
+    // directly rather than the generic investmentPlanProjection wrapper,
+    // since that collapses bonuses/fees into the account value without
+    // exposing them as separate figures.
+    function detailedProductTable(plan, currentAge) {
+      var startAge = Calc.num(plan.startAge);
+      var endAge = Calc.num(plan.stopAge) || startAge;
+      var years = Math.max(1, endAge - startAge + 1);
+      var isGWA4 = plan.insurerProduct === 'GWA4';
+      var rawRows;
+      if (isGWA4) {
+        var annualPremium = Calc.num(plan.monthlyPremium) * 12;
+        var premiumYears = plan.gwa4PremiumYears != null && plan.gwa4PremiumYears !== '' ? Calc.num(plan.gwa4PremiumYears) : years;
+        rawRows = Calc.gwa4Projection(annualPremium, plan.gwa4Choice || 'Choice 10', Calc.num(plan.expectedReturn), years, premiumYears, Calc.num(plan.dividendYield));
+      } else {
+        rawRows = Calc.gfaProjection(Calc.num(plan.lumpSum), startAge, Calc.num(plan.expectedReturn), years, Calc.num(plan.dividendYield));
+      }
+
+      var hidden = !!hideFeesAndBonuses[plan.id];
+      var wrap = Dom.el('div', {});
+      wrap.appendChild(Dom.el('div', { class: 'flex justify-between items-center mb-2' }, [
+        Dom.el('div', { class: 'text-tertiary' }, [
+          'Premium in Cash is what\u2019s actually paid; Investment Inflow is what reaches the fund after any upfront charge (GFA only \u2014 GWA4 invests 100% of premium, so the two match there).'
+        ]),
+        Dom.el('button', {
+          class: 'btn btn-ghost btn-sm',
+          onclick: function () { hideFeesAndBonuses[plan.id] = !hidden; Dom.withFocusPreserved(container, draw); }
+        }, [hidden ? 'Show Fees & Bonuses' : 'Hide Fees & Bonuses'])
+      ]));
+
+      var headers = ['Year', 'Age', 'Premium in Cash', 'Investment Inflow'];
+      if (!hidden) headers.push('Bonuses', 'Fees');
+      headers.push('Investment Value', 'Dividend Amount', 'Net Amount');
+
+      var tableWrap = Dom.el('div', { class: 'table-scroll' });
+      var table = Dom.el('table', { class: 'data-table' });
+      table.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, headers.map(function (h) { return Dom.el('th', {}, [h]); }))]));
+      var tbody = Dom.el('tbody');
+      rawRows.forEach(function (r) {
+        var premiumInCash = r.premiumPaid || 0;
+        var feeAmount = r.feeAmount || 0;
+        // For GFA, the fee is an upfront deduction FROM the premium
+        // before it's invested, so Investment Inflow = cash paid minus
+        // that charge. For GWA4, the Policy Fee is deducted ONGOING from
+        // the whole account value, not from that year's premium itself
+        // — so the full premium reaches the fund, and Investment Inflow
+        // equals Premium in Cash.
+        var investmentInflow = isGWA4 ? premiumInCash : premiumInCash - feeAmount;
+        var totalBonus = r.totalBonus || 0;
+        var dividend = r.annualDividend || 0;
+        var netAmount = dividend - premiumInCash;
+        var age = startAge + r.year - 1;
+        var cells = [
+          Dom.el('td', {}, [String(r.year)]),
+          Dom.el('td', {}, [String(age)]),
+          Dom.el('td', {}, [premiumInCash > 0 ? Dom.fmtMoney(premiumInCash) : '\u2014']),
+          Dom.el('td', {}, [investmentInflow > 0 ? Dom.fmtMoney(investmentInflow) : '\u2014'])
+        ];
+        if (!hidden) {
+          cells.push(Dom.el('td', { style: totalBonus > 0 ? 'color:var(--good)' : '' }, [totalBonus > 0 ? '+' + Dom.fmtMoney(totalBonus) : '\u2014']));
+          cells.push(Dom.el('td', { style: feeAmount > 0 ? 'color:var(--burgundy)' : '' }, [feeAmount > 0 ? '\u2212' + Dom.fmtMoney(feeAmount) : '\u2014']));
+        }
+        cells.push(Dom.el('td', { style: 'font-weight:700' }, [Dom.fmtMoney(r.accountValue)]));
+        cells.push(Dom.el('td', {}, [dividend > 0 ? Dom.fmtMoney(dividend) : '\u2014']));
+        cells.push(Dom.el('td', { style: netAmount < 0 ? 'color:var(--bad)' : netAmount > 0 ? 'color:var(--good)' : '' }, [(netAmount >= 0 ? '+' : '\u2212') + Dom.fmtMoney(Math.abs(netAmount))]));
+        tbody.appendChild(Dom.el('tr', {}, cells));
       });
       table.appendChild(tbody);
       tableWrap.appendChild(table);

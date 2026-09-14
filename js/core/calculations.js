@@ -370,10 +370,11 @@ var Calc = (function () {
   // (and, per the product pack, the Premium Bonus that's tied to each
   // premium payment also stops). Defaults to the full projection length
   // if not given, matching "premiums continue throughout" as before.
-  function gwa4Projection(annualPremium, choice, expectedReturnPct, years, premiumYears) {
+  function gwa4Projection(annualPremium, choice, expectedReturnPct, years, premiumYears, dividendYieldPct) {
     var plan = GWA4_RATES[choice] || GWA4_RATES['Choice 5'];
     var expectedReturn = num(expectedReturnPct) / 100;
     var payYears = premiumYears != null ? premiumYears : years;
+    var dividendYield = num(dividendYieldPct) / 100;
     var rows = [];
     var accountValue = 0;
     var totalPremiumPaid = 0;
@@ -383,10 +384,13 @@ var Calc = (function () {
       var policyFeePct = gwa4PolicyFeePct(choice, year) / 100;
       var lowPremiumFee = isPayingYear && plan.lowPremiumMonthlyFee && annualPremium < plan.lowPremiumThreshold ? plan.lowPremiumMonthlyFee * 12 : 0;
       // Premium invested first, then a full year of growth net of the
-      // ongoing Policy Fee (approximated as a drag on the return rate,
-      // consistent with how this app models fees elsewhere).
-      accountValue = accountValue + thisYearPremium;
-      accountValue = accountValue * (1 + expectedReturn - policyFeePct) - lowPremiumFee;
+      // ongoing Policy Fee (kept as an explicit dollar amount here too,
+      // not just a rate reduction, so the table can show what was
+      // actually deducted each year).
+      var balanceBeforeGrowth = accountValue + thisYearPremium;
+      var policyFeeAmount = balanceBeforeGrowth * policyFeePct;
+      accountValue = balanceBeforeGrowth * (1 + expectedReturn) - policyFeeAmount - lowPremiumFee;
+      var feeAmount = policyFeeAmount + lowPremiumFee;
       totalPremiumPaid += thisYearPremium;
 
       var welcomeBonus = year === 1 && isPayingYear ? annualPremium * (gwa4WelcomeBonusPct(choice, annualPremium) / 100) : 0;
@@ -401,15 +405,18 @@ var Calc = (function () {
       // Regular Premium" — so unlike Loyalty Bonus, it stops once
       // premiums stop.
       var premiumBonus = year >= plan.premiumBonusStartYear && isPayingYear ? annualPremium * (plan.premiumBonusPct / 100) : 0;
-      accountValue += welcomeBonus + loyaltyBonus + premiumBonus;
+      var totalBonus = welcomeBonus + loyaltyBonus + premiumBonus;
+      accountValue += totalBonus;
+
+      var annualDividend = accountValue * dividendYield;
 
       var surrenderChargePct = gwa4SurrenderChargePct(choice, year);
       var surrenderValue = accountValue * (1 - surrenderChargePct / 100);
 
       rows.push({
         year: year, premiumPaid: thisYearPremium, totalPremiumPaid: totalPremiumPaid, isPayingYear: isPayingYear,
-        policyFeePct: policyFeePct * 100, welcomeBonus: welcomeBonus, loyaltyBonus: loyaltyBonus,
-        premiumBonus: premiumBonus, accountValue: accountValue,
+        policyFeePct: policyFeePct * 100, feeAmount: feeAmount, welcomeBonus: welcomeBonus, loyaltyBonus: loyaltyBonus,
+        premiumBonus: premiumBonus, totalBonus: totalBonus, accountValue: accountValue, annualDividend: annualDividend,
         surrenderChargePct: surrenderChargePct, surrenderValue: surrenderValue
       });
     }
@@ -426,15 +433,20 @@ var Calc = (function () {
   function gfaPremiumChargePct(ageAtEntry) {
     return num(ageAtEntry) >= 76 ? 2.5 : 3.0;
   }
-  function gfaProjection(lumpSum, ageAtEntry, expectedReturnPct, years) {
+  function gfaProjection(lumpSum, ageAtEntry, expectedReturnPct, years, dividendYieldPct) {
     var chargePct = gfaPremiumChargePct(ageAtEntry) / 100;
     var expectedReturn = num(expectedReturnPct) / 100;
-    var initialInvested = lumpSum * (1 - chargePct);
+    var dividendYield = num(dividendYieldPct) / 100;
+    var feeAmountYear1 = lumpSum * chargePct;
+    var initialInvested = lumpSum - feeAmountYear1;
     var rows = [];
     var accountValue = initialInvested;
     for (var year = 1; year <= years; year++) {
       if (year > 1) accountValue = accountValue * (1 + expectedReturn);
-      rows.push({ year: year, accountValue: accountValue });
+      var premiumPaid = year === 1 ? lumpSum : 0;
+      var feeAmount = year === 1 ? feeAmountYear1 : 0;
+      var annualDividend = accountValue * dividendYield;
+      rows.push({ year: year, accountValue: accountValue, premiumPaid: premiumPaid, feeAmount: feeAmount, annualDividend: annualDividend });
     }
     return rows;
   }
@@ -455,18 +467,19 @@ var Calc = (function () {
       if (plan.insurerProduct === 'GWA4') {
         var annualPremium = num(plan.monthlyPremium) * 12;
         var premiumYears = plan.gwa4PremiumYears != null && plan.gwa4PremiumYears !== '' ? num(plan.gwa4PremiumYears) : years;
-        rawRows = gwa4Projection(annualPremium, plan.gwa4Choice || 'Choice 10', num(plan.expectedReturn), years, premiumYears);
+        rawRows = gwa4Projection(annualPremium, plan.gwa4Choice || 'Choice 10', num(plan.expectedReturn), years, premiumYears, num(plan.dividendYield));
       } else {
-        rawRows = gfaProjection(num(plan.lumpSum), startAge, num(plan.expectedReturn), years);
+        rawRows = gfaProjection(num(plan.lumpSum), startAge, num(plan.expectedReturn), years, num(plan.dividendYield));
       }
       var totalPaidRunning = 0;
       return rawRows.map(function (r, i) {
         var premiumPaid = r.premiumPaid != null ? r.premiumPaid : (i === 0 ? num(plan.lumpSum) : 0);
         totalPaidRunning += premiumPaid;
         var roi = totalPaidRunning > 0 ? ((r.accountValue - totalPaidRunning) / totalPaidRunning) * 100 : 0;
+        var annualDividend = r.annualDividend || 0;
         return {
           age: startAge + i, premiumPaid: premiumPaid, accumulatedValue: r.accountValue,
-          annualDividend: 0, monthlyDividend: 0, roi: roi, netCashflow: -premiumPaid,
+          annualDividend: annualDividend, monthlyDividend: annualDividend / 12, roi: roi, netCashflow: annualDividend - premiumPaid,
           switchedToDividendFund: false
         };
       });
