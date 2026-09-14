@@ -1,0 +1,318 @@
+/* ============================================================
+   styles.css — design system
+   Palette: deep ink navy + brushed brass accent (private-banking
+   register), warm neutral paper in light mode, graphite in dark.
+   Type: system font stack (Apple-native feel, zero CDN risk).
+   ============================================================ */
+
+:root {
+  --ink-950: #08262A;
+  --ink-900: #0D343A;
+  --ink-800: #124249;
+  --ink-700: #1A555D;
+  --brass-500: #F26B4D;
+  --brass-400: #F58868;
+  --brass-300: #F9AF98;
+
+  --bg: #F5F8F7;
+  --bg-elevated: #FFFFFF;
+  --bg-sidebar: #0D343A;
+  --text-primary: #142526;
+  --text-secondary: #57706F;
+  --text-tertiary: #86A09E;
+  --border: #DEE9E7;
+  --border-strong: #CBDCDA;
+  --shadow-sm: 0 1px 2px rgba(13, 52, 58, 0.06), 0 1px 1px rgba(13,52,58,0.04);
+  --shadow-md: 0 8px 24px rgba(13, 52, 58, 0.09), 0 2px 6px rgba(13,52,58,0.05);
+  --shadow-lg: 0 20px 48px rgba(13, 52, 58, 0.16), 0 6px 16px rgba(13,52,58,0.07);
+  --accent: var(--brass-500);
+  --accent-soft: rgba(242, 107, 77, 0.12);
+  --good: #1C9166;
+  --good-soft: rgba(28, 145, 102, 0.12);
+  --warn: #DB9426;
+  --warn-soft: rgba(219, 148, 38, 0.12);
+  --bad: #D6484A;
+  --burgundy: #7A2331;
+  --bad-soft: rgba(214, 72, 74, 0.12);
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, "Roboto Mono", monospace;
+}
+
+[data-theme="dark"] {
+  --bg: #081A1D;
+  --bg-elevated: #0F2528;
+  --bg-sidebar: #071619;
+  --text-primary: #EDF4F3;
+  --text-secondary: #A0B7B5;
+  --text-tertiary: #6E8A88;
+  --border: #1C3A3D;
+  --border-strong: #274B4E;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.35);
+  --shadow-lg: 0 20px 48px rgba(0,0,0,0.5);
+  --accent: var(--brass-400);
+  --accent-soft: rgba(245, 136, 104, 0.18);
+  --good-soft: rgba(28, 145, 102, 0.22);
+  --warn-soft: rgba(219, 148, 38, 0.22);
+  --bad-soft: rgba(214, 72, 74, 0.22);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+h1,h2,h3,h4 { margin: 0; font-weight: 900; letter-spacing: -0.01em; font-family: "Arial Black", Arial, sans-serif; }
+p { margin: 0; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+::selection { background: var(--accent-soft); }
+
+/* ---------- App shell ---------- */
+.app-shell { display: flex; height: 100vh; overflow: hidden; }
+
+.sidebar {
+  width: 264px; min-width: 264px; background: var(--bg-sidebar); color: #fff;
+  display: flex; flex-direction: column; padding: 20px 14px; overflow-y: auto;
+  transition: width 0.25s ease, min-width 0.25s ease;
+}
+.sidebar.collapsed { width: 76px; min-width: 76px; }
+.sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 6px 10px 22px; }
+.sidebar-brand .mark {
+  width: 34px; height: 34px; border-radius: 9px; flex: none;
+  background: linear-gradient(135deg, var(--brass-300), var(--brass-500));
+  display: flex; align-items: center; justify-content: center; font-family: var(--font-serif);
+  font-weight: 700; color: var(--ink-950); font-size: 15px;
+}
+.sidebar-brand .word { font-family: var(--font-serif); font-size: 14.5px; letter-spacing: 0.01em; color: #F2EFE6; white-space: nowrap; overflow: hidden; }
+.sidebar.collapsed .word, .sidebar.collapsed .section-label { display: none; }
+
+.sidebar-section { margin-bottom: 4px; }
+.section-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: #7FA39D; padding: 14px 12px 6px; font-weight: 600; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 10px;
+  color: #C9DEDA; font-size: 12px; font-weight: 500; margin-bottom: 2px; white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease; position: relative;
+}
+.nav-item .ic { width: 18px; height: 18px; flex: none; opacity: 0.85; }
+.nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.nav-item.active { background: rgba(245,136,104,0.18); color: #FFF3EE; }
+.nav-item.active::before {
+  content: ''; position: absolute; left: -14px; top: 8px; bottom: 8px; width: 3px;
+  background: var(--brass-400); border-radius: 2px;
+}
+.sidebar-toggle {
+  margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  color: #7FA39D; font-size: 13px; border-radius: 10px; background: transparent; border: none;
+}
+.sidebar-toggle:hover { background: rgba(255,255,255,0.06); color: #fff; }
+
+/* ---------- Main content ---------- */
+.main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; padding: 16px 32px;
+  border-bottom: 1px solid var(--border); background: var(--bg-elevated); flex: none;
+}
+.topbar .client-chip { display: flex; align-items: center; gap: 10px; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--accent-soft); color: var(--accent);
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+.icon-btn {
+  width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-elevated);
+  display: flex; align-items: center; justify-content: center; color: var(--text-secondary); transition: all 0.15s ease;
+}
+.icon-btn:hover { border-color: var(--accent); color: var(--accent); box-shadow: var(--shadow-sm); }
+
+.content { flex: 1; overflow-y: auto; padding: 28px 32px 64px; animation: fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: translateY(0);} }
+
+.page-header { margin-bottom: 22px; }
+.page-header h1 { font-size: 26px; letter-spacing: -0.015em; }
+.page-header .sub { color: var(--text-secondary); font-size: 14px; margin-top: 4px; }
+
+/* ---------- Cards / grid ---------- */
+.card {
+  background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm); padding: 20px; transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card.hoverable:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.grid { display: grid; gap: 16px; }
+.grid-kpi { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+
+.kpi-card { display: flex; flex-direction: column; gap: 8px; }
+.kpi-card .kpi-label { font-size: 12.5px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.kpi-card .kpi-value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; font-family: var(--font-serif); }
+.kpi-card .kpi-delta { font-size: 12.5px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.kpi-delta.up { color: var(--good); } .kpi-delta.down { color: var(--bad); } .kpi-delta.flat { color: var(--text-tertiary); }
+
+.section-title { font-size: 15px; font-weight: 900; margin: 28px 0 12px; letter-spacing: -0.005em; font-family: "Arial Black", Arial, sans-serif; }
+.section-title:first-child { margin-top: 0; }
+/* Standardized "card title" — the header line at the top of a card, one
+   level below .section-title (e.g. "How Required Portfolio Is
+   Calculated", "Monthly Contribution", "Account Balances"). Previously
+   scattered as inline styles ranging inconsistently from 13px to 16px
+   across different modules; this makes it one consistent size/weight. */
+.card-title { font-size: 14px; font-weight: 700; margin: 0 0 8px; }
+.card-title:first-child { margin-top: 0; }
+
+/* ---------- Forms ---------- */
+label.field-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.03em; }
+.field { margin-bottom: 14px; }
+input[type=text], input[type=number], input[type=date], input[type=email], input[type=tel], select, textarea {
+  width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border-strong);
+  background: var(--bg); color: var(--text-primary); font-size: 14px; font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.input-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.input-prefix { position: relative; }
+.input-prefix span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); font-size: 13px; font-weight: 600; }
+.input-prefix input { padding-left: 32px; }
+
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 10px; font-size: 13.5px; font-weight: 600; border: 1px solid transparent; transition: all 0.15s ease; }
+.btn-primary { background: var(--ink-900); color: #fff; }
+[data-theme="dark"] .btn-primary { background: var(--brass-400); color: var(--ink-950); }
+.btn-primary:hover { opacity: 0.9; box-shadow: var(--shadow-sm); }
+.btn-secondary { background: var(--bg-elevated); border-color: var(--border-strong); color: var(--text-primary); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover { color: var(--bad); }
+.btn-sm { padding: 6px 11px; font-size: 12.5px; }
+
+/* ---------- Tables ---------- */
+table.data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+/* Tighter variant for wide tables with many columns (e.g. Hospital Plan
+   Premiums' 9-column projection), so more fits comfortably without the
+   page feeling oversized. */
+table.data-table.compact-table { font-size: 12px; }
+table.data-table.compact-table th { font-size: 10.5px; padding: 6px 8px; }
+table.data-table.compact-table td { padding: 6px 8px; }
+.data-table th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-tertiary); padding: 8px 10px; border-bottom: 1px solid var(--border-strong); font-weight: 700; }
+.data-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text-primary); }
+.data-table tbody tr { transition: background 0.15s ease; }
+.data-table tbody tr:hover { background: var(--accent-soft); }
+.table-scroll { max-height: 420px; overflow-y: auto; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+.table-scroll thead th { position: sticky; top: 0; background: var(--bg-elevated); z-index: 1; }
+
+/* ---------- Progress / gauges ---------- */
+.progress-track { height: 8px; border-radius: 6px; background: var(--border); overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--brass-300), var(--brass-500)); transition: width 0.4s ease; }
+.badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.02em; }
+.badge-good { background: var(--good-soft); color: var(--good); }
+.badge-warn { background: var(--warn-soft); color: var(--warn); }
+.badge-bad { background: var(--bad-soft); color: var(--bad); }
+
+/* ---------- Policy / plan cards ---------- */
+.policy-card { border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-elevated); padding: 18px; box-shadow: var(--shadow-sm); }
+.policy-card .policy-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.policy-card .policy-title { font-size: 15.5px; font-weight: 700; }
+.policy-card .policy-sub { font-size: 12.5px; color: var(--text-secondary); margin-top: 2px; }
+.mini-stat { display: flex; flex-direction: column; gap: 2px; }
+.mini-stat .l { font-size: 11px; text-transform: uppercase; color: var(--text-tertiary); font-weight: 600; letter-spacing: 0.03em; }
+.mini-stat .v { font-size: 15px; font-weight: 700; }
+
+.collapsible-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+.chevron { transition: transform 0.2s ease; }
+.chevron.open { transform: rotate(180deg); }
+.collapsible-body { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; }
+.collapsible-body.open { max-height: 3000px; }
+
+/* AI panel */
+.ai-panel { border-radius: var(--radius-md); border: 1px solid var(--border-strong); background: linear-gradient(160deg, var(--accent-soft), transparent 60%); padding: 18px; }
+.ai-rec { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.ai-rec:last-child { border-bottom: none; }
+.ai-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex: none; }
+.ai-dot.high { background: var(--bad); } .ai-dot.medium { background: var(--warn); } .ai-dot.good { background: var(--good); }
+
+/* Notes / lists */
+.note-item { padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-elevated); margin-bottom: 10px; }
+.note-item .note-date { font-size: 11.5px; color: var(--text-tertiary); font-weight: 600; margin-bottom: 4px; }
+
+/* Chart container */
+.chart-wrap { position: relative; height: 240px; }
+.chart-wrap.tall { height: 320px; }
+
+/* Compact field variant — used for dense repeating rows (Cashflow items)
+   so category headers can stand out as the primary visual anchor instead
+   of every row competing at the same size. */
+.compact-row label.field-label { font-size: 9.5px; margin-bottom: 3px; }
+.compact-row input, .compact-row select { padding: 6px 9px; font-size: 12.5px; }
+.compact-row .field { margin-bottom: 0; }
+/* .compact-row's shorthand padding above resets padding-left to 9px on
+   every input, silently overriding .input-prefix's padding-left:32px
+   (equal specificity, later in cascade order wins) — which made the "S$"
+   prefix overlap the number itself. This selector is more specific (3
+   classes vs 2) so it always wins regardless of source order. */
+.compact-row .input-prefix input { padding-left: 32px; }
+/* Genuinely narrower fields (not just tighter padding) — caps each
+   field's width instead of letting it stretch to fill the grid row,
+   for pages where compact-row's padding reduction alone isn't enough. */
+/* Compact but properly spread: fields are narrower than the default
+   (not stretched to fill 1fr each), but sized so 2-3 fit naturally
+   across a card's width with normal gaps between them, rather than
+   either stretching edge-to-edge or bunching to the left with a large
+   empty gap on the right. */
+/* Compact but properly spread: fields are narrower than the default
+   (not stretched edge-to-edge), and grow up to a moderate max so 2-3
+   fields fill a row's actual available width reasonably evenly across
+   different screen sizes, rather than a small fixed cap leaving a large
+   empty gap on wider screens. */
+.narrow-row { grid-template-columns: repeat(auto-fit, minmax(180px, 340px)) !important; }
+.flex { display: flex; } .items-center { align-items: center; } .justify-between { justify-content: space-between; }
+.gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; }
+.text-secondary { color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
+.text-tertiary { color: var(--text-tertiary); font-size: 11.5px; line-height: 1.5; }
+.mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; } .mb-3 { margin-bottom: 12px; }
+.w-full { width: 100%; }
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text-tertiary); }
+
+/* Custom modal dialogs (replacing window.confirm/prompt/alert) */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(13,52,58,0.45); z-index: 1000;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-box {
+  background: var(--bg-elevated); border-radius: 14px; padding: 22px 24px; max-width: 420px; width: 100%;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+.modal-message { font-size: 14px; line-height: 1.5; color: var(--text-primary); margin-bottom: 16px; white-space: pre-line; }
+.modal-input {
+  width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-strong);
+  background: var(--bg); color: var(--text-primary); font-size: 14px; font-family: inherit; margin-bottom: 16px;
+}
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.btn-danger { background: var(--bad); color: #fff; }
+.btn-danger:hover { opacity: 0.9; }
+.empty-state .big-ic { font-size: 34px; margin-bottom: 10px; }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* Print (Proposal export) */
+@media print {
+  .sidebar, .topbar { display: none !important; }
+  .main-area, .content { overflow: visible !important; height: auto !important; }
+  .content { padding: 0 !important; }
+  .no-print { display: none !important; }
+  body { background: #fff; }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .sidebar { position: fixed; z-index: 40; height: 100vh; }
+  .content { padding: 20px 16px 48px; }
+  .topbar { padding: 14px 16px; }
+}
