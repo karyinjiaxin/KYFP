@@ -3,7 +3,6 @@
    ============================================================ */
 
 var ModuleInvestments = (function () {
-  var openTables = {}; // plan id -> bool, persists expand state across re-renders
   var hideFeesAndBonuses = {}; // plan id -> bool, persists column visibility across re-renders
   var INVESTMENT_TYPES = ['Investment Policy (ILP)', 'Unit Trust', 'ETF', 'Shares', 'Bonds', 'Gold', 'Crypto', 'REIT', 'Endowment', 'Other'];
 
@@ -40,12 +39,11 @@ var ModuleInvestments = (function () {
 
     function planCard(plan, idx, currentAge) {
       var base = 'investments.' + idx + '.';
-      var isOpen = !!openTables[plan.id];
 
-      var card = Dom.el('div', { class: 'card mb-3' });
+      var card = Dom.el('div', { class: 'card mb-3 investment-compact' });
       card.appendChild(Dom.el('div', { class: 'policy-head' }, [
         Dom.el('div', {}, [
-          Dom.el('div', { style: 'font-size:16px;font-weight:700' }, [plan.name]),
+          Dom.el('div', { style: 'font-size:13.5px;font-weight:700' }, [plan.name]),
           Dom.el('div', { class: 'text-tertiary' }, [plan.assetType || 'Unit Trust'])
         ]),
         Dom.el('button', { class: 'btn btn-ghost btn-sm', onclick: function () { var arr = Store.get('investments'); arr.splice(idx, 1); Store.set('investments', arr); } }, ['Remove'])
@@ -142,20 +140,8 @@ var ModuleInvestments = (function () {
         '"Current Investment Value" is optional, for a plan that\u2019s already been running: enter today\u2019s real account value and the age it was observed, and the projection is grounded to that actual figure at that age instead of trusting a recomputation from scratch since Start Age.'
       ]));
 
-      var toggleHeader = Dom.el('div', {
-        class: 'collapsible-header mt-3', onclick: function () {
-          openTables[plan.id] = !openTables[plan.id];
-          Dom.withFocusPreserved(container, draw);
-        }
-      }, [
-        Dom.el('div', { style: 'font-weight:700;font-size:13.5px' }, ['Annual Projection Table']),
-        Dom.el('svg', { class: 'chevron' + (isOpen ? ' open' : ''), width: '18', height: '18', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', html: '<path d="M6 9l6 6 6-6"/>' })
-      ]);
-      card.appendChild(toggleHeader);
-
-      var body = Dom.el('div', { class: 'collapsible-body' + (isOpen ? ' open' : ''), style: 'margin-top:10px' });
-      if (isOpen) body.appendChild(projectionTable(plan, currentAge));
-      card.appendChild(body);
+      card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:13.5px;margin-top:16px;margin-bottom:8px' }, ['Annual Projection Table']));
+      card.appendChild(projectionTable(plan, currentAge));
 
       return card;
     }
