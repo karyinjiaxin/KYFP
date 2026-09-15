@@ -221,7 +221,6 @@ var InsurerRates = (function () {
    table); GTC/GTC2 riders are fully cash-payable. */
 
 var ModuleHospitalPlans = (function () {
-  var openPlans = {};
   var PROJECT_FROM_OPTIONS = ["Today's Age", 'Age 55', 'Age 60', 'Age 65'];
   var GSH_DEFAULT_COVERAGE = { 'P Plus': 1500000, 'P Prime': 1500000, 'A Plus': 1200000, 'B Plus': 500000 };
 
@@ -342,9 +341,8 @@ var ModuleHospitalPlans = (function () {
       var proj = geProjection(p, range.from, range.to);
       var last = proj[proj.length - 1] || { cumCash: 0, cumMedisave: 0 };
       var todayRow = geProjection(p, todaysAge, todaysAge)[0] || { cash: 0, medisave: 0 };
-      var isOpen = !!openPlans[p.id || idx];
 
-      var card = Dom.el('div', { class: 'card mb-3' });
+      var card = Dom.el('div', { class: 'card mb-3 compact-fields' });
       card.appendChild(Dom.el('div', { class: 'policy-head' }, [
         Dom.el('div', {}, [
           Dom.el('div', { class: 'policy-title' }, ['GREAT SupremeHealth ' + p.gshPlan + (p.riderFamily ? ' + ' + (p.riderFamily === 'GTC2' ? 'GTC2 ' : 'GTC ') + p.riderKey : '')]),
@@ -388,41 +386,28 @@ var ModuleHospitalPlans = (function () {
         Fields.selectInput(base + 'projectFrom', 'Project Total Premiums From', PROJECT_FROM_OPTIONS)
       ]));
 
-      var toggleHeader = Dom.el('div', {
-        class: 'collapsible-header', onclick: function () {
-          openPlans[p.id || idx] = !isOpen;
-          Dom.withFocusPreserved(container, draw);
-        }
-      }, [
-        Dom.el('div', { style: 'font-weight:700;font-size:13.5px' }, ['Annual Premium Projection']),
-        Dom.el('svg', { class: 'chevron' + (isOpen ? ' open' : ''), width: '18', height: '18', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', html: '<path d="M6 9l6 6 6-6"/>' })
-      ]);
-      card.appendChild(toggleHeader);
-      var body = Dom.el('div', { class: 'collapsible-body' + (isOpen ? ' open' : ''), style: 'margin-top:12px' });
-      if (isOpen) {
-        body.appendChild(Dom.el('div', { class: 'chart-wrap tall mb-3' }, [Dom.el('canvas', { id: 'hospChart' + idx })]));
-        body.appendChild(projectionTable(proj));
-        body.appendChild(fundingCalculator(p, idx, proj, todaysAge));
-      }
+      card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:13px;margin-top:16px;margin-bottom:8px' }, ['Annual Premium Projection']));
+      var body = Dom.el('div', {});
+      body.appendChild(Dom.el('div', { class: 'chart-wrap tall mb-3' }, [Dom.el('canvas', { id: 'hospChart' + idx })]));
+      body.appendChild(projectionTable(proj));
+      body.appendChild(fundingCalculator(p, idx, proj, todaysAge));
       card.appendChild(body);
 
-      if (isOpen) {
-        requestAnimationFrame(function () {
-          var t = Charts.themeColors();
-          Charts.render(document.getElementById('hospChart' + idx), {
-            type: 'bar',
-            data: {
-              labels: proj.map(function (r) { return r.age; }),
-              datasets: [
-                { label: 'Cash', data: proj.map(function (r) { return r.cash; }), backgroundColor: t.palette[0] },
-                { label: 'MediSave', data: proj.map(function (r) { return r.medisave; }), backgroundColor: t.palette[2] }
-              ]
-            },
-            options: { scales: { x: { stacked: true }, y: { stacked: true } } }
-          });
-          drawFundingChart(p, idx, proj, todaysAge);
+      requestAnimationFrame(function () {
+        var t = Charts.themeColors();
+        Charts.render(document.getElementById('hospChart' + idx), {
+          type: 'bar',
+          data: {
+            labels: proj.map(function (r) { return r.age; }),
+            datasets: [
+              { label: 'Cash', data: proj.map(function (r) { return r.cash; }), backgroundColor: t.palette[0] },
+              { label: 'MediSave', data: proj.map(function (r) { return r.medisave; }), backgroundColor: t.palette[2] }
+            ]
+          },
+          options: { scales: { x: { stacked: true }, y: { stacked: true } } }
         });
-      }
+        drawFundingChart(p, idx, proj, todaysAge);
+      });
 
       return card;
     }

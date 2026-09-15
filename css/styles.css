@@ -251,7 +251,14 @@ table.data-table.compact-table td { padding: 6px 8px; }
    insurer product, etc.) beyond the shared compact-row sizing used
    elsewhere (Cashflow, Retirement, Roadmap), so this is scoped to its
    own class rather than changing compact-row for every page. */
-.investment-compact input[type=text], .investment-compact input[type=number], .investment-compact select { font-size: 12.5px; padding: 7px 10px; }
+/* Shared tighter typography for pages that need higher information
+   density (Investment Planning, Hospital Plan Premiums) — smaller than
+   compact-row alone gives, since that only shrinks labels, not the
+   actual input/select value text which is what reads as "big". */
+.compact-fields input[type=text], .compact-fields input[type=number], .compact-fields select { font-size: 11.5px; padding: 6px 9px; }
+.compact-fields label.field-label { font-size: 9px; margin-bottom: 3px; }
+.compact-fields .policy-title { font-size: 13px; }
+.compact-fields .policy-sub { font-size: 11px; }
 .compact-row input, .compact-row select { padding: 6px 9px; font-size: 12.5px; }
 .compact-row .field { margin-bottom: 0; }
 /* .compact-row's shorthand padding above resets padding-left to 9px on

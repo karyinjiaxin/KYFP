@@ -40,10 +40,10 @@ var ModuleInvestments = (function () {
     function planCard(plan, idx, currentAge) {
       var base = 'investments.' + idx + '.';
 
-      var card = Dom.el('div', { class: 'card mb-3 investment-compact' });
+      var card = Dom.el('div', { class: 'card mb-3 compact-fields' });
       card.appendChild(Dom.el('div', { class: 'policy-head' }, [
         Dom.el('div', {}, [
-          Dom.el('div', { style: 'font-size:13.5px;font-weight:700' }, [plan.name]),
+          Dom.el('div', { style: 'font-size:13px;font-weight:700' }, [plan.name]),
           Dom.el('div', { class: 'text-tertiary' }, [plan.assetType || 'Unit Trust'])
         ]),
         Dom.el('button', { class: 'btn btn-ghost btn-sm', onclick: function () { var arr = Store.get('investments'); arr.splice(idx, 1); Store.set('investments', arr); } }, ['Remove'])
