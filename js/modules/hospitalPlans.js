@@ -741,10 +741,10 @@ var ModuleHospitalPlans = (function () {
     }
     function heroStat(label, value, sub, color) {
       return Dom.el('div', {
-        class: 'card',
+        class: 'card kpi-card',
         style: color ? 'background:' + hexToRgba(color, 0.14) + ';border-color:' + hexToRgba(color, 0.4) + ';border-left:4px solid ' + color : 'background:var(--bg)'
       }, [
-        Dom.el('div', { class: 'kpi-label' }, [label]),
+        Dom.el('div', { class: 'kpi-label', style: 'font-size:10.5px' }, [label]),
         Dom.el('div', { class: 'kpi-value', style: 'font-size:17px' }, [value]),
         Dom.el('div', { class: 'text-tertiary mt-1' }, [sub])
       ]);
