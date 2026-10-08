@@ -9,11 +9,11 @@
 
 var ModuleDashboard = (function () {
 
-  function kpi(label, value, deltaText, deltaDir) {
+  function kpi(label, value, deltaText, deltaDir, accent) {
     var delta = deltaText ? Dom.el('div', { class: 'kpi-delta ' + (deltaDir || 'flat') }, [deltaText]) : null;
     var children = [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])];
     if (delta) children.push(delta);
-    return Dom.el('div', { class: 'card kpi-card hoverable' }, children);
+    return Dom.el('div', { class: 'card kpi-card hoverable' + (accent ? ' kpi-accent-' + accent : '') }, children);
   }
 
   function goalChip(label, value, accent) {
@@ -93,19 +93,19 @@ var ModuleDashboard = (function () {
       container.appendChild(Dom.el('div', { class: 'section-title' }, ['🔍 Full Detail']));
       var targetRetireAge = Calc.num((c.retirement || {}).retirementAge);
       var kpiGrid = Dom.el('div', { class: 'grid grid-kpi' }, [
-        kpi('Monthly Income', Dom.fmtMoney(Calc.monthlyIncome(c))),
-        kpi('Monthly Expenses', Dom.fmtMoney(Calc.monthlyExpenses(c))),
-        kpi('Savings Rate', Dom.fmtPct(savingsRate), savingsRate >= 20 ? 'Healthy' : 'Below target', savingsRate >= 20 ? 'up' : 'down'),
-        kpi('Net Worth', Dom.fmtMoney(nw)),
-        kpi('Investment Value (today)', Dom.fmtMoney(invValue)),
-        kpi('Insurance Coverage', Dom.fmtMoney(coverage)),
-        kpi('Retirement Progress', Dom.fmtPct(rp.requiredPortfolio > 0 ? (rp.projectedAssets / rp.requiredPortfolio) * 100 : 100), '% of required portfolio projected by age ' + targetRetireAge, 'flat'),
-        kpi('Passive Income / mo', Dom.fmtMoney(passiveIncome), 'Rental + investment dividends + other investment income', 'flat'),
-        kpi('Dividend Income / mo', Dom.fmtMoney(dividendIncome)),
-        kpi('Emergency Fund', efMonths.toFixed(1) + ' mo', efMonths >= ((c.emergencyFund || {}).targetMonths || 6) ? 'On target' : 'Below target', efMonths >= ((c.emergencyFund || {}).targetMonths || 6) ? 'up' : 'down'),
-        kpi('Financial Independence', Dom.fmtPct(fiPct), 'Passive income vs today\u2019s expenses', 'flat'),
-        kpi('Target Retirement Age', targetRetireAge || '—', 'Set on Retirement Planning', 'flat'),
-        kpi('Earliest Possible Retirement Age', projRetireAge ? projRetireAge : 'Not by 85', projRetireAge && targetRetireAge ? (projRetireAge <= targetRetireAge ? 'Ahead of target' : 'Behind target') : '', projRetireAge && targetRetireAge ? (projRetireAge <= targetRetireAge ? 'up' : 'down') : 'flat')
+        kpi('Monthly Income', Dom.fmtMoney(Calc.monthlyIncome(c)), null, null, 'green'),
+        kpi('Monthly Expenses', Dom.fmtMoney(Calc.monthlyExpenses(c)), null, null, 'orange'),
+        kpi('Savings Rate', Dom.fmtPct(savingsRate), savingsRate >= 20 ? 'Healthy' : 'Below target', savingsRate >= 20 ? 'up' : 'down', 'blue'),
+        kpi('Net Worth', Dom.fmtMoney(nw), null, null, 'violet'),
+        kpi('Investment Value (today)', Dom.fmtMoney(invValue), null, null, 'teal'),
+        kpi('Insurance Coverage', Dom.fmtMoney(coverage), null, null, 'red'),
+        kpi('Retirement Progress', Dom.fmtPct(rp.requiredPortfolio > 0 ? (rp.projectedAssets / rp.requiredPortfolio) * 100 : 100), '% of required portfolio projected by age ' + targetRetireAge, 'flat', 'yellow'),
+        kpi('Passive Income / mo', Dom.fmtMoney(passiveIncome), 'Rental + investment dividends + other investment income', 'flat', 'cyan'),
+        kpi('Dividend Income / mo', Dom.fmtMoney(dividendIncome), null, null, 'pink'),
+        kpi('Emergency Fund', efMonths.toFixed(1) + ' mo', efMonths >= ((c.emergencyFund || {}).targetMonths || 6) ? 'On target' : 'Below target', efMonths >= ((c.emergencyFund || {}).targetMonths || 6) ? 'up' : 'down', 'red'),
+        kpi('Financial Independence', Dom.fmtPct(fiPct), 'Passive income vs today\u2019s expenses', 'flat', 'yellow'),
+        kpi('Target Retirement Age', targetRetireAge || '—', 'Set on Retirement Planning', 'flat', 'indigo'),
+        kpi('Earliest Possible Retirement Age', projRetireAge ? projRetireAge : 'Not by 85', projRetireAge && targetRetireAge ? (projRetireAge <= targetRetireAge ? 'Ahead of target' : 'Behind target') : '', projRetireAge && targetRetireAge ? (projRetireAge <= targetRetireAge ? 'up' : 'down') : 'flat', 'indigo')
       ]);
       container.appendChild(kpiGrid);
 

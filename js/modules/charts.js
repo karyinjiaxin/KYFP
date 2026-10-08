@@ -116,6 +116,13 @@ var Charts = (function () {
     };
   }
 
+  // Validated categorical palette (CVD-safe adjacent pairs, contrast-checked
+  // in both light and dark mode) — replaces the previous 6-color ad hoc
+  // set so chart series are reliably distinguishable, including for
+  // colorblind viewers. Order is the safety mechanism — keep it as-is.
+  var PALETTE_LIGHT = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
+  var PALETTE_DARK = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'];
+
   function themeColors() {
     var dark = document.documentElement.getAttribute('data-theme') === 'dark';
     return {
@@ -123,7 +130,7 @@ var Charts = (function () {
       grid: dark ? 'rgba(255,255,255,0.07)' : 'rgba(13,52,58,0.07)',
       brass: dark ? '#F58868' : '#F26B4D',
       ink: dark ? '#EDF4F3' : '#142526',
-      palette: ['#F26B4D', '#1A555D', '#1C9166', '#D6484A', '#7C6FB0', '#3E8FB1']
+      palette: dark ? PALETTE_DARK : PALETTE_LIGHT
     };
   }
 
