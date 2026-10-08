@@ -5,31 +5,31 @@
 var Sidebar = (function () {
   var NAV = [
     { section: 'Overview', items: [
-      { key: 'dashboard', label: 'Dashboard', ic: 'grid' },
-      { key: 'profile', label: 'Client Profile', ic: 'user' },
-      { key: 'couple', label: 'Couple Planning', ic: 'couple' },
-      { key: 'cashflow', label: 'Cashflow', ic: 'arrows' },
-      { key: 'buckets', label: 'Bank Account Buckets', ic: 'bucket' },
-      { key: 'networth', label: 'Net Worth', ic: 'bar' }
+      { key: 'dashboard', label: 'Dashboard', ic: 'grid', col: 'blue' },
+      { key: 'profile', label: 'Client Profile', ic: 'user', col: 'indigo' },
+      { key: 'couple', label: 'Couple Planning', ic: 'couple', col: 'pink' },
+      { key: 'cashflow', label: 'Cashflow', ic: 'arrows', col: 'green' },
+      { key: 'buckets', label: 'Bank Account Buckets', ic: 'bucket', col: 'cyan' },
+      { key: 'networth', label: 'Net Worth', ic: 'bar', col: 'violet' }
     ]},
     { section: 'Planning', items: [
-      { key: 'insurance', label: 'Insurance Coverage', ic: 'shield' },
-      { key: 'hospital', label: 'Hospital Plan Premiums', ic: 'cross' },
-      { key: 'retirement', label: 'Retirement Planning', ic: 'sun' },
-      { key: 'roadmap', label: 'Cash Flow Roadmap', ic: 'roadmap' },
-      { key: 'investments', label: 'Investment Planning', ic: 'trend' },
-      { key: 'dividends', label: 'Insurance + Dividends', ic: 'coin' },
-      { key: 'cpf', label: 'CPF', ic: 'building' },
-      { key: 'tax', label: 'Tax Planning', ic: 'doc' },
-      { key: 'estate', label: 'Estate Planning', ic: 'scroll' },
-      { key: 'ratios', label: 'Financial Ratios', ic: 'gauge' },
-      { key: 'goals', label: 'Goals & Milestones', ic: 'flag' }
+      { key: 'insurance', label: 'Insurance Coverage', ic: 'shield', col: 'red' },
+      { key: 'hospital', label: 'Hospital Plan Premiums', ic: 'cross', col: 'pink' },
+      { key: 'retirement', label: 'Retirement Planning', ic: 'sun', col: 'yellow' },
+      { key: 'roadmap', label: 'Cash Flow Roadmap', ic: 'roadmap', col: 'teal' },
+      { key: 'investments', label: 'Investment Planning', ic: 'trend', col: 'teal' },
+      { key: 'dividends', label: 'Insurance + Dividends', ic: 'coin', col: 'orange' },
+      { key: 'cpf', label: 'CPF', ic: 'building', col: 'orange' },
+      { key: 'tax', label: 'Tax Planning', ic: 'doc', col: 'yellow' },
+      { key: 'estate', label: 'Estate Planning', ic: 'scroll', col: 'blue' },
+      { key: 'ratios', label: 'Financial Ratios', ic: 'gauge', col: 'violet' },
+      { key: 'goals', label: 'Goals & Milestones', ic: 'flag', col: 'green' }
     ]},
     { section: 'Client', items: [
-      { key: 'sessionnotes', label: 'Session Notes', ic: 'note' },
-      { key: 'meetingnotes', label: 'Meeting Notes', ic: 'cal' },
-      { key: 'proposals', label: 'Proposals', ic: 'file' },
-      { key: 'settings', label: 'Settings', ic: 'gear' }
+      { key: 'sessionnotes', label: 'Session Notes', ic: 'note', col: 'green' },
+      { key: 'meetingnotes', label: 'Meeting Notes', ic: 'cal', col: 'indigo' },
+      { key: 'proposals', label: 'Proposals', ic: 'file', col: 'teal' },
+      { key: 'settings', label: 'Settings', ic: 'gear', col: 'cyan' }
     ]}
   ];
 
@@ -57,8 +57,8 @@ var Sidebar = (function () {
     roadmap: '<path d="M3 20l6-16 4 10 3-6 5 12"/><circle cx="9" cy="4" r="1.5"/><circle cx="20" cy="20" r="1.5"/>'
   };
 
-  function iconSvg(name) {
-    return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || ICONS.grid) + '</svg>';
+  function iconSvg(name, colorClass) {
+    return '<svg class="ic' + (colorClass ? ' ' + colorClass : '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || ICONS.grid) + '</svg>';
   }
 
   var rootEl = null;
@@ -76,7 +76,7 @@ var Sidebar = (function () {
       group.items.forEach(function (item) {
         var navItem = Dom.el('a', {
           href: '#' + item.key, class: 'nav-item', 'data-key': item.key,
-          html: iconSvg(item.ic) + '<span>' + item.label + '</span>'
+          html: iconSvg(item.ic, item.col ? 'nav-icon-' + item.col : null) + '<span>' + item.label + '</span>'
         });
         sec.appendChild(navItem);
       });

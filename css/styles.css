@@ -150,11 +150,50 @@ button { font-family: inherit; cursor: pointer; }
 .grid-2 { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
 .grid-3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 
-.kpi-card { display: flex; flex-direction: column; gap: 8px; }
+.kpi-card { display: flex; flex-direction: column; gap: 8px; border-left: 3px solid transparent; }
 .kpi-card .kpi-label { font-size: 12.5px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 .kpi-card .kpi-value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; font-family: var(--font-serif); }
 .kpi-card .kpi-delta { font-size: 12.5px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
 .kpi-delta.up { color: var(--good); } .kpi-delta.down { color: var(--bad); } .kpi-delta.flat { color: var(--text-tertiary); }
+
+/* ---------- Accent system ----------
+   Validated categorical palette (CVD-safe adjacent pairs, contrast-checked
+   in both light and dark mode). Used for KPI card accent stripes and
+   sidebar nav icon tints so each card/section reads as visually distinct
+   rather than uniform. Order is the safety mechanism — keep it as-is. */
+.kpi-accent-blue   { border-left-color: #2a78d6; } [data-theme="dark"] .kpi-accent-blue   { border-left-color: #3987e5; }
+.kpi-accent-orange { border-left-color: #eb6834; } [data-theme="dark"] .kpi-accent-orange { border-left-color: #d95926; }
+.kpi-accent-teal   { border-left-color: #1baf7a; } [data-theme="dark"] .kpi-accent-teal   { border-left-color: #199e70; }
+.kpi-accent-yellow { border-left-color: #c98500; } [data-theme="dark"] .kpi-accent-yellow { border-left-color: #c98500; }
+.kpi-accent-pink   { border-left-color: #d5578e; } [data-theme="dark"] .kpi-accent-pink   { border-left-color: #d55181; }
+.kpi-accent-green  { border-left-color: #0ca30c; } [data-theme="dark"] .kpi-accent-green  { border-left-color: #0ca30c; }
+.kpi-accent-violet { border-left-color: #4a3aa7; } [data-theme="dark"] .kpi-accent-violet { border-left-color: #9085e9; }
+.kpi-accent-red    { border-left-color: #d03b3b; } [data-theme="dark"] .kpi-accent-red    { border-left-color: #e66767; }
+.kpi-accent-indigo { border-left-color: #4f46e5; } [data-theme="dark"] .kpi-accent-indigo { border-left-color: #818cf8; }
+.kpi-accent-cyan   { border-left-color: #0e8a9c; } [data-theme="dark"] .kpi-accent-cyan   { border-left-color: #22b8cf; }
+
+/* Sidebar background is always dark (ink-navy), so nav icons always use the
+   brighter "dark-surface" step regardless of the page theme. */
+.nav-icon-blue   { color: #5B9FEE; }
+.nav-icon-orange { color: #F0906B; }
+.nav-icon-teal   { color: #4FCDA0; }
+.nav-icon-yellow { color: #E8B23D; }
+.nav-icon-pink   { color: #E887A8; }
+.nav-icon-green  { color: #4FCB6E; }
+.nav-icon-violet { color: #AFA3EF; }
+.nav-icon-red    { color: #EE8A8A; }
+.nav-icon-indigo { color: #9CA6F5; }
+.nav-icon-cyan   { color: #5FD0E0; }
+.nav-item.active .nav-icon-blue,
+.nav-item.active .nav-icon-orange,
+.nav-item.active .nav-icon-teal,
+.nav-item.active .nav-icon-yellow,
+.nav-item.active .nav-icon-pink,
+.nav-item.active .nav-icon-green,
+.nav-item.active .nav-icon-violet,
+.nav-item.active .nav-icon-red,
+.nav-item.active .nav-icon-indigo,
+.nav-item.active .nav-icon-cyan { color: var(--brass-400); }
 
 .section-title { font-size: 15px; font-weight: 900; margin: 28px 0 12px; letter-spacing: -0.005em; font-family: "Arial Black", Arial, sans-serif; }
 .section-title:first-child { margin-top: 0; }
