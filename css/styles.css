@@ -205,6 +205,25 @@ button { font-family: inherit; cursor: pointer; }
 .card-title { font-size: 14px; font-weight: 700; margin: 0 0 8px; }
 .card-title:first-child { margin-top: 0; }
 
+/* ---------- Classy type scale (client-record pages) ----------
+   Client Profile, Session Notes, Meeting Notes, Proposals and Settings
+   are read/skimmed rather than scanned for numbers, so they use a
+   smaller, quieter type scale than the data-dense planning pages: the
+   heavy Arial Black display weight is dropped in favor of the serif-ish
+   UI face at a lighter weight with a touch more letter-spacing, which
+   reads as more editorial and less "dashboard". Applied via the
+   .content-classy class the router toggles on the page container. */
+.content-classy .page-header h1 { font-size: 21px; font-weight: 700; font-family: var(--font-serif); letter-spacing: -0.005em; }
+.content-classy .page-header .sub { font-size: 12.5px; }
+.content-classy .section-title { font-size: 12px; font-weight: 700; font-family: var(--font-ui); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); }
+.content-classy .card-title { font-size: 13px; }
+.content-classy label.field-label { font-size: 10.5px; }
+.content-classy input[type=text], .content-classy input[type=number], .content-classy input[type=date],
+.content-classy input[type=email], .content-classy input[type=tel], .content-classy select, .content-classy textarea { font-size: 12.5px; }
+.content-classy .text-secondary { font-size: 12px; }
+.content-classy .text-tertiary { font-size: 11px; }
+.content-classy .btn { font-size: 12.5px; }
+
 /* ---------- Forms ---------- */
 label.field-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.03em; }
 .field { margin-bottom: 14px; }
