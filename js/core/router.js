@@ -8,6 +8,11 @@ var Router = (function () {
   var currentUnsub = null;
   var currentKey = null;
 
+  // Client-record pages (profile onward in the sidebar) use a smaller,
+  // more refined type scale than the data-dense planning pages — see
+  // .content-classy in styles.css.
+  var CLASSY_KEYS = { profile: true, sessionnotes: true, meetingnotes: true, proposals: true, settings: true };
+
   function register(key, moduleObj) {
     routes[key] = moduleObj;
   }
@@ -23,6 +28,7 @@ var Router = (function () {
 
     if (currentUnsub) { try { currentUnsub(); } catch (e) {} currentUnsub = null; }
     container.innerHTML = '';
+    container.classList.toggle('content-classy', !!CLASSY_KEYS[key]);
 
     var mod = routes[key];
     if (mod && typeof mod.render === 'function') {
