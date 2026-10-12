@@ -309,9 +309,40 @@ var App = (function () {
   return { init: init, setTheme: setTheme };
 })();
 
+// Resolves true once a session exists (or immediately, in local-only
+// mode). Resolves false after a fresh sign-in, having already replaced
+// #content with the login screen and triggered a reload — the caller
+// must stop and not touch the DOM.
+function ensureAuthenticated() {
+  var sb = Auth.getClient();
+  if (!sb) return Promise.resolve(true); // local-only mode — no login required
+  return Auth.getSession().then(function (session) {
+    if (session) return true;
+    return Auth.renderLoginScreen(document.body).then(function () {
+      window.location.reload();
+      return false;
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+  ensureAuthenticated().then(function (authenticated) {
+    if (!authenticated) return; // login screen shown, or a reload is already in flight
+    return Sync.pullBeforeInit().then(startApp);
+  }).catch(function (err) { startApp(); console.error('Auth/sync bootstrap failed, continuing local-only', err); });
+});
+
+function startApp() {
   try {
     App.init();
+    if (Sync.enabled()) Sync.startWatching();
+    var signOutBtn = document.getElementById('signOutBtn');
+    if (signOutBtn) {
+      if (Sync.enabled()) {
+        signOutBtn.style.display = '';
+        signOutBtn.addEventListener('click', Auth.signOut);
+      }
+    }
   } catch (err) {
     // If ANY single line in init() throws (e.g. one mismatched file with
     // a missing element id), the whole app previously failed silently —
@@ -331,4 +362,4 @@ document.addEventListener('DOMContentLoaded', function () {
       '</div></div>';
     document.body.appendChild(box);
   }
-});
+}
