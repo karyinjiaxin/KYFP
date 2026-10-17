@@ -466,7 +466,7 @@ var ModuleHospitalPlans = (function () {
     function projectionTable(proj) {
       var wrap = Dom.el('div', { class: 'table-scroll' });
       var table = Dom.el('table', { class: 'data-table compact-table' });
-      table.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, ['Age', 'GSH Cash', 'GTC Cash', 'Total Cash', 'MediSave', 'Total', 'Cum. GSH Cash', 'Cum. GTC Cash', 'Cum. MediSave'].map(function (h) { return Dom.el('th', {}, [h]); }))]));
+      table.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, ['Age', 'GSH Cash', 'GTC Cash', 'Total Cash', 'MediSave', 'Total', 'Cum. GSH Cash', 'Cum. GTC Cash', 'Cum. Total Cash', 'Cum. MediSave'].map(function (h) { return Dom.el('th', {}, [h]); }))]));
       var tbody = Dom.el('tbody');
       proj.forEach(function (r) {
         tbody.appendChild(Dom.el('tr', {}, [
@@ -478,6 +478,7 @@ var ModuleHospitalPlans = (function () {
           Dom.el('td', {}, [Dom.fmtMoney(r.totalPremium)]),
           Dom.el('td', {}, [Dom.fmtMoney(r.cumGshCash)]),
           Dom.el('td', {}, [Dom.fmtMoney(r.cumGtcCash)]),
+          Dom.el('td', { style: 'font-weight:700' }, [Dom.fmtMoney(r.cumCash)]),
           Dom.el('td', {}, [Dom.fmtMoney(r.cumMedisave)])
         ]));
       });
