@@ -503,7 +503,8 @@ var ModuleHospitalPlans = (function () {
       // since Regular was this app's original/default mode.
       var rawProduct = funding.insurerProduct;
       var isLumpSum = rawProduct === 'Lump Sum' || rawProduct === 'GFA';
-      var isRegular = !isLumpSum;
+      var isEndowment = rawProduct === 'Endowment/Retirement Plan';
+      var isRegular = !isLumpSum && !isEndowment;
       var rawChoice = funding.gwa4Choice;
       var normalizedChoice = rawChoice === 'Choice 5' ? '5' : rawChoice === 'Choice 10' ? '10' : rawChoice === 'Choice 15' ? '15' : rawChoice;
       var regularAmount = funding.regularAnnualPremium != null ? funding.regularAnnualPremium : funding.amount;
@@ -538,7 +539,17 @@ var ModuleHospitalPlans = (function () {
             Store.set(base + 'insurerProduct', 'Lump Sum');
             if (!lumpSumAmount) Store.set(base + 'lumpSumAmount', 100000);
           }
-        }, ['Lump Sum'])
+        }, ['Lump Sum']),
+        Dom.el('button', {
+          class: 'btn btn-sm ' + (isEndowment ? 'btn-primary' : 'btn-secondary'),
+          onclick: function () {
+            Store.set(base + 'insurerProduct', 'Endowment/Retirement Plan');
+            if (!funding.endowPremiumTerm) Store.set(base + 'endowPremiumTerm', '10');
+            if (!funding.endowPayoutOption) Store.set(base + 'endowPayoutOption', '61-20');
+            if (!funding.endowAnnualPremium) Store.set(base + 'endowAnnualPremium', 6000);
+            if (!funding.endowAnnualPayout) Store.set(base + 'endowAnnualPayout', 10000);
+          }
+        }, ['Endowment / Retirement Plan'])
       ]));
 
       if (isRegular) {
@@ -574,7 +585,7 @@ var ModuleHospitalPlans = (function () {
         wrap.appendChild(Dom.el('div', { class: 'text-tertiary mb-3' }, [
           'Welcome Bonus, Policy Fee and Loyalty Bonus are auto-populated from GWA4\u2019s actual policy terms for the chosen Premium Term and premium \u2014 no manual entry needed. The whole-of-life policy keeps compounding regardless of whether premiums continue past the term.'
         ]));
-      } else {
+      } else if (isLumpSum) {
         wrap.appendChild(Dom.el('div', { class: 'input-row mb-3' }, [
           Fields.moneyInput(base + 'lumpSumAmount', 'Lump Sum Amount'),
           Fields.numberInput(base + 'growthRate', 'Expected Fund Return %', { step: '0.1' }),
@@ -582,6 +593,27 @@ var ModuleHospitalPlans = (function () {
         ]));
         wrap.appendChild(Dom.el('div', { class: 'text-tertiary mb-3' }, [
           'GFA\u2019s upfront Premium Charge (3.0% under age 76, 2.5% from 76) is auto-populated \u2014 no manual fee entry needed, and GFA has no ongoing fee or bonus.'
+        ]));
+      } else {
+        // No published Great Eastern rate table for this product exists
+        // in the app (unlike GWA4/GFA above, which are sourced from
+        // their actual policy terms) \u2014 so this is manual entry straight
+        // from the policy's benefit illustration, not a computed
+        // projection. Payout combos match the four the advisor described
+        // (56/10, 61/20, 71/10, 76/20); Premium Term reuses GWA4's 5/10/15
+        // options since that's this app's existing convention for plans
+        // priced by premium-paying period.
+        wrap.appendChild(Dom.el('div', { class: 'input-row mb-3' }, [
+          Fields.moneyInput(base + 'endowAnnualPremium', 'Annual Premium'),
+          Fields.selectInput(base + 'endowPremiumTerm', 'Premium Term (Years)', ['5', '10', '15']),
+          Fields.selectInput(base + 'endowPayoutOption', 'Payout', ['56-10', '61-20', '71-10', '76-20'])
+        ]));
+        var payoutLabels = { '56-10': 'From age 56, for 10 years', '61-20': 'From age 61, for 20 years', '71-10': 'From age 71, for 10 years', '76-20': 'From age 76, for 20 years' };
+        wrap.appendChild(Dom.el('div', { class: 'input-row mb-3' }, [
+          Fields.moneyInput(base + 'endowAnnualPayout', 'Annual Payout Amount')
+        ]));
+        wrap.appendChild(Dom.el('div', { class: 'text-tertiary mb-3' }, [
+          'Manual entry from the policy\u2019s benefit illustration \u2014 ' + (payoutLabels[funding.endowPayoutOption || '61-20']) + ', premiums paid for the first ' + (funding.endowPremiumTerm || '10') + ' years. There\u2019s no published rate table for this plan in the app (unlike GWA4/GFA above), so Annual Payout Amount isn\u2019t computed from a fund/dividend assumption \u2014 enter the illustrated figure directly.'
         ]));
       }
 
@@ -657,12 +689,13 @@ var ModuleHospitalPlans = (function () {
     function fundingProjection(funding, todaysAge, proj) {
       var rawProduct = funding.insurerProduct;
       var isLumpSum = rawProduct === 'Lump Sum' || rawProduct === 'GFA';
+      var isEndowment = rawProduct === 'Endowment/Retirement Plan';
       // Default to Regular Accumulation whenever it isn't explicitly Lump
-      // Sum — there's no third "None" mode in the UI anymore, and this
-      // also covers any value saved under an older name (before this was
-      // called "Regular Accumulation") without silently falling through
-      // to a manual mode with nothing filled in.
-      var isRegular = !isLumpSum;
+      // Sum or Endowment/Retirement Plan — there's no separate "None" mode
+      // in the UI, and this also covers any value saved under an older
+      // name (before this was called "Regular Accumulation") without
+      // silently falling through to a manual mode with nothing filled in.
+      var isRegular = !isLumpSum && !isEndowment;
       if (isRegular) {
         // gwa4Projection's loop runs from Year 0 to Year `years`
         // inclusive (years+1 total rows, since Year 0 is inception, not
@@ -702,7 +735,7 @@ var ModuleHospitalPlans = (function () {
             cashPremium: proj[projIndex].cash
           };
         });
-      } else {
+      } else if (isLumpSum) {
         var years = proj.length;
         var amount = Calc.num(funding.lumpSumAmount != null ? funding.lumpSumAmount : funding.amount);
         var rawRows = Calc.gfaProjection(amount, todaysAge, Calc.num(funding.growthRate), years, Calc.num(funding.dividendRate));
@@ -715,6 +748,30 @@ var ModuleHospitalPlans = (function () {
             age: proj[r.year].age, fundValue: r.accountValue, dividend: r.annualDividend,
             investmentInflow: r.premiumPaid, feeAmount: r.feeAmount, totalBonus: r.totalBonus || 0,
             cashPremium: proj[r.year].cash
+          };
+        });
+      } else {
+        // Manual entry, not a computed fund — there's no published rate
+        // table for this product (see the UI note above). "Investment
+        // Value" here is just the running net of premiums paid minus
+        // payouts received so far, not a real surrender/account value —
+        // reusing the shared table's columns is still the clearest way
+        // to show premium-in / payout-out / net against the hospital
+        // plan's own cash premium, same as the other two modes.
+        var premium = Calc.num(funding.endowAnnualPremium);
+        var premiumTerm = Calc.num(funding.endowPremiumTerm) || 10;
+        var payoutParts = (funding.endowPayoutOption || '61-20').split('-');
+        var payoutStartAge = Calc.num(payoutParts[0]);
+        var payoutDuration = Calc.num(payoutParts[1]);
+        var annualPayout = Calc.num(funding.endowAnnualPayout);
+        var netRunning = 0;
+        return proj.map(function (row, y) {
+          var premiumPaid = y < premiumTerm ? premium : 0;
+          var payout = (row.age >= payoutStartAge && row.age < payoutStartAge + payoutDuration) ? annualPayout : 0;
+          netRunning += premiumPaid - payout;
+          return {
+            year: y, age: row.age, fundValue: Math.max(0, netRunning), dividend: payout,
+            investmentInflow: premiumPaid, feeAmount: 0, totalBonus: 0, cashPremium: row.cash
           };
         });
       }
