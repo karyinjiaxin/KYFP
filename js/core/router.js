@@ -4,12 +4,22 @@
 
 var Router = (function () {
   var routes = {};
+  var order = [];
   var container = null;
   var currentUnsub = null;
   var currentKey = null;
 
   function register(key, moduleObj) {
+    if (order.indexOf(key) === -1) order.push(key);
     routes[key] = moduleObj;
+  }
+
+  // Ordered list of every registered page — used by the print tab-picker
+  // to offer pages in the same order they appear in the sidebar.
+  function listRoutes() {
+    return order.map(function (key) {
+      return { key: key, title: (routes[key] && routes[key].title) || key, module: routes[key] };
+    });
   }
 
   function navigate(key) {
@@ -58,6 +68,7 @@ var Router = (function () {
     },
     register: register,
     navigate: navigate,
-    current: function () { return currentKey; }
+    current: function () { return currentKey; },
+    listRoutes: listRoutes
   };
 })();
