@@ -851,6 +851,24 @@ var Calc = (function () {
     return { employee: contrib.employee, employer: contrib.employer, total: contrib.total, allocation: SG.allocationForAge(age), rates: contrib.rates, wageBase: contrib.wageBase, medisaveOnly: false };
   }
 
+  // Additional Wage (bonus) CPF for the year — capped at the Additional
+  // Wage ceiling (the $102,000 combined OW+AW ceiling minus Ordinary
+  // Wages actually subject to CPF this year), at the same combined
+  // employee+employer rate as this age band's Ordinary Wage rate. $0 for
+  // Self-Employed/Unemployed (cpfContributionBreakdown already zeroes
+  // out wageBase/rates for those). This was previously missing
+  // everywhere — the CPF balance projection used Ordinary Wage
+  // contributions only, understating growth for anyone with a bonus.
+  function annualAdditionalWageCpf(c, age) {
+    var breakdown = cpfContributionBreakdown(c, age);
+    var annualOWSubjectToCpf = (breakdown.wageBase || 0) * 12;
+    var awCeiling = Math.max(0, CPF_TOTAL_WAGE_CEILING - annualOWSubjectToCpf);
+    var bonusAnnual = num((c.income || {}).bonus);
+    var awSubjectToCpf = Math.min(bonusAnnual, awCeiling);
+    var awRateTotal = breakdown.rates ? (breakdown.rates.employee + breakdown.rates.employer) : 0;
+    return { subjectToCpf: awSubjectToCpf, ceiling: awCeiling, contribution: awSubjectToCpf * awRateTotal, rates: breakdown.rates };
+  }
+
   function autoCpfContribution(c) {
     var age = ageFromDob((c.personal || {}).dob) || num((c.retirement || {}).currentAge) || 35;
     var status = (c.personal || {}).employmentStatus;
@@ -874,6 +892,14 @@ var Calc = (function () {
   var CPF_OA_RATE = 0.025;
   var CPF_SA_MA_RATE = 0.04;
   var CPF_ANNUAL_LIMIT = 37740; // total CPF contributions (mandatory + most voluntary) per calendar year, all ages; source: cpf.gov.sg. Voluntary MediSave-only top-ups are capped by BHS alone instead, per IRAS.
+  // Combined annual ceiling for Ordinary + Additional Wages subject to
+  // CPF. The Additional Wage (bonus) Ceiling for a given year is this
+  // minus the Ordinary Wages actually subject to CPF that year — e.g. at
+  // the $8,000/mo OW ceiling, OW-for-the-year is $96,000, leaving $6,000
+  // of AW ceiling headroom. 37% x $102,000 = $37,740 = CPF_ANNUAL_LIMIT
+  // above, confirming the two constants are consistent. Source: CPF
+  // Board (unchanged through the 2026 OW ceiling increase).
+  var CPF_TOTAL_WAGE_CEILING = 102000;
 
   // Generic helper: look up a year in a known-values table, or project
   // forward from the last known year at an assumed growth rate. Shared by
@@ -1021,7 +1047,13 @@ var Calc = (function () {
 
       var isWorking = age < stopWorkAge;
       var contrib = isWorking ? cpfContributionBreakdown(c, age) : { total: 0, allocation: { oa: 0, sa: 0, ma: 0 } };
-      var mandatoryAnnual = contrib.total * 12;
+      // Additional Wage (bonus) CPF — previously missing entirely, which
+      // understated projected CPF growth for anyone with a bonus. Credited
+      // once for the year (not spread monthly), same as how an annual
+      // bonus is actually paid and CPF-contributed in practice; stops at
+      // Stop Work Age same as the mandatory Ordinary Wage contribution.
+      var awContribution = isWorking ? annualAdditionalWageCpf(c, age).contribution : 0;
+      var mandatoryAnnual = contrib.total * 12 + awContribution;
       var mandatoryOA = mandatoryAnnual * contrib.allocation.oa;
       var mandatorySAPortion = mandatoryAnnual * contrib.allocation.sa;
       var mandatoryMA = mandatoryAnnual * contrib.allocation.ma;
@@ -1739,9 +1771,9 @@ var Calc = (function () {
     FREQUENCY_MULTIPLIER: FREQUENCY_MULTIPLIER,
     netWorthHistorySeries: netWorthHistorySeries, recordNetWorthSnapshot: recordNetWorthSnapshot,
     linearTrendline: linearTrendline, autoCpfContribution: autoCpfContribution,
-    cpfContributionBreakdown: cpfContributionBreakdown, cpfProjectionTo55: cpfProjectionTo55,
+    cpfContributionBreakdown: cpfContributionBreakdown, annualAdditionalWageCpf: annualAdditionalWageCpf, cpfProjectionTo55: cpfProjectionTo55,
     CPF_OA_RATE: CPF_OA_RATE, CPF_SA_MA_RATE: CPF_SA_MA_RATE, CPF_BHS_2026: BHS_TABLE[2026],
-    CPF_ANNUAL_LIMIT: CPF_ANNUAL_LIMIT, CPF_BHS_GROWTH_RATE: BHS_GROWTH_RATE, frsAtClientAge55: frsAtClientAge55,
+    CPF_ANNUAL_LIMIT: CPF_ANNUAL_LIMIT, CPF_TOTAL_WAGE_CEILING: CPF_TOTAL_WAGE_CEILING, CPF_BHS_GROWTH_RATE: BHS_GROWTH_RATE, frsAtClientAge55: frsAtClientAge55,
     estimatedCpfLifePayout: estimatedCpfLifePayout,
     retirementSumForYear: retirementSumForYear, cpfProjectionFull: cpfProjectionFull, bhsForYear: bhsForYear,
     hospitalPremiumProjection: hospitalPremiumProjection,
