@@ -48,7 +48,7 @@ var SampleClient = {
     {
       id: 'taxes', name: 'Taxes', bucket: 'Bills',
       items: [
-        { id: 'i6', name: 'Income Tax', cost: 1704, frequency: 'Monthly' }
+        { id: 'i6', name: 'Income Tax', cost: 1704, frequency: 'Monthly', autoIncomeTax: true }
       ]
     },
     {

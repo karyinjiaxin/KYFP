@@ -1343,6 +1343,20 @@ var Calc = (function () {
     };
   }
 
+  // Single source of truth for "net income tax payable this year" — used
+  // by the Tax Planning page and the Cashflow auto-Income-Tax line item,
+  // so they can never disagree (same pattern as autoCpfContribution).
+  // Net of the Parenthood Tax Rebate, which comes off tax payable
+  // directly rather than reducing chargeable income.
+  function estimatedNetIncomeTax(c) {
+    var annualIncome = monthlyIncome(c) * 12;
+    var reliefsInfo = totalTaxReliefs(c);
+    var chargeable = Math.max(0, annualIncome - reliefsInfo.capped);
+    var grossTax = SG.estimateIncomeTax(chargeable);
+    var parenthoodRebate = num((c.tax || {}).parenthoodTaxRebate);
+    return Math.max(0, grossTax - parenthoodRebate);
+  }
+
   // ---------- HOSPITAL PLAN PREMIUM FINANCING ----------
   // Integrated Shield Plan-style premiums escalate steeply with age (both
   // because rates go up by age band, and because claims risk rises).
@@ -1779,6 +1793,7 @@ var Calc = (function () {
     hospitalPremiumProjection: hospitalPremiumProjection,
     netWorthGoalHelper: netWorthGoalHelper,
     qualifyingChildRelief: qualifyingChildRelief, totalTaxReliefs: totalTaxReliefs, PERSONAL_RELIEF_CAP: PERSONAL_RELIEF_CAP,
+    estimatedNetIncomeTax: estimatedNetIncomeTax,
     earnedIncomeReliefCap: earnedIncomeReliefCap, autoEarnedIncomeRelief: autoEarnedIncomeRelief
   };
 })();

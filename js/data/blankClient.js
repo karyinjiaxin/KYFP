@@ -27,7 +27,7 @@ var BlankClient = {
       { id: 'i5', name: 'Mobile', cost: 0, frequency: 'Monthly' }
     ] },
     { id: 'taxes', name: 'Taxes', bucket: 'Bills', items: [
-      { id: 'i6', name: 'Income Tax', cost: 0, frequency: 'Monthly' }
+      { id: 'i6', name: 'Income Tax', cost: 0, frequency: 'Monthly', autoIncomeTax: true }
     ] },
     { id: 'subscriptions', name: 'Subscriptions', bucket: 'Bills', items: [
       { id: 'i7', name: 'Subscriptions', cost: 0, frequency: 'Monthly' }
