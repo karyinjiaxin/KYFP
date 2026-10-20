@@ -186,7 +186,7 @@ var SampleClient = {
   insurance: [
     {
       id: 'pol_1', company: 'Great Eastern', policyName: 'GREAT Life Signature',
-      type: 'Life', premium: 380, premiumFrequency: 'Monthly', coverage: 500000,
+      type: 'Life', premium: 380, premiumFrequency: 'Monthly', coverage: 500000, coverageTpd: 500000, coverageCi: 150000,
       startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 12000, dividend: 3.2
     },
     {

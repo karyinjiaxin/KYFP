@@ -176,10 +176,25 @@ var Calc = (function () {
   }
   function totalAnnualPremium(c) { return sum(c.insurance, policyAnnualPremium); }
   function totalMonthlyPremium(c) { return totalAnnualPremium(c) / 12; }
+  // A Life policy can bundle Death, TPD and a CI rider under one plan
+  // (one premium, one company) rather than needing a separate policy row
+  // per benefit. Death and TPD are treated as one Death/TPD need (the TPD
+  // benefit is usually an acceleration of the same death benefit, not an
+  // addition to it) — take whichever of the two is higher per policy
+  // rather than summing them, which would double-count the same risk.
+  // The CI rider is a genuinely separate benefit, so it's tracked and
+  // totalled on its own.
+  function lifePolicyDeathTpd(p) { return Math.max(num(p.coverage), num(p.coverageTpd)); }
+  function lifePolicyCi(p) { return num(p.coverageCi); }
+  function lifePoliciesCiTotal(c) { return sum((c.insurance || []).filter(function (p) { return p.type === 'Life'; }), lifePolicyCi); }
   function totalCoverageByType(c, type) {
-    return sum((c.insurance || []).filter(function (p) { return p.type === type; }), function (p) { return p.coverage; });
+    var policies = (c.insurance || []).filter(function (p) { return p.type === type; });
+    if (type === 'Life') return sum(policies, lifePolicyDeathTpd);
+    return sum(policies, function (p) { return p.coverage; });
   }
-  function totalCoverage(c) { return sum(c.insurance, function (p) { return p.coverage; }); }
+  function totalCoverage(c) {
+    return sum(c.insurance, function (p) { return p.type === 'Life' ? lifePolicyDeathTpd(p) + lifePolicyCi(p) : num(p.coverage); });
+  }
 
   // ---------- QUICK-INPUT COVERAGE (aggregate amounts entered directly,
   // for a fast estimate without keying every individual policy) ----------
@@ -208,7 +223,7 @@ var Calc = (function () {
     var q = c.insuranceQuickCoverage || {};
     return {
       'Life': totalCoverageByType(c, 'Life') + num(q.deathTpd),
-      'CI': totalCoverageByType(c, 'CI') + num(q.lateStageCI),
+      'CI': totalCoverageByType(c, 'CI') + num(q.lateStageCI) + lifePoliciesCiTotal(c),
       'ECI': totalCoverageByType(c, 'ECI') + num(q.earlyStageCI),
       'Hospital': totalCoverageByType(c, 'Hospital') + num(q.annualHospitalClaimableLimit),
       'PA': totalCoverageByType(c, 'PA') + num(q.accidentalDeath) + num(q.accidentalMedicalReimbursement),
@@ -263,7 +278,7 @@ var Calc = (function () {
     return num((c.insuranceQuickCoverage || {}).incomeProtection);
   }
   function deathTpdCoverageHeld(c) { return totalCoverageByType(c, 'Life') + quickDeathTpdCoverage(c); }
-  function ciCoverageHeld(c) { return totalCoverageByType(c, 'CI') + totalCoverageByType(c, 'ECI') + quickCICoverage(c); }
+  function ciCoverageHeld(c) { return totalCoverageByType(c, 'CI') + totalCoverageByType(c, 'ECI') + lifePoliciesCiTotal(c) + quickCICoverage(c); }
   function deathTpdGap(c) { return Math.max(0, recommendedDeathTpdCoverage(c) - deathTpdCoverageHeld(c)); }
   function ciGap(c) { return Math.max(0, recommendedCICoverage(c) - ciCoverageHeld(c)); }
 

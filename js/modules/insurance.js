@@ -43,7 +43,7 @@ var ModuleInsurance = (function () {
       container.appendChild(Dom.el('button', {
         class: 'btn btn-secondary mt-3', onclick: function () {
           var arr = Store.get('insurance') || [];
-          arr.push({ id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0 });
+          arr.push({ id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0 });
           Store.set('insurance', arr);
         }
       }, ['+ Add Policy']));
@@ -139,11 +139,18 @@ var ModuleInsurance = (function () {
         Dom.el('button', { class: 'btn btn-ghost btn-sm', onclick: function () { var arr = Store.get('insurance'); arr.splice(idx, 1); Store.set('insurance', arr); } }, ['Remove'])
       ]));
 
-      var statsRow = Dom.el('div', { class: 'grid grid-3', style: 'margin-bottom:14px' }, [
-        miniStat('Annual Premium', Dom.fmtMoney(annualPremium)),
-        miniStat('Coverage', Dom.fmtMoney(p.coverage)),
-        miniStat('Cash Value', Dom.fmtMoney(p.cashValue))
-      ]);
+      var isLife = p.type === 'Life';
+      var statsRow = isLife
+        ? Dom.el('div', { class: 'grid grid-3', style: 'margin-bottom:14px' }, [
+            miniStat('Annual Premium', Dom.fmtMoney(annualPremium)),
+            miniStat('Death / TPD', Dom.fmtMoney(Math.max(Calc.num(p.coverage), Calc.num(p.coverageTpd)))),
+            miniStat('CI Rider', Dom.fmtMoney(p.coverageCi))
+          ])
+        : Dom.el('div', { class: 'grid grid-3', style: 'margin-bottom:14px' }, [
+            miniStat('Annual Premium', Dom.fmtMoney(annualPremium)),
+            miniStat('Coverage', Dom.fmtMoney(p.coverage)),
+            miniStat('Cash Value', Dom.fmtMoney(p.cashValue))
+          ]);
       card.appendChild(statsRow);
 
       var formRow1 = Dom.el('div', { class: 'input-row' }, [
@@ -154,7 +161,7 @@ var ModuleInsurance = (function () {
       var formRow2 = Dom.el('div', { class: 'input-row mt-2' }, [
         Fields.moneyInput(base + 'premium', 'Premium'),
         Fields.selectInput(base + 'premiumFrequency', 'Frequency', ['Monthly', 'Annually']),
-        Fields.moneyInput(base + 'coverage', 'Coverage')
+        isLife ? Fields.moneyInput(base + 'coverage', 'Death Coverage') : Fields.moneyInput(base + 'coverage', 'Coverage')
       ]);
       var formRow3 = Dom.el('div', { class: 'input-row mt-2' }, [
         Fields.numberInput(base + 'startAge', 'Start Age'),
@@ -166,6 +173,15 @@ var ModuleInsurance = (function () {
         Fields.numberInput(base + 'dividend', 'Dividend Rate %', { step: '0.1' })
       ]);
       card.appendChild(formRow1); card.appendChild(formRow2); card.appendChild(formRow3); card.appendChild(formRow4);
+      if (isLife) {
+        card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
+          Fields.moneyInput(base + 'coverageTpd', 'TPD Coverage'),
+          Fields.moneyInput(base + 'coverageCi', 'CI Coverage (rider)')
+        ]));
+        card.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, [
+          'One Life plan can bundle Death, TPD and a CI rider under a single premium — leave TPD blank/0 if it simply matches Death Coverage. Death and TPD count toward the Death/TPD need as whichever is higher (not added together); CI Coverage counts toward the Critical Illness need.'
+        ]));
+      }
       if (p.type === 'Hospital') {
         card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
           Fields.selectInput(base + 'wardClass', 'Ward Class', ['Private Hospital', 'Govt A Ward', 'Govt B Ward'])
