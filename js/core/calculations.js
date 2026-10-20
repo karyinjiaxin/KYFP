@@ -1257,8 +1257,13 @@ var Calc = (function () {
     });
   }
   var MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  // Label includes the year (e.g. "Oct 2026") — a month-only label would
+  // collide with the same month a year later (e.g. two "Oct" entries a
+  // year apart would silently overwrite each other instead of both
+  // showing on the trend chart).
   function recordNetWorthSnapshot(c) {
-    var monthLabel = MONTH_ABBR[new Date().getMonth()];
+    var now = new Date();
+    var monthLabel = MONTH_ABBR[now.getMonth()] + ' ' + now.getFullYear();
     var hist = (c.netWorthHistory || []).slice();
     var entry = { month: monthLabel, assets: totalAssets(c), liabilities: totalLiabilities(c) };
     var idx = hist.length ? hist.length - 1 : -1;
