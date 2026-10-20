@@ -74,7 +74,7 @@ var ModuleHousePurchase = (function () {
         container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
           kpiMini('Total Upfront Cash Needed', Dom.fmtMoney(s.totalUpfrontCash), 'Downpayment (cash) + fees/duties − grants'),
           kpiMini('Downpayment (CPF)', Dom.fmtMoney(s.downpaymentCpf)),
-          kpiMini('Loan Amount', Dom.fmtMoney(s.loanAmount), s.loanRules.ltvPct + '% LTV'),
+          kpiMini('Loan Amount', Dom.fmtMoney(s.loanAmount), s.loanRules.ltvPct + '% LTV' + (s.loanExceedsEligibility ? ' — ⚠ may exceed TDSR/MSR eligibility' : '')),
           kpiMini('Monthly Mortgage', Dom.fmtMoney(s.monthlyMortgage), Dom.fmtMoney(s.monthlyCpf) + ' CPF + ' + Dom.fmtMoney(s.monthlyCash) + ' cash')
         ]));
       }
@@ -195,6 +195,37 @@ var ModuleHousePurchase = (function () {
         'Currently: ' + Dom.fmtMoney(s.monthlyCpf) + '/mo from CPF OA, ' + Dom.fmtMoney(s.monthlyCash) + '/mo cash.'
       ]));
       container.appendChild(loanCard);
+
+      // ---- Loan Eligibility (TDSR/MSR) ----
+      container.appendChild(Dom.el('div', { class: 'section-title' }, ['⚖️ Loan Eligibility (TDSR / MSR)']));
+      var eligCard = Dom.el('div', { class: 'card mb-3' });
+      var elig = s.eligibility;
+      eligCard.appendChild(Dom.el('div', { class: 'input-row' }, [
+        Fields.moneyInput('housePurchase.otherMonthlyDebt', 'Other Monthly Debt Obligations (car/personal loans, etc.)')
+      ]));
+      eligCard.appendChild(Dom.el('div', { class: 'text-tertiary mt-1 mb-3' }, [
+        'TDSR: all monthly debt (incl. this mortgage) capped at 55% of gross monthly income — applies to bank loans only, not a direct HDB Loan. MSR: this mortgage alone capped at 30% of gross monthly income — applies only to HDB/EC, whichever loan type. Both are assessed at a stress-tested interest rate (' + elig.stressRate + '% for this loan type), not the actual rate above — the stress rate only affects how much you can borrow, not what you’ll actually pay.'
+      ]));
+      eligCard.appendChild(Dom.el('div', { class: 'grid grid-3' }, [
+        kpiMini('Gross Monthly Income', Dom.fmtMoney(elig.grossMonthlyIncome)),
+        kpiMini('MSR Cap (30%)', elig.msrCap != null ? Dom.fmtMoney(elig.msrCap) + '/mo' : 'N/A (not HDB/EC)'),
+        kpiMini('TDSR Cap (55%)', elig.tdsrCap != null ? Dom.fmtMoney(elig.tdsrCap) + '/mo' : 'N/A (HDB Loan)')
+      ]));
+      eligCard.appendChild(Dom.el('div', { class: 'flex justify-between items-center mt-3', style: 'padding:10px 0;border-top:1px solid var(--border)' }, [
+        Dom.el('div', { class: 'text-secondary' }, ['Maximum Loan Amount (at ' + elig.stressRate + '% stress rate, ' + s.tenureYears + ' yrs)']),
+        Dom.el('div', { style: 'font-weight:700;font-size:15px' }, [Dom.fmtMoney(elig.maxLoanAmount)])
+      ]));
+      if (s.price > 0) {
+        eligCard.appendChild(Dom.el('div', {
+          class: 'mt-2', style: 'padding:10px 12px;border-radius:8px;font-size:12.5px;font-weight:600;' +
+            (s.loanExceedsEligibility ? 'background:var(--bad-soft);color:var(--bad)' : 'background:var(--good-soft);color:var(--good)')
+        }, [
+          s.loanExceedsEligibility
+            ? '⚠ Loan Amount needed (' + Dom.fmtMoney(s.loanAmount) + ') exceeds what this income likely qualifies for. Consider a larger cash downpayment, a longer tenure, a lower purchase price, or reducing other debt.'
+            : '✓ Loan Amount needed (' + Dom.fmtMoney(s.loanAmount) + ') is within what this income likely qualifies for.'
+        ]));
+      }
+      container.appendChild(eligCard);
 
       // ---- Sync status ----
       container.appendChild(Dom.el('div', { class: 'section-title' }, ['🔄 Synced To']));

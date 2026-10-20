@@ -170,6 +170,21 @@ var App = (function () {
     var active = Calc.num(hp.purchasePrice) > 0;
     var s = active ? Calc.housePurchaseSummary(c) : null;
 
+    // Interest Rate and Loan Tenure are plain editable fields that fall
+    // back to a sensible default (per loan type) whenever left blank — but
+    // a blank numeric field on screen just displays "0", not the default
+    // actually being used, which reads as if the loan were interest-free
+    // with no tenure. Writing the real default in once (the first time a
+    // purchase becomes active) makes the field show the true number; it's
+    // then a normal editable field from there on, same "auto-fill once"
+    // pattern as Net Worth's investment asset auto-fill.
+    if (active) {
+      if (hp.interestRate == null || hp.interestRate === '') Store.set('housePurchase.interestRate', s.interestRate);
+      if (!Calc.num(hp.loanTenureYears)) Store.set('housePurchase.loanTenureYears', s.tenureYears);
+      if (hp.downpaymentCashPct == null || hp.downpaymentCashPct === '') Store.set('housePurchase.downpaymentCashPct', s.downpaymentCashPct);
+      if (hp.monthlyCpfPct == null || hp.monthlyCpfPct === '') Store.set('housePurchase.monthlyCpfPct', s.monthlyCpfPct);
+    }
+
     // 1) Mortgage Details -> CPF (via syncMortgageCpfDeduction)
     if (active) {
       var md = c.liabilities && c.liabilities.mortgageDetails;

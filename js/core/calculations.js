@@ -1870,6 +1870,49 @@ var Calc = (function () {
     if (r === 0) return loanAmount / n;
     return loanAmount * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
   }
+  // Inverse of mortgageMonthlyPayment — the loan principal that a given
+  // monthly payment can service at a given rate/tenure. Used to work out
+  // the MAXIMUM loan a client's income can qualify for under TDSR/MSR,
+  // as opposed to mortgageMonthlyPayment which goes the other way (payment
+  // for a chosen loan amount).
+  function maxLoanForPayment(maxMonthlyPayment, annualRatePct, tenureYears) {
+    maxMonthlyPayment = Math.max(0, num(maxMonthlyPayment));
+    var n = Math.max(1, Math.round(num(tenureYears) * 12));
+    var r = num(annualRatePct) / 100 / 12;
+    if (maxMonthlyPayment <= 0) return 0;
+    if (r === 0) return maxMonthlyPayment * n;
+    return maxMonthlyPayment * (1 - Math.pow(1 + r, -n)) / r;
+  }
+  // MAS borrowing limits (Total Debt Servicing Ratio / Mortgage Servicing
+  // Ratio) — MAS media release, 29 Sep 2022 ("Measures to Promote
+  // Sustainable Conditions in the Property Market"):
+  //  - TDSR: total monthly debt obligations (incl. this mortgage) capped
+  //    at 55% of gross monthly income. Does NOT apply to a direct HDB
+  //    Concessionary Loan (only to bank loans), computed using a medium-
+  //    term interest rate floor of 4% p.a.
+  //  - MSR: this mortgage alone capped at 30% of gross monthly income.
+  //    Applies only to HDB flats and ECs (whether financed by an HDB loan
+  //    or a bank loan) — never to a private condo/landed purchase.
+  //  - HDB's own loans use a 3% p.a. floor (vs. the 4% bank-loan floor)
+  //    to compute the eligible loan amount, per the same MAS release.
+  // The stress-test rate here is ONLY used to size the maximum loan a
+  // client qualifies for — the actual mortgage payment elsewhere in this
+  // module still uses the real negotiated interest rate.
+  function housePurchaseLoanEligibility(c, loanType, isHdbEligible, tenureYears) {
+    var hp = c.housePurchase || {};
+    var grossMonthlyIncome = monthlyIncome(c);
+    var otherMonthlyDebt = num(hp.otherMonthlyDebt);
+    var stressRate = loanType === 'HDB' ? 3 : 4;
+    var msrCap = isHdbEligible ? grossMonthlyIncome * 0.30 : null;
+    var tdsrCap = loanType === 'HDB' ? null : Math.max(0, grossMonthlyIncome * 0.55 - otherMonthlyDebt);
+    var caps = [msrCap, tdsrCap].filter(function (v) { return v != null; });
+    var maxMonthlyPayment = caps.length ? Math.min.apply(Math, caps) : Infinity;
+    var maxLoanAmount = maxLoanForPayment(maxMonthlyPayment, stressRate, tenureYears);
+    return {
+      grossMonthlyIncome: grossMonthlyIncome, otherMonthlyDebt: otherMonthlyDebt, stressRate: stressRate,
+      msrCap: msrCap, tdsrCap: tdsrCap, maxMonthlyPayment: maxMonthlyPayment, maxLoanAmount: maxLoanAmount
+    };
+  }
   var HOUSE_PURCHASE_GRANT_FIELDS = ['grantFamily', 'grantEhg', 'grantSingles', 'grantProximity'];
   function housePurchaseGrantsTotal(hp) {
     return sum(HOUSE_PURCHASE_GRANT_FIELDS.map(function (k) { return hp[k]; }), function (v) { return v; });
@@ -1911,11 +1954,14 @@ var Calc = (function () {
     var otherUpfrontCosts = num(hp.optionFee) + num(hp.valuationFee) + num(hp.exerciseFee) + num(hp.cov) +
       bsd + absd + num(hp.legalFees) + num(hp.agentFee) + num(hp.renoCost) + num(hp.furnishingCost);
     var totalUpfrontCash = Math.max(0, downpaymentCash + otherUpfrontCosts - grants);
+    var eligibility = housePurchaseLoanEligibility(c, loanType, isHdbEligible, tenureYears);
+    var loanExceedsEligibility = eligibility.maxLoanAmount < loanAmount - 1;
     return {
-      price: price, bsd: bsd, absd: absd, grants: grants, loanRules: loanRules,
+      price: price, bsd: bsd, absd: absd, grants: grants, loanRules: loanRules, loanType: loanType,
       downpaymentPct: downpaymentPct, downpaymentAmount: downpaymentAmount, minCashAmount: minCashAmount,
       downpaymentCashPct: downpaymentCashPct, downpaymentCash: downpaymentCash, downpaymentCpf: downpaymentCpf,
       loanAmount: loanAmount, interestRate: interestRate, tenureYears: tenureYears,
+      eligibility: eligibility, loanExceedsEligibility: loanExceedsEligibility,
       monthlyMortgage: monthlyMortgage, monthlyCpfPct: monthlyCpfPct, monthlyCpf: monthlyCpf, monthlyCash: monthlyCash,
       otherUpfrontCosts: otherUpfrontCosts, totalUpfrontCash: totalUpfrontCash
     };
@@ -1973,6 +2019,7 @@ var Calc = (function () {
     buyersStampDuty: buyersStampDuty, buyersStampDutyBreakdown: buyersStampDutyBreakdown,
     additionalBuyerStampDuty: additionalBuyerStampDuty, ABSD_RATES: ABSD_RATES,
     housePurchaseLoanRules: housePurchaseLoanRules, mortgageMonthlyPayment: mortgageMonthlyPayment,
+    maxLoanForPayment: maxLoanForPayment, housePurchaseLoanEligibility: housePurchaseLoanEligibility,
     housePurchaseGrantsTotal: housePurchaseGrantsTotal, housePurchaseSummary: housePurchaseSummary
   };
 })();
