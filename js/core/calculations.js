@@ -1501,6 +1501,23 @@ var Calc = (function () {
       ? num(rm.retirementPayoutOverride) : roadmapRetirementPayoutSuggestion(c);
 
     var balance = num((c.assets || {}).cash);
+    // At 55, CPF forms the Retirement Account up to the selected
+    // Retirement Sum tier (BRS/FRS/ERS, from the CPF tab — defaults to
+    // FRS) using SA first, then OA only if SA falls short; any OA left
+    // over after that is withdrawable in cash per CPF Board rules, not
+    // locked up. cpfProjectionFull already computes exactly this (the
+    // transition row's final `oa`) — previously unused here, so the
+    // roadmap's cash balance silently ignored a real, often large,
+    // one-time cash inflow available right at retirement planning's own
+    // age-55 milestone. Optional via roadmap.includeCpfExcessAt55
+    // (defaults on) for an advisor who'd rather assume the client leaves
+    // it in CPF instead of withdrawing.
+    var includeCpfExcess = rm.includeCpfExcessAt55 !== false;
+    var cpfTransitionRow = includeCpfExcess
+      ? cpfProjectionFull(c).filter(function (r) { return r.transitioned55; })[0]
+      : null;
+    var cpfExcessAge = cpfTransitionRow ? cpfTransitionRow.age : null;
+    var cpfExcessAmount = cpfTransitionRow ? cpfTransitionRow.oa : 0;
     var annualIncome = monthlyIncome(c) * 12;
     var annualExpenses = monthlyExpenses(c) * 12;
     var annualRetirementPayout = retirementPayoutMonthly * 12;
@@ -1574,11 +1591,14 @@ var Calc = (function () {
       });
       balance += eventNet;
 
+      var cpfExcessCredited = (includeCpfExcess && age === cpfExcessAge) ? cpfExcessAmount : 0;
+      balance += cpfExcessCredited;
+
       rows.push({
         year: yearLabel, age: age, balance: balance, interest: interest,
         incomeCredited: incomeCredited, retirementPayoutCredited: retirementPayoutCredited,
         expensesDeducted: expensesDeducted, events: eventsThisYear, eventNet: eventNet, stoppedExpenses: stoppedThisYear,
-        isWorking: isWorking
+        cpfExcessCredited: cpfExcessCredited, isWorking: isWorking
       });
 
       if (isWorking) annualIncome *= (1 + incomeGrowthRate);
