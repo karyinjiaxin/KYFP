@@ -32,6 +32,17 @@ var ModuleRoadmap = (function () {
       assumeCard.appendChild(Dom.el('div', { class: 'text-tertiary mt-2' }, [
         'Interest Rate defaults to 0.05% (a savings/current account rate, not an investment return \u2014 for investment growth assumptions, see Retirement Planning\u2019s Expected Return). Expense Inflation defaults to 2%/year. Income Growth (e.g. salary increments) grows annual income year over year until Retirement Age, then switches to the Retirement Payout below \u2014 leave at 0 to assume flat income.'
       ]));
+      var includeCpfExcess = rm.includeCpfExcessAt55 !== false;
+      var cpfTier = (c.cpf || {}).retirementSumTier || 'FRS';
+      assumeCard.appendChild(Dom.el('div', { class: 'flex items-center gap-2 mt-3', style: 'padding-top:10px;border-top:1px solid var(--border)' }, [
+        Dom.el('button', {
+          class: 'btn btn-sm ' + (includeCpfExcess ? 'btn-primary' : 'btn-secondary'),
+          onclick: function () { Store.set('roadmap.includeCpfExcessAt55', !includeCpfExcess); }
+        }, [includeCpfExcess ? '\u2713 Including CPF Excess Cash at 55' : 'Include CPF Excess Cash at 55']),
+        Dom.el('div', { class: 'text-tertiary' }, [
+          'At 55, CPF forms the Retirement Account up to the ' + cpfTier + ' Retirement Sum (set on the CPF tab) \u2014 any OA left over after that is withdrawable in cash, not locked up. When on, that one-time amount (from the CPF tab\u2019s own projection) credits into this roadmap\u2019s Savings Balance the year it happens.'
+        ])
+      ]));
       container.appendChild(assumeCard);
 
       // ---- Does desired retirement income match projected expenses? ----
@@ -257,7 +268,7 @@ var ModuleRoadmap = (function () {
         var tableWrap = Dom.el('div', { class: 'table-scroll' });
         var table = Dom.el('table', { class: 'data-table' });
         table.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, [
-          'Year', 'Age', 'Savings Balance', 'Interest', 'Income Credited', 'Retirement Payout', 'Expenses Deducted', 'Life Event'
+          'Year', 'Age', 'Savings Balance', 'Interest', 'Income Credited', 'Retirement Payout', 'CPF Excess (age 55)', 'Expenses Deducted', 'Life Event'
         ].map(function (h) { return Dom.el('th', {}, [h]); }))]));
         var tbody = Dom.el('tbody');
         rows.forEach(function (r) {
@@ -275,6 +286,7 @@ var ModuleRoadmap = (function () {
             Dom.el('td', {}, [Dom.fmtMoney(r.interest)]),
             Dom.el('td', {}, [r.incomeCredited > 0 ? Dom.fmtMoney(r.incomeCredited) : '\u2014']),
             Dom.el('td', {}, [r.retirementPayoutCredited > 0 ? Dom.fmtMoney(r.retirementPayoutCredited) : '\u2014']),
+            Dom.el('td', { style: r.cpfExcessCredited > 0 ? 'color:var(--good);font-weight:700' : '' }, [r.cpfExcessCredited > 0 ? '+' + Dom.fmtMoney(r.cpfExcessCredited) : '\u2014']),
             Dom.el('td', { style: 'color:var(--burgundy)' }, [
               '\u2212' + Dom.fmtMoney(r.expensesDeducted),
               r.stoppedExpenses.length ? Dom.el('div', { style: 'font-size:10.5px;color:var(--good);font-weight:700' }, ['\u2713 ' + r.stoppedExpenses.map(function (es) { return es.name; }).join(', ') + ' stopped']) : null

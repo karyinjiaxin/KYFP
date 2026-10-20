@@ -137,7 +137,8 @@ var Calc = (function () {
     // money once via these fields and again by recomputing the plans
     // directly.
     return num(a.cash) + totalCpfBalance(c) + num(a.stocks) + num(a.etfs) + num(a.unitTrusts) +
-      num(a.crypto) + propertyValueTotal(c) + num(a.business) + num(a.insuranceCashValue);
+      num(a.crypto) + propertyValueTotal(c) + num(a.business) + num(a.insuranceCashValue) +
+      num(a.cpfIs) + num(a.srsInvestments);
   }
   function totalLiabilities(c) {
     var l = c.liabilities || {};
@@ -156,8 +157,11 @@ var Calc = (function () {
     var a = c.assets || {};
     // Same reasoning as totalAssets above — these fields already reflect
     // Investment Planning's contribution via auto-sync, so adding the
-    // plans' value again here would double-count.
-    return num(a.stocks) + num(a.etfs) + num(a.unitTrusts) + num(a.crypto);
+    // plans' value again here would double-count. CPF IS and SRS
+    // Investments are genuinely separate holdings (money that left the
+    // OA/SA cash balance or SRS cash balance to buy into the market), so
+    // no double-counting risk including them here.
+    return num(a.stocks) + num(a.etfs) + num(a.unitTrusts) + num(a.crypto) + num(a.cpfIs) + num(a.srsInvestments);
   }
   function debtRatio(c) {
     var ta = totalAssets(c);
@@ -851,6 +855,24 @@ var Calc = (function () {
     return { employee: contrib.employee, employer: contrib.employer, total: contrib.total, allocation: SG.allocationForAge(age), rates: contrib.rates, wageBase: contrib.wageBase, medisaveOnly: false };
   }
 
+  // Additional Wage (bonus) CPF for the year — capped at the Additional
+  // Wage ceiling (the $102,000 combined OW+AW ceiling minus Ordinary
+  // Wages actually subject to CPF this year), at the same combined
+  // employee+employer rate as this age band's Ordinary Wage rate. $0 for
+  // Self-Employed/Unemployed (cpfContributionBreakdown already zeroes
+  // out wageBase/rates for those). This was previously missing
+  // everywhere — the CPF balance projection used Ordinary Wage
+  // contributions only, understating growth for anyone with a bonus.
+  function annualAdditionalWageCpf(c, age) {
+    var breakdown = cpfContributionBreakdown(c, age);
+    var annualOWSubjectToCpf = (breakdown.wageBase || 0) * 12;
+    var awCeiling = Math.max(0, CPF_TOTAL_WAGE_CEILING - annualOWSubjectToCpf);
+    var bonusAnnual = num((c.income || {}).bonus);
+    var awSubjectToCpf = Math.min(bonusAnnual, awCeiling);
+    var awRateTotal = breakdown.rates ? (breakdown.rates.employee + breakdown.rates.employer) : 0;
+    return { subjectToCpf: awSubjectToCpf, ceiling: awCeiling, contribution: awSubjectToCpf * awRateTotal, rates: breakdown.rates };
+  }
+
   function autoCpfContribution(c) {
     var age = ageFromDob((c.personal || {}).dob) || num((c.retirement || {}).currentAge) || 35;
     var status = (c.personal || {}).employmentStatus;
@@ -874,6 +896,14 @@ var Calc = (function () {
   var CPF_OA_RATE = 0.025;
   var CPF_SA_MA_RATE = 0.04;
   var CPF_ANNUAL_LIMIT = 37740; // total CPF contributions (mandatory + most voluntary) per calendar year, all ages; source: cpf.gov.sg. Voluntary MediSave-only top-ups are capped by BHS alone instead, per IRAS.
+  // Combined annual ceiling for Ordinary + Additional Wages subject to
+  // CPF. The Additional Wage (bonus) Ceiling for a given year is this
+  // minus the Ordinary Wages actually subject to CPF that year — e.g. at
+  // the $8,000/mo OW ceiling, OW-for-the-year is $96,000, leaving $6,000
+  // of AW ceiling headroom. 37% x $102,000 = $37,740 = CPF_ANNUAL_LIMIT
+  // above, confirming the two constants are consistent. Source: CPF
+  // Board (unchanged through the 2026 OW ceiling increase).
+  var CPF_TOTAL_WAGE_CEILING = 102000;
 
   // Generic helper: look up a year in a known-values table, or project
   // forward from the last known year at an assumed growth rate. Shared by
@@ -1021,7 +1051,13 @@ var Calc = (function () {
 
       var isWorking = age < stopWorkAge;
       var contrib = isWorking ? cpfContributionBreakdown(c, age) : { total: 0, allocation: { oa: 0, sa: 0, ma: 0 } };
-      var mandatoryAnnual = contrib.total * 12;
+      // Additional Wage (bonus) CPF — previously missing entirely, which
+      // understated projected CPF growth for anyone with a bonus. Credited
+      // once for the year (not spread monthly), same as how an annual
+      // bonus is actually paid and CPF-contributed in practice; stops at
+      // Stop Work Age same as the mandatory Ordinary Wage contribution.
+      var awContribution = isWorking ? annualAdditionalWageCpf(c, age).contribution : 0;
+      var mandatoryAnnual = contrib.total * 12 + awContribution;
       var mandatoryOA = mandatoryAnnual * contrib.allocation.oa;
       var mandatorySAPortion = mandatoryAnnual * contrib.allocation.sa;
       var mandatoryMA = mandatoryAnnual * contrib.allocation.ma;
@@ -1311,6 +1347,20 @@ var Calc = (function () {
     };
   }
 
+  // Single source of truth for "net income tax payable this year" — used
+  // by the Tax Planning page and the Cashflow auto-Income-Tax line item,
+  // so they can never disagree (same pattern as autoCpfContribution).
+  // Net of the Parenthood Tax Rebate, which comes off tax payable
+  // directly rather than reducing chargeable income.
+  function estimatedNetIncomeTax(c) {
+    var annualIncome = monthlyIncome(c) * 12;
+    var reliefsInfo = totalTaxReliefs(c);
+    var chargeable = Math.max(0, annualIncome - reliefsInfo.capped);
+    var grossTax = SG.estimateIncomeTax(chargeable);
+    var parenthoodRebate = num((c.tax || {}).parenthoodTaxRebate);
+    return Math.max(0, grossTax - parenthoodRebate);
+  }
+
   // ---------- HOSPITAL PLAN PREMIUM FINANCING ----------
   // Integrated Shield Plan-style premiums escalate steeply with age (both
   // because rates go up by age band, and because claims risk rises).
@@ -1451,6 +1501,23 @@ var Calc = (function () {
       ? num(rm.retirementPayoutOverride) : roadmapRetirementPayoutSuggestion(c);
 
     var balance = num((c.assets || {}).cash);
+    // At 55, CPF forms the Retirement Account up to the selected
+    // Retirement Sum tier (BRS/FRS/ERS, from the CPF tab — defaults to
+    // FRS) using SA first, then OA only if SA falls short; any OA left
+    // over after that is withdrawable in cash per CPF Board rules, not
+    // locked up. cpfProjectionFull already computes exactly this (the
+    // transition row's final `oa`) — previously unused here, so the
+    // roadmap's cash balance silently ignored a real, often large,
+    // one-time cash inflow available right at retirement planning's own
+    // age-55 milestone. Optional via roadmap.includeCpfExcessAt55
+    // (defaults on) for an advisor who'd rather assume the client leaves
+    // it in CPF instead of withdrawing.
+    var includeCpfExcess = rm.includeCpfExcessAt55 !== false;
+    var cpfTransitionRow = includeCpfExcess
+      ? cpfProjectionFull(c).filter(function (r) { return r.transitioned55; })[0]
+      : null;
+    var cpfExcessAge = cpfTransitionRow ? cpfTransitionRow.age : null;
+    var cpfExcessAmount = cpfTransitionRow ? cpfTransitionRow.oa : 0;
     var annualIncome = monthlyIncome(c) * 12;
     var annualExpenses = monthlyExpenses(c) * 12;
     var annualRetirementPayout = retirementPayoutMonthly * 12;
@@ -1524,11 +1591,14 @@ var Calc = (function () {
       });
       balance += eventNet;
 
+      var cpfExcessCredited = (includeCpfExcess && age === cpfExcessAge) ? cpfExcessAmount : 0;
+      balance += cpfExcessCredited;
+
       rows.push({
         year: yearLabel, age: age, balance: balance, interest: interest,
         incomeCredited: incomeCredited, retirementPayoutCredited: retirementPayoutCredited,
         expensesDeducted: expensesDeducted, events: eventsThisYear, eventNet: eventNet, stoppedExpenses: stoppedThisYear,
-        isWorking: isWorking
+        cpfExcessCredited: cpfExcessCredited, isWorking: isWorking
       });
 
       if (isWorking) annualIncome *= (1 + incomeGrowthRate);
@@ -1739,14 +1809,15 @@ var Calc = (function () {
     FREQUENCY_MULTIPLIER: FREQUENCY_MULTIPLIER,
     netWorthHistorySeries: netWorthHistorySeries, recordNetWorthSnapshot: recordNetWorthSnapshot,
     linearTrendline: linearTrendline, autoCpfContribution: autoCpfContribution,
-    cpfContributionBreakdown: cpfContributionBreakdown, cpfProjectionTo55: cpfProjectionTo55,
+    cpfContributionBreakdown: cpfContributionBreakdown, annualAdditionalWageCpf: annualAdditionalWageCpf, cpfProjectionTo55: cpfProjectionTo55,
     CPF_OA_RATE: CPF_OA_RATE, CPF_SA_MA_RATE: CPF_SA_MA_RATE, CPF_BHS_2026: BHS_TABLE[2026],
-    CPF_ANNUAL_LIMIT: CPF_ANNUAL_LIMIT, CPF_BHS_GROWTH_RATE: BHS_GROWTH_RATE, frsAtClientAge55: frsAtClientAge55,
+    CPF_ANNUAL_LIMIT: CPF_ANNUAL_LIMIT, CPF_TOTAL_WAGE_CEILING: CPF_TOTAL_WAGE_CEILING, CPF_BHS_GROWTH_RATE: BHS_GROWTH_RATE, frsAtClientAge55: frsAtClientAge55,
     estimatedCpfLifePayout: estimatedCpfLifePayout,
     retirementSumForYear: retirementSumForYear, cpfProjectionFull: cpfProjectionFull, bhsForYear: bhsForYear,
     hospitalPremiumProjection: hospitalPremiumProjection,
     netWorthGoalHelper: netWorthGoalHelper,
     qualifyingChildRelief: qualifyingChildRelief, totalTaxReliefs: totalTaxReliefs, PERSONAL_RELIEF_CAP: PERSONAL_RELIEF_CAP,
+    estimatedNetIncomeTax: estimatedNetIncomeTax,
     earnedIncomeReliefCap: earnedIncomeReliefCap, autoEarnedIncomeRelief: autoEarnedIncomeRelief
   };
 })();

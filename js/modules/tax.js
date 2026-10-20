@@ -15,7 +15,7 @@ var ModuleTax = (function () {
       var tax = SG.estimateIncomeTax(chargeable);
       var effRate = SG.effectiveRate(chargeable);
       var parenthoodRebate = Calc.num((c.tax || {}).parenthoodTaxRebate);
-      var netTaxPayable = Math.max(0, tax - parenthoodRebate);
+      var netTaxPayable = Calc.estimatedNetIncomeTax(c);
 
       container.innerHTML = '';
       container.appendChild(Dom.el('div', { class: 'page-header' }, [

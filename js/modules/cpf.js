@@ -80,6 +80,13 @@ var ModuleCpf = (function () {
         contribCard.appendChild(row('Employer Contribution', Dom.fmtMoney(contrib.employer)));
       }
       contribCard.appendChild(row('Total Monthly Contribution', Dom.fmtMoney(contrib.medisaveOnly ? Calc.autoCpfContribution(c) : contrib.total)));
+      if (!contrib.medisaveOnly && status !== 'Unemployed') {
+        var awInfo = Calc.annualAdditionalWageCpf(c, age);
+        contribCard.appendChild(row('+ Bonus CPF (this year, from Additional Wage)', Dom.fmtMoney(awInfo.contribution)));
+        contribCard.appendChild(Dom.el('div', { class: 'text-tertiary', style: 'margin-top:-8px;padding-bottom:8px' }, [
+          'Monthly Contribution above is Ordinary Wage (salary) only — bonus CPF is a separate once-a-year amount, included in the Projection below. Bonus subject to CPF this year: ' + Dom.fmtMoney(awInfo.subjectToCpf) + ' of ' + Dom.fmtMoney(Calc.num((c.income || {}).bonus)) + ' bonus, capped by the ' + Dom.fmtMoney(awInfo.ceiling) + ' Additional Wage ceiling (' + Dom.fmtMoney(Calc.CPF_TOTAL_WAGE_CEILING) + ' combined OW+AW ceiling minus ' + Dom.fmtMoney(contrib.wageBase * 12) + ' Ordinary Wages this year).'
+        ]));
+      }
       grid.appendChild(contribCard);
       container.appendChild(grid);
 

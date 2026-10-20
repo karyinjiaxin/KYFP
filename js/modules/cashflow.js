@@ -239,6 +239,25 @@ var ModuleCashflow = (function () {
           ])
         ]);
       }
+      if (item.autoIncomeTax) {
+        return Dom.el('div', {
+          class: 'input-row compact-row mb-2', style: 'align-items:end;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--border)',
+          onclick: function (e) { e.stopPropagation(); }
+        }, [
+          Dom.el('div', { class: 'field' }, [
+            Dom.el('label', { class: 'field-label' }, ['Item']),
+            Dom.el('div', { style: 'padding:6px 9px;font-size:12.5px;font-weight:600' }, [item.name, ' ', Dom.el('span', { class: 'badge badge-good', style: 'font-size:9.5px;padding:1px 7px;margin-left:4px' }, ['AUTO'])])
+          ]),
+          Dom.el('div', { class: 'field' }, [
+            Dom.el('label', { class: 'field-label' }, ['Cost / mo']),
+            Dom.el('div', { style: 'padding:6px 9px;font-size:12.5px;font-weight:600' }, [Dom.fmtMoney(item.cost)])
+          ]),
+          Dom.el('div', { class: 'field' }, [
+            Dom.el('label', { class: 'field-label' }, ['Source']),
+            Dom.el('div', { class: 'text-tertiary', style: 'padding:6px 9px' }, ['Tax Planning: Net Tax Payable ÷ 12'])
+          ])
+        ]);
+      }
       var row = Dom.el('div', {
         class: 'input-row compact-row mb-2', style: 'align-items:end;padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--border)',
         onclick: function (e) { e.stopPropagation(); }

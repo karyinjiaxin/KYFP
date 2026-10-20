@@ -65,6 +65,33 @@ var App = (function () {
     if (changed) Store.set('cashflowCategories', next);
   }
 
+  // Keeps any cashflow line item tagged autoIncomeTax: true in sync with
+  // the client's income, reliefs, and parenthood rebate — same pattern
+  // as syncAutoCpf above, using the same Calc.estimatedNetIncomeTax the
+  // Tax Planning page itself displays, so the two can never disagree.
+  // Net income tax is an annual figure; the monthly line item shows it
+  // spread evenly across the year rather than as one annual lump —
+  // consistent with every other Cashflow item being monthly.
+  function syncAutoIncomeTax() {
+    var cats = Store.get('cashflowCategories');
+    if (!Array.isArray(cats)) return;
+    var computed = Math.round((Calc.estimatedNetIncomeTax(Store.getAll()) / 12) * 100) / 100;
+    var changed = false;
+    var next = JSON.parse(JSON.stringify(cats));
+    next.forEach(function (cat) {
+      (cat.items || []).forEach(function (item) {
+        if (item.autoIncomeTax) {
+          if (item.cost !== computed || item.frequency !== 'Monthly') {
+            item.cost = computed;
+            item.frequency = 'Monthly';
+            changed = true;
+          }
+        }
+      });
+    });
+    if (changed) Store.set('cashflowCategories', next);
+  }
+
   // Keeps Tax Planning's "CPF Relief" and "Earned Income Relief" figures
   // correct automatically — both are legally tied to actual CPF
   // contributions and earned income, so leaving them as independently
@@ -168,6 +195,7 @@ var App = (function () {
     initTheme();
     syncCurrentAgeFromDob();
     syncAutoCpf();
+    syncAutoIncomeTax();
     syncAutoReliefs();
     syncMortgageCpfDeduction();
     syncInvestmentAssets();
@@ -185,6 +213,7 @@ var App = (function () {
     Store.subscribe('*', function () {
       syncCurrentAgeFromDob();
       syncAutoCpf();
+      syncAutoIncomeTax();
       syncAutoReliefs();
       syncMortgageCpfDeduction();
       syncInvestmentAssets();
@@ -195,6 +224,14 @@ var App = (function () {
     Store.subscribe('personal.employmentStatus', syncAutoCpf);
     Store.subscribe('personal.dob', syncAutoCpf);
     Store.subscribe('income.salary', syncAutoCpf);
+    Store.subscribe('personal.employmentStatus', syncAutoIncomeTax);
+    Store.subscribe('personal.dob', syncAutoIncomeTax);
+    Store.subscribe('income.salary', syncAutoIncomeTax);
+    Store.subscribe('income.bonus', syncAutoIncomeTax);
+    Store.subscribe('income.businessIncome', syncAutoIncomeTax);
+    Store.subscribe('tax.reliefs', syncAutoIncomeTax);
+    Store.subscribe('tax.parenthoodTaxRebate', syncAutoIncomeTax);
+    Store.subscribe('dependants', syncAutoIncomeTax);
     Store.subscribe('personal.employmentStatus', syncAutoReliefs);
     Store.subscribe('personal.dob', syncAutoReliefs);
     Store.subscribe('income.salary', syncAutoReliefs);

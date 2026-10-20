@@ -82,6 +82,23 @@ var Store = (function () {
     });
   }
 
+  // Flags an existing "Income Tax" cashflow item as auto-managed
+  // (autoIncomeTax: true) for a browser that saved its data before this
+  // feature existed — without this, a returning advisor would need to
+  // manually re-add the item (there's no "add auto item" affordance in
+  // the UI, only pre-seeded ones) to get the same auto-sync a brand new
+  // client gets. Only sets the flag on an item that already exists with
+  // this exact name; never creates, renames, or deletes anything. Cost
+  // is left for app.js's syncAutoIncomeTax to correct right after init.
+  function migrateAutoIncomeTaxFlag(cashflowCategories) {
+    if (!Array.isArray(cashflowCategories)) return;
+    cashflowCategories.forEach(function (cat) {
+      (cat.items || []).forEach(function (item) {
+        if (item.name === 'Income Tax' && !item.autoIncomeTax) item.autoIncomeTax = true;
+      });
+    });
+  }
+
   return {
     init: function (defaults) {
       var saved = null;
@@ -102,6 +119,7 @@ var Store = (function () {
           saved.cashflowCategories = JSON.parse(JSON.stringify(defaults.cashflowCategories));
         }
         migrateEstateStatus(saved.estate);
+        migrateAutoIncomeTaxFlag(saved.cashflowCategories);
         data = saved;
       } else {
         data = JSON.parse(JSON.stringify(defaults));
@@ -201,6 +219,7 @@ var Store = (function () {
       var entry = list.filter(function (e) { return e.id === id; })[0];
       if (!entry) return false;
       data = JSON.parse(JSON.stringify(entry.data));
+      migrateAutoIncomeTaxFlag(data.cashflowCategories);
       persist();
       try { localStorage.setItem(CURRENT_CLIENT_ID_KEY, id); } catch (e) {}
       notify('*');

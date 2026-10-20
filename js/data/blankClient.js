@@ -27,7 +27,7 @@ var BlankClient = {
       { id: 'i5', name: 'Mobile', cost: 0, frequency: 'Monthly' }
     ] },
     { id: 'taxes', name: 'Taxes', bucket: 'Bills', items: [
-      { id: 'i6', name: 'Income Tax', cost: 0, frequency: 'Monthly' }
+      { id: 'i6', name: 'Income Tax', cost: 0, frequency: 'Monthly', autoIncomeTax: true }
     ] },
     { id: 'subscriptions', name: 'Subscriptions', bucket: 'Bills', items: [
       { id: 'i7', name: 'Subscriptions', cost: 0, frequency: 'Monthly' }
@@ -65,7 +65,7 @@ var BlankClient = {
     retirementSumTier: 'FRS', voluntaryAllAccounts: 0, voluntarySA: 0, voluntaryMA: 0
   },
   assets: {
-    cash: 0, stocks: 0, etfs: 0, unitTrusts: 0, crypto: 0, business: 0, insuranceCashValue: 0,
+    cash: 0, stocks: 0, etfs: 0, unitTrusts: 0, crypto: 0, cpfIs: 0, srsInvestments: 0, business: 0, insuranceCashValue: 0,
     property: []
   },
   liabilities: {
