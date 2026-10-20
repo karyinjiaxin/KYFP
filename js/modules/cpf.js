@@ -82,8 +82,17 @@ var ModuleCpf = (function () {
       contribCard.appendChild(row('Total Monthly Contribution', Dom.fmtMoney(contrib.medisaveOnly ? Calc.autoCpfContribution(c) : contrib.total)));
       if (!contrib.medisaveOnly && status !== 'Unemployed') {
         var awInfo = Calc.annualAdditionalWageCpf(c, age);
-        contribCard.appendChild(row('+ Bonus CPF (this year, from Additional Wage)', Dom.fmtMoney(awInfo.contribution)));
-        contribCard.appendChild(Dom.el('div', { class: 'text-tertiary', style: 'margin-top:-8px;padding-bottom:8px' }, [
+        // Deliberately smaller/lighter than the main contribution rows above
+        // — this is a once-a-year supplementary figure for reference, not
+        // part of the Monthly Contribution total, so it shouldn't carry the
+        // same visual weight. "ANNUAL" is spelled out in the label itself
+        // (not just the caption below) since S$2,220 with no unit reads as
+        // ambiguous — easy to mistake for a second monthly figure.
+        contribCard.appendChild(Dom.el('div', { class: 'flex justify-between items-center', style: 'padding:5px 0;border-bottom:1px solid var(--border)' }, [
+          Dom.el('div', { class: 'text-tertiary', style: 'font-size:11.5px' }, ['+ Bonus CPF — ANNUAL, this year only (from Additional Wage)']),
+          Dom.el('div', { style: 'font-weight:700;font-size:12px;color:var(--text-secondary)' }, [Dom.fmtMoney(awInfo.contribution) + ' /yr'])
+        ]));
+        contribCard.appendChild(Dom.el('div', { class: 'text-tertiary', style: 'margin-top:4px;padding-bottom:8px' }, [
           'Monthly Contribution above is Ordinary Wage (salary) only — bonus CPF is a separate once-a-year amount, included in the Projection below. Bonus subject to CPF this year: ' + Dom.fmtMoney(awInfo.subjectToCpf) + ' of ' + Dom.fmtMoney(Calc.num((c.income || {}).bonus)) + ' bonus, capped by the ' + Dom.fmtMoney(awInfo.ceiling) + ' Additional Wage ceiling (' + Dom.fmtMoney(Calc.CPF_TOTAL_WAGE_CEILING) + ' combined OW+AW ceiling minus ' + Dom.fmtMoney(contrib.wageBase * 12) + ' Ordinary Wages this year).'
         ]));
       }
