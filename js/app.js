@@ -126,6 +126,114 @@ var App = (function () {
     }
   }
 
+  // House Purchase Planning drives three other pages from one computed
+  // summary, same "single source of truth" pattern as the syncs above —
+  // only while a Purchase Price is actually entered (an unused House
+  // Purchase page should touch nothing elsewhere):
+  //  1) Net Worth's Mortgage Details (which already feeds CPF via
+  //     syncMortgageCpfDeduction above).
+  //  2) A dedicated, auto-managed Cashflow line item (same autoCpf/
+  //     autoIncomeTax pattern) for the monthly CASH portion of the
+  //     mortgage — kept separate from any pre-existing manual
+  //     "Mortgage/Rent" entry rather than merging into it, since that
+  //     entry might represent a different, unrelated situation (e.g.
+  //     current rent before this purchase happens).
+  //  3) A one-off Roadmap life event for the total upfront cash needed
+  //     (downpayment cash + duties/fees − grants), placed at the
+  //     client's age in the stated Year of Purchase.
+  // Each piece is found by a stable marker (autoHousePurchase / source:
+  // 'housePurchase') and updated in place rather than appended again on
+  // every recompute, and is removed if the Purchase Price is cleared.
+  // Reentrancy guard: this function makes several sequential Store.set
+  // calls (mortgageDetails has 4 fields alone), and each one synchronously
+  // re-triggers the broad '*' bundle below — including this same function
+  // — before the earlier calls in this same pass have all landed. Without
+  // the guard, that reentrant call sees a still-partially-updated state,
+  // decides something still needs writing, and writes again, re-triggering
+  // another reentrant call before ITS writes land either — an exponential
+  // cascade that blows the call stack. The guard makes a re-entrant call
+  // during an in-progress pass a no-op; the in-progress pass still runs
+  // to completion and leaves everything consistent on its own.
+  var syncingHousePurchase = false;
+  function syncHousePurchase() {
+    if (syncingHousePurchase) return;
+    syncingHousePurchase = true;
+    try {
+      syncHousePurchaseImpl();
+    } finally {
+      syncingHousePurchase = false;
+    }
+  }
+  function syncHousePurchaseImpl() {
+    var c = Store.getAll();
+    var hp = c.housePurchase || {};
+    var active = Calc.num(hp.purchasePrice) > 0;
+    var s = active ? Calc.housePurchaseSummary(c) : null;
+
+    // 1) Mortgage Details -> CPF (via syncMortgageCpfDeduction)
+    if (active) {
+      var md = c.liabilities && c.liabilities.mortgageDetails;
+      if (!md || md.monthlyCash !== s.monthlyCash || md.monthlyCPF !== s.monthlyCpf ||
+        md.tenureYears !== s.tenureYears || md.interestRate !== s.interestRate) {
+        Store.set('liabilities.mortgageDetails.monthlyCash', s.monthlyCash);
+        Store.set('liabilities.mortgageDetails.monthlyCPF', s.monthlyCpf);
+        Store.set('liabilities.mortgageDetails.tenureYears', s.tenureYears);
+        Store.set('liabilities.mortgageDetails.interestRate', s.interestRate);
+      }
+    }
+
+    // 2) Cashflow auto item
+    var cats = Store.get('cashflowCategories');
+    if (Array.isArray(cats)) {
+      var nextCats = JSON.parse(JSON.stringify(cats));
+      var homeCat = nextCats.filter(function (cat) { return cat.id === 'home'; })[0];
+      var existingItem = null;
+      nextCats.forEach(function (cat) { (cat.items || []).forEach(function (item) { if (item.autoHousePurchase) existingItem = item; }); });
+      var catsChanged = false;
+      if (active) {
+        var targetCost = Math.round(s.monthlyCash * 100) / 100;
+        if (existingItem) {
+          if (existingItem.cost !== targetCost || existingItem.frequency !== 'Monthly') {
+            existingItem.cost = targetCost; existingItem.frequency = 'Monthly'; catsChanged = true;
+          }
+        } else {
+          if (!homeCat) { homeCat = { id: 'home', name: 'Home', bucket: 'Bills', items: [] }; nextCats.push(homeCat); }
+          homeCat.items.push({ id: Dom.uid('item'), name: 'Mortgage (House Purchase)', cost: targetCost, frequency: 'Monthly', autoHousePurchase: true });
+          catsChanged = true;
+        }
+      } else if (existingItem) {
+        nextCats.forEach(function (cat) { cat.items = (cat.items || []).filter(function (item) { return !item.autoHousePurchase; }); });
+        catsChanged = true;
+      }
+      if (catsChanged) Store.set('cashflowCategories', nextCats);
+    }
+
+    // 3) Roadmap one-off life event
+    var events = Store.get('roadmap.lifeEvents');
+    if (!Array.isArray(events)) events = [];
+    var nextEvents = JSON.parse(JSON.stringify(events));
+    var existingEvent = nextEvents.filter(function (ev) { return ev.source === 'housePurchase'; })[0];
+    var eventsChanged = false;
+    if (active) {
+      var age = ModuleHousePurchase ? ModuleHousePurchase.housePurchaseAge(c) : null;
+      var amount = Math.round(s.totalUpfrontCash * 100) / 100;
+      if (age != null) {
+        if (existingEvent) {
+          if (existingEvent.age !== age || existingEvent.amount !== amount) {
+            existingEvent.age = age; existingEvent.amount = amount; existingEvent.direction = 'Outflow'; existingEvent.durationYears = 1; eventsChanged = true;
+          }
+        } else {
+          nextEvents.push({ name: 'House Purchase — Upfront Cash', age: age, amount: amount, direction: 'Outflow', durationYears: 1, source: 'housePurchase' });
+          eventsChanged = true;
+        }
+      }
+    } else if (existingEvent) {
+      nextEvents = nextEvents.filter(function (ev) { return ev.source !== 'housePurchase'; });
+      eventsChanged = true;
+    }
+    if (eventsChanged) Store.set('roadmap.lifeEvents', nextEvents);
+  }
+
   // Auto-fills Net Worth's Unit Trusts/ETFs/Stocks/Crypto from matching
   // Investment Planning plans (by Type) — but only while the field is
   // still at its untouched default (0), so a value the advisor typed in
@@ -284,6 +392,7 @@ var App = (function () {
     syncInvestmentAssets();
     syncRetirementSumGrowthDefault();
     syncGapClosingDefaults();
+    syncHousePurchase();
     // Each sync function is also wired to its own specific path(s) below
     // for fast, targeted reaction during normal editing — but ALL of
     // them also need to re-run on a broad '*' reset (New Client, Switch
@@ -302,7 +411,10 @@ var App = (function () {
       syncInvestmentAssets();
       syncRetirementSumGrowthDefault();
       syncGapClosingDefaults();
+      syncHousePurchase();
     });
+    Store.subscribe('housePurchase', syncHousePurchase);
+    Store.subscribe('personal.dob', syncHousePurchase);
     Store.subscribe('personal.dob', syncCurrentAgeFromDob);
     Store.subscribe('personal.employmentStatus', syncAutoCpf);
     Store.subscribe('personal.dob', syncAutoCpf);
@@ -348,6 +460,7 @@ var App = (function () {
     }
 
     registerModule('dashboard', 'ModuleDashboard');
+    registerModule('houseplan', 'ModuleHousePurchase');
     registerModule('couple', 'ModuleCouple');
     registerModule('roadmap', 'ModuleRoadmap');
     registerModule('cashflow', 'ModuleCashflow');

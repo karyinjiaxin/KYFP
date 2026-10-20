@@ -13,6 +13,7 @@ var Sidebar = (function () {
       { key: 'networth', label: 'Net Worth', ic: 'bar', col: 'violet' }
     ]},
     { section: 'Planning', items: [
+      { key: 'houseplan', label: 'House Purchase', ic: 'home', col: 'blue' },
       { key: 'insurance', label: 'Insurance Coverage', ic: 'shield', col: 'red' },
       { key: 'hospital', label: 'Hospital Plan Premiums', ic: 'cross', col: 'pink' },
       { key: 'retirement', label: 'Retirement Planning', ic: 'sun', col: 'yellow' },
@@ -54,7 +55,8 @@ var Sidebar = (function () {
     gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.2a1.7 1.7 0 00-1-1.5 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.2a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.2a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.2a1.7 1.7 0 00-1.5 1z"/>',
     bucket: '<path d="M4 8h16l-1.7 11.2a2 2 0 01-2 1.8H7.7a2 2 0 01-2-1.8L4 8z"/><path d="M2 8h20M8 8V6a4 4 0 018 0v2"/>',
     couple: '<circle cx="8.5" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M2.5 21c0-3.5 3-5.5 6-5.5s6 2 6 5.5"/><path d="M14 21c0-2.5 1.8-4.2 4-4.2s4.5 1.5 4.5 4.2"/>',
-    roadmap: '<path d="M3 20l6-16 4 10 3-6 5 12"/><circle cx="9" cy="4" r="1.5"/><circle cx="20" cy="20" r="1.5"/>'
+    roadmap: '<path d="M3 20l6-16 4 10 3-6 5 12"/><circle cx="9" cy="4" r="1.5"/><circle cx="20" cy="20" r="1.5"/>',
+    home: '<path d="M4 11l8-7 8 7"/><path d="M6 10v9a1 1 0 001 1h3v-6h4v6h3a1 1 0 001-1v-9"/>'
   };
 
   function iconSvg(name, colorClass) {
