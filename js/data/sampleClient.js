@@ -172,12 +172,12 @@ var SampleClient = {
   // Use the "Record This Month" button on Net Worth to append/update
   // today's totals as you use the app over time.
   netWorthHistory: [
-    { month: 'Apr', assets: 1180000, liabilities: 1035000 },
-    { month: 'May', assets: 1205000, liabilities: 1028000 },
-    { month: 'Jun', assets: 1232000, liabilities: 1021000 },
-    { month: 'Jul', assets: 1258000, liabilities: 1013000 },
-    { month: 'Aug', assets: 1281000, liabilities: 1005000 },
-    { month: 'Sep', assets: 1304000, liabilities: 997000 }
+    { month: 'Apr 2026', assets: 1180000, liabilities: 1035000 },
+    { month: 'May 2026', assets: 1205000, liabilities: 1028000 },
+    { month: 'Jun 2026', assets: 1232000, liabilities: 1021000 },
+    { month: 'Jul 2026', assets: 1258000, liabilities: 1013000 },
+    { month: 'Aug 2026', assets: 1281000, liabilities: 1005000 },
+    { month: 'Sep 2026', assets: 1304000, liabilities: 997000 }
   ],
   insuranceQuickCoverage: {
     deathTpd: 0, terminalIllness: 0, earlyStageCI: 0, lateStageCI: 0, incomeProtection: 0,

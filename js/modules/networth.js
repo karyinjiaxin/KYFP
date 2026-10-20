@@ -128,6 +128,9 @@ var ModuleNetWorth = (function () {
 
       container.appendChild(grid);
 
+      container.appendChild(Dom.el('div', { class: 'section-title' }, ['📈 Net Worth History']));
+      container.appendChild(historyCard(c));
+
       container.appendChild(Dom.el('div', { class: 'section-title' }, ['🥧 Asset Allocation']));
       var chartCard = Dom.el('div', { class: 'card' }, [Dom.el('div', { class: 'chart-wrap tall' }, [Dom.el('canvas', { id: 'nwAllocChart' })])]);
       container.appendChild(chartCard);
@@ -188,6 +191,55 @@ var ModuleNetWorth = (function () {
           var arr = Store.get('assets.property') || []; arr.push({ name: 'New Property', value: 0, loan: 0 }); Store.set('assets.property', arr);
         }
       }, ['+ Add Property']));
+      return wrap;
+    }
+
+    // Editable net worth history — "Record This Month" above only ever
+    // captures TODAY's figures, so a client with real history from before
+    // they started using this tool (or a typo in a past snapshot) had no
+    // way to add/fix it. Same list-row pattern as Property below: free
+    // text for the month label (so past months/years can be backfilled
+    // in any format, not just whatever "Record This Month" would have
+    // generated) plus Assets/Liabilities, with Net Worth shown computed.
+    // Order here IS the order the Dashboard trend chart draws left to
+    // right — add/arrange entries chronologically.
+    function historyCard(c) {
+      var wrap = Dom.el('div', { class: 'card mb-3' });
+      var hist = c.netWorthHistory || [];
+      if (hist.length === 0) {
+        wrap.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, [
+          'No history yet. Click "Record This Month" above to snapshot today’s figures, or add a past entry below to backfill history from before you started using this tool.'
+        ]));
+      } else {
+        wrap.appendChild(Dom.el('div', { class: 'text-tertiary mb-3' }, [
+          'Feeds the "Assets, Debt & Net Worth" trend chart on the Dashboard. Order here is the order it charts, left to right — add or arrange entries chronologically.'
+        ]));
+      }
+      hist.forEach(function (h, idx) {
+        var netWorthValue = Calc.num(h.assets) - Calc.num(h.liabilities);
+        var row = Dom.el('div', { class: 'input-row', style: 'margin-bottom:8px;align-items:end' }, [
+          Fields.textInput('netWorthHistory.' + idx + '.month', 'Month', { placeholder: 'e.g. Oct 2026' }),
+          Fields.moneyInput('netWorthHistory.' + idx + '.assets', 'Assets'),
+          Fields.moneyInput('netWorthHistory.' + idx + '.liabilities', 'Liabilities'),
+          Dom.el('div', { class: 'field' }, [
+            Dom.el('label', { class: 'field-label' }, ['Net Worth']),
+            Dom.el('div', { style: 'padding:9px 12px;font-size:12.5px;font-weight:700' }, [Dom.fmtMoney(netWorthValue)])
+          ])
+        ]);
+        row.appendChild(Dom.el('button', {
+          class: 'btn btn-ghost btn-sm', onclick: function () {
+            var arr = Store.get('netWorthHistory'); arr.splice(idx, 1); Store.set('netWorthHistory', arr);
+          }
+        }, ['Remove']));
+        wrap.appendChild(row);
+      });
+      wrap.appendChild(Dom.el('button', {
+        class: 'btn btn-secondary btn-sm', onclick: function () {
+          var arr = Store.get('netWorthHistory') || [];
+          arr.push({ month: '', assets: 0, liabilities: 0 });
+          Store.set('netWorthHistory', arr);
+        }
+      }, ['+ Add Past Entry']));
       return wrap;
     }
 
