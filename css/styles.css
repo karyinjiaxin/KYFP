@@ -357,12 +357,21 @@ table.data-table.compact-table td { padding: 6px 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* Print (Proposal export) */
+.print-multi-root { display: none; }
 @media print {
   .sidebar, .topbar { display: none !important; }
   .main-area, .content { overflow: visible !important; height: auto !important; }
   .content { padding: 0 !important; }
   .no-print { display: none !important; }
   body { background: #fff; }
+
+  /* Multi-tab print picker: the live route (.content) is hidden in favor
+     of the dedicated print-only container built from the tabs picked. */
+  body.printing-multi .content { display: none !important; }
+  body.printing-multi .print-multi-root { display: block !important; }
+  .print-multi-root .print-page { page-break-after: always; }
+  .print-multi-root .print-page:last-child { page-break-after: auto; }
+  .print-multi-root .print-page-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
 }
 
 /* Responsive */

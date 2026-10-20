@@ -190,6 +190,83 @@ var App = (function () {
     }
   }
 
+  // Printing used to always jump to the Proposals page and print that
+  // alone. This lets the advisor pick any combination of pages — each
+  // selected page is rendered into a dedicated print-only container (one
+  // per page, separated by a page break) so multiple tabs can go out in a
+  // single PDF/printout without disturbing whatever page is on screen.
+  function openPrintTabPicker() {
+    var routes = Router.listRoutes().filter(function (r) { return typeof r.module.render === 'function'; });
+    var overlay = Dom.el('div', { class: 'modal-overlay' });
+    var checks = routes.map(function (r) {
+      return { key: r.key, title: r.title, module: r.module, cb: Dom.el('input', { type: 'checkbox', checked: r.key === 'proposals' ? 'checked' : null }) };
+    });
+    var list = Dom.el('div', { style: 'max-height:360px;overflow-y:auto;text-align:left;margin:4px 0 16px;border:1px solid var(--border);border-radius:8px;padding:4px 12px' });
+    checks.forEach(function (item) {
+      list.appendChild(Dom.el('label', { style: 'display:flex;align-items:center;gap:10px;padding:7px 2px;cursor:pointer;font-size:13.5px' }, [item.cb, item.title]));
+    });
+    var box = Dom.el('div', { class: 'modal-box' }, [
+      Dom.el('div', { class: 'modal-message' }, ['Choose which tabs to include in the printout:']),
+      list,
+      Dom.el('div', { class: 'modal-actions' }, [
+        Dom.el('button', { class: 'btn btn-ghost', onclick: function () { overlay.remove(); } }, ['Cancel']),
+        Dom.el('button', {
+          class: 'btn btn-primary',
+          onclick: function () {
+            var selected = checks.filter(function (item) { return item.cb.checked; });
+            if (!selected.length) { Dom.modalAlert('Select at least one tab to print.'); return; }
+            overlay.remove();
+            printSelectedTabs(selected);
+          }
+        }, ['Print'])
+      ])
+    ]);
+    overlay.appendChild(box);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+  }
+
+  function printSelectedTabs(selected) {
+    var root = document.createElement('div');
+    root.className = 'print-multi-root';
+    var unsubs = [];
+    selected.forEach(function (item) {
+      var page = Dom.el('div', { class: 'print-page' }, [
+        Dom.el('div', { class: 'print-page-title' }, [item.title])
+      ]);
+      var body = Dom.el('div');
+      page.appendChild(body);
+      root.appendChild(page);
+      try {
+        var maybeUnsub = item.module.render(body);
+        if (typeof maybeUnsub === 'function') unsubs.push(maybeUnsub);
+      } catch (err) {
+        body.appendChild(Dom.el('div', { class: 'text-secondary' }, ['Couldn’t load this page: ' + (err && err.message ? err.message : err)]));
+        console.error('Print: page "' + item.key + '" failed to render:', err);
+      }
+    });
+    document.body.appendChild(root);
+    document.body.classList.add('printing-multi');
+
+    var cleaned = false;
+    function cleanup() {
+      if (cleaned) return;
+      cleaned = true;
+      unsubs.forEach(function (unsub) { try { unsub(); } catch (e) {} });
+      document.body.classList.remove('printing-multi');
+      if (root.parentNode) root.parentNode.removeChild(root);
+      window.removeEventListener('afterprint', cleanup);
+    }
+    window.addEventListener('afterprint', cleanup);
+    // Fallback in case 'afterprint' doesn't fire (some mobile browsers) —
+    // long enough that it never races a print dialog still open.
+    setTimeout(cleanup, 60000);
+
+    // Let the freshly-rendered pages (and any chart canvases drawn via
+    // requestAnimationFrame inside each module) paint before printing.
+    requestAnimationFrame(function () { setTimeout(function () { window.print(); }, 250); });
+  }
+
   function init() {
     Store.init(SampleClient);
     initTheme();
@@ -306,10 +383,7 @@ var App = (function () {
       var current = document.documentElement.getAttribute('data-theme');
       setTheme(current === 'dark' ? 'light' : 'dark');
     });
-    onClick('printBtn', function () {
-      Router.navigate('proposals');
-      setTimeout(function () { window.print(); }, 200);
-    });
+    onClick('printBtn', openPrintTabPicker);
 
     onClick('quickSaveBtn', function () {
       Store.quickSave();
