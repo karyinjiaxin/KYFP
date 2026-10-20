@@ -27,6 +27,8 @@ var ModuleProposals = (function () {
         Dom.el('div', { class: 'text-secondary', style: 'margin-top:4px' }, ['Prepared for ' + ((c.personal || {}).name || 'Client') + ' · ' + new Date().toLocaleDateString('en-SG', { year: 'numeric', month: 'long', day: 'numeric' })])
       ]));
 
+      doc.appendChild(notesSection(c));
+
       section(doc, 'Current Situation', [
         propRow('Monthly Income', Dom.fmtMoney(Calc.monthlyIncome(c))),
         propRow('Monthly Expenses', Dom.fmtMoney(Calc.monthlyExpenses(c))),
@@ -76,6 +78,24 @@ var ModuleProposals = (function () {
       }));
 
       container.appendChild(doc);
+    }
+
+    // Free-text commentary the advisor can personalise per client — e.g. a
+    // greeting, context for why these recommendations were made, or a
+    // reminder of what was discussed in the meeting. The editing textarea
+    // itself is excluded from the printed PDF (no-print); a plain
+    // print-only block right below it renders the same text as normal
+    // document copy, with line breaks preserved.
+    function notesSection(c) {
+      var wrap = Dom.el('div', { class: 'mb-3' });
+      var notes = c.proposalNotes || '';
+      wrap.appendChild(Dom.el('div', { class: 'no-print' }, [
+        Fields.textInput('proposalNotes', 'Notes to Client (appears in the printed proposal, below the title)', { multiline: true, rows: 4, placeholder: 'e.g. a personal greeting, context from your meeting, or anything else you’d like to say directly to the client…' })
+      ]));
+      if (notes.trim()) {
+        wrap.appendChild(Dom.el('div', { class: 'print-only', style: 'font-size:13.5px;line-height:1.6;white-space:pre-line;margin-bottom:8px' }, [notes]));
+      }
+      return wrap;
     }
 
     function buildPriorities(c, rp) {
