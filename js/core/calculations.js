@@ -1805,6 +1805,122 @@ var Calc = (function () {
     };
   }
 
+  // ---------- HOUSE PURCHASE PLANNING ----------
+  // Buyer's Stamp Duty — same tiered schedule for HDB and private
+  // residential property (IRAS, in effect since 15 Feb 2023).
+  var BSD_TIERS = [
+    { upTo: 180000, rate: 0.01 },
+    { upTo: 360000, rate: 0.02 },
+    { upTo: 1000000, rate: 0.03 },
+    { upTo: 1500000, rate: 0.04 },
+    { upTo: 3000000, rate: 0.05 },
+    { upTo: Infinity, rate: 0.06 }
+  ];
+  function buyersStampDuty(price) {
+    price = num(price);
+    var duty = 0, lastCap = 0;
+    for (var i = 0; i < BSD_TIERS.length; i++) {
+      var tier = BSD_TIERS[i];
+      var taxableInTier = Math.max(0, Math.min(price, tier.upTo) - lastCap);
+      duty += taxableInTier * tier.rate;
+      lastCap = tier.upTo;
+      if (price <= tier.upTo) break;
+    }
+    return duty;
+  }
+  function buyersStampDutyBreakdown(price) {
+    price = num(price);
+    var rows = [], lastCap = 0;
+    for (var i = 0; i < BSD_TIERS.length; i++) {
+      var tier = BSD_TIERS[i];
+      var taxableInTier = Math.max(0, Math.min(price, tier.upTo) - lastCap);
+      if (taxableInTier > 0) rows.push({ from: lastCap, to: Math.min(price, tier.upTo), rate: tier.rate, amount: taxableInTier * tier.rate });
+      lastCap = tier.upTo;
+      if (price <= tier.upTo) break;
+    }
+    return rows;
+  }
+  // Additional Buyer's Stamp Duty — IRAS rates in effect since 27 Apr 2023.
+  var ABSD_RATES = {
+    SC_1ST: 0, SC_2ND: 0.20, SC_3RD_PLUS: 0.30,
+    PR_1ST: 0.05, PR_2ND_PLUS: 0.30,
+    FOREIGNER: 0.60, ENTITY: 0.65, NONE: 0
+  };
+  function additionalBuyerStampDuty(price, profile) {
+    var rate = ABSD_RATES[profile] != null ? ABSD_RATES[profile] : 0;
+    return num(price) * rate;
+  }
+  // Loan-to-Value limits: HDB Concessionary Loan 80% (20% downpayment, can
+  // be fully CPF), Bank Loan 75% (25% downpayment, at least 5% must be cash
+  // per MAS rules) — first-loan assumptions; an existing/concurrent
+  // property loan lowers these further, which this simplified planner
+  // doesn't model.
+  function housePurchaseLoanRules(loanType) {
+    return loanType === 'HDB'
+      ? { ltvPct: 80, minCashPct: 0 }
+      : { ltvPct: 75, minCashPct: 5 };
+  }
+  // Standard mortgage amortization — same formula used for any level-
+  // payment loan.
+  function mortgageMonthlyPayment(loanAmount, annualRatePct, tenureYears) {
+    loanAmount = num(loanAmount);
+    var n = Math.max(1, Math.round(num(tenureYears) * 12));
+    var r = num(annualRatePct) / 100 / 12;
+    if (loanAmount <= 0) return 0;
+    if (r === 0) return loanAmount / n;
+    return loanAmount * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+  }
+  var HOUSE_PURCHASE_GRANT_FIELDS = ['grantFamily', 'grantEhg', 'grantSingles', 'grantProximity'];
+  function housePurchaseGrantsTotal(hp) {
+    return sum(HOUSE_PURCHASE_GRANT_FIELDS.map(function (k) { return hp[k]; }), function (v) { return v; });
+  }
+  // Full cost/financing breakdown for the House Purchase planner — single
+  // source of truth the module's UI and the app-wide sync (into Net
+  // Worth's Mortgage Details, CPF, Cashflow and the Roadmap) both read
+  // from, so those stay consistent with whatever's shown on the page.
+  function housePurchaseSummary(c) {
+    var hp = c.housePurchase || {};
+    var price = num(hp.purchasePrice);
+    var bsd = buyersStampDuty(price);
+    var absd = hp.absdOverride != null && hp.absdOverride !== '' ? num(hp.absdOverride) : additionalBuyerStampDuty(price, hp.buyerProfile || 'SC_1ST');
+    var grants = housePurchaseGrantsTotal(hp);
+    // Only HDB BTO/Resale are eligible for an HDB Concessionary Loan — any
+    // other property type can only take a Bank Loan, so that's the right
+    // default for them when the advisor hasn't explicitly picked a loan
+    // type yet (rather than always defaulting to the HDB loan's more
+    // generous 80% LTV, which would understate the downpayment needed).
+    var isHdbEligible = String(hp.propertyType || '').indexOf('HDB') === 0;
+    var loanType = hp.loanType || (isHdbEligible ? 'HDB' : 'Bank');
+    var loanRules = housePurchaseLoanRules(loanType);
+    var downpaymentPct = loanRules.ltvPct < 100 ? (100 - loanRules.ltvPct) : 0;
+    var downpaymentAmount = price * downpaymentPct / 100;
+    var minCashAmount = price * loanRules.minCashPct / 100;
+    var downpaymentCashPct = Dom_clamp(hp.downpaymentCashPct != null && hp.downpaymentCashPct !== '' ? num(hp.downpaymentCashPct) : loanRules.minCashPct, loanRules.minCashPct, 100);
+    var downpaymentCash = downpaymentAmount * downpaymentCashPct / 100;
+    var downpaymentCpf = downpaymentAmount - downpaymentCash;
+    var loanAmount = Math.max(0, price - downpaymentAmount);
+    var interestRate = hp.interestRate != null && hp.interestRate !== '' ? num(hp.interestRate) : (loanType === 'Bank' ? 3.5 : 2.6);
+    var tenureYears = num(hp.loanTenureYears) || 25;
+    var monthlyMortgage = mortgageMonthlyPayment(loanAmount, interestRate, tenureYears);
+    var monthlyCpfPct = Dom_clamp(hp.monthlyCpfPct != null && hp.monthlyCpfPct !== '' ? num(hp.monthlyCpfPct) : 100, 0, 100);
+    var monthlyCpf = monthlyMortgage * monthlyCpfPct / 100;
+    var monthlyCash = monthlyMortgage - monthlyCpf;
+    // One-off costs due in cash at/around purchase — everything that
+    // isn't the downpayment or loan-financed. Grants offset cash needed
+    // (HDB resale only), never below 0.
+    var otherUpfrontCosts = num(hp.optionFee) + num(hp.valuationFee) + num(hp.exerciseFee) + num(hp.cov) +
+      bsd + absd + num(hp.legalFees) + num(hp.agentFee) + num(hp.renoCost) + num(hp.furnishingCost);
+    var totalUpfrontCash = Math.max(0, downpaymentCash + otherUpfrontCosts - grants);
+    return {
+      price: price, bsd: bsd, absd: absd, grants: grants, loanRules: loanRules,
+      downpaymentPct: downpaymentPct, downpaymentAmount: downpaymentAmount, minCashAmount: minCashAmount,
+      downpaymentCashPct: downpaymentCashPct, downpaymentCash: downpaymentCash, downpaymentCpf: downpaymentCpf,
+      loanAmount: loanAmount, interestRate: interestRate, tenureYears: tenureYears,
+      monthlyMortgage: monthlyMortgage, monthlyCpfPct: monthlyCpfPct, monthlyCpf: monthlyCpf, monthlyCash: monthlyCash,
+      otherUpfrontCosts: otherUpfrontCosts, totalUpfrontCash: totalUpfrontCash
+    };
+  }
+
   return {
     num: num, sum: sum, ageFromDob: ageFromDob, parseDateString: parseDateString, totalCpfBalance: totalCpfBalance,
     monthlyIncome: monthlyIncome, annualIncomeExclInvestment: annualIncomeExclInvestment, monthlyExpenses: monthlyExpenses, monthlySurplus: monthlySurplus,
@@ -1853,6 +1969,10 @@ var Calc = (function () {
     netWorthGoalHelper: netWorthGoalHelper,
     qualifyingChildRelief: qualifyingChildRelief, totalTaxReliefs: totalTaxReliefs, PERSONAL_RELIEF_CAP: PERSONAL_RELIEF_CAP,
     estimatedNetIncomeTax: estimatedNetIncomeTax,
-    earnedIncomeReliefCap: earnedIncomeReliefCap, autoEarnedIncomeRelief: autoEarnedIncomeRelief
+    earnedIncomeReliefCap: earnedIncomeReliefCap, autoEarnedIncomeRelief: autoEarnedIncomeRelief,
+    buyersStampDuty: buyersStampDuty, buyersStampDutyBreakdown: buyersStampDutyBreakdown,
+    additionalBuyerStampDuty: additionalBuyerStampDuty, ABSD_RATES: ABSD_RATES,
+    housePurchaseLoanRules: housePurchaseLoanRules, mortgageMonthlyPayment: mortgageMonthlyPayment,
+    housePurchaseGrantsTotal: housePurchaseGrantsTotal, housePurchaseSummary: housePurchaseSummary
   };
 })();
