@@ -137,7 +137,8 @@ var Calc = (function () {
     // money once via these fields and again by recomputing the plans
     // directly.
     return num(a.cash) + totalCpfBalance(c) + num(a.stocks) + num(a.etfs) + num(a.unitTrusts) +
-      num(a.crypto) + propertyValueTotal(c) + num(a.business) + num(a.insuranceCashValue);
+      num(a.crypto) + propertyValueTotal(c) + num(a.business) + num(a.insuranceCashValue) +
+      num(a.cpfIs) + num(a.srsInvestments);
   }
   function totalLiabilities(c) {
     var l = c.liabilities || {};
@@ -156,8 +157,11 @@ var Calc = (function () {
     var a = c.assets || {};
     // Same reasoning as totalAssets above — these fields already reflect
     // Investment Planning's contribution via auto-sync, so adding the
-    // plans' value again here would double-count.
-    return num(a.stocks) + num(a.etfs) + num(a.unitTrusts) + num(a.crypto);
+    // plans' value again here would double-count. CPF IS and SRS
+    // Investments are genuinely separate holdings (money that left the
+    // OA/SA cash balance or SRS cash balance to buy into the market), so
+    // no double-counting risk including them here.
+    return num(a.stocks) + num(a.etfs) + num(a.unitTrusts) + num(a.crypto) + num(a.cpfIs) + num(a.srsInvestments);
   }
   function debtRatio(c) {
     var ta = totalAssets(c);

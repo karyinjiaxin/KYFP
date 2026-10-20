@@ -27,7 +27,8 @@ var ModuleNetWorth = (function () {
 
   var ASSET_FIELDS = [
     ['cash', 'Cash'], ['stocks', 'Stocks'], ['etfs', 'ETFs'],
-    ['unitTrusts', 'Unit Trusts'], ['crypto', 'Crypto'], ['business', 'Business'], ['insuranceCashValue', 'Insurance Cash Value']
+    ['unitTrusts', 'Unit Trusts'], ['crypto', 'Crypto'], ['cpfIs', 'CPF Investment Scheme (CPF IS)'], ['srsInvestments', 'SRS Investments'],
+    ['business', 'Business'], ['insuranceCashValue', 'Insurance Cash Value']
   ];
   var LIABILITY_FIELDS = [
     ['creditCards', 'Credit Cards'], ['carLoan', 'Car Loan'], ['personalLoan', 'Personal Loan']
@@ -53,7 +54,7 @@ var ModuleNetWorth = (function () {
         kpiMini('Net Worth', Dom.fmtMoney(Calc.netWorth(c))),
         kpiMini('Total Assets', Dom.fmtMoney(Calc.totalAssets(c))),
         kpiMini('Liquid Assets', Dom.fmtMoney(Calc.liquidAssets(c))),
-        kpiMini('Investment Assets', Dom.fmtMoney(Calc.investmentAssetsTotal(c)), 'Stocks + ETFs + Unit Trusts + Crypto + Investment Plans (today\u2019s value)'),
+        kpiMini('Investment Assets', Dom.fmtMoney(Calc.investmentAssetsTotal(c)), 'Stocks + ETFs + Unit Trusts + Crypto + CPF IS + SRS Investments + Investment Plans (today\u2019s value)'),
         kpiMini('Total Liabilities', Dom.fmtMoney(Calc.totalLiabilities(c))),
         kpiMini('Debt Ratio', Dom.fmtPct(Calc.debtRatio(c)))
       ]));
@@ -137,10 +138,10 @@ var ModuleNetWorth = (function () {
         Charts.render(document.getElementById('nwAllocChart'), {
           type: 'doughnut',
           data: {
-            labels: ['Cash', 'CPF', 'Stocks', 'ETFs', 'Unit Trusts', 'Crypto', 'Property (net)', 'Business', 'Insurance CV'],
+            labels: ['Cash', 'CPF', 'Stocks', 'ETFs', 'Unit Trusts', 'Crypto', 'CPF IS', 'SRS Investments', 'Property (net)', 'Business', 'Insurance CV'],
             datasets: [{
-              data: [Calc.num(a.cash), Calc.totalCpfBalance(c), Calc.num(a.stocks), Calc.num(a.etfs), Calc.num(a.unitTrusts), Calc.num(a.crypto), Calc.propertyValueTotal(c) - Calc.propertyLoanTotal(c), Calc.num(a.business), Calc.num(a.insuranceCashValue)],
-              backgroundColor: t.palette.concat(['#E0A458', '#6FA394', '#B98BB0'])
+              data: [Calc.num(a.cash), Calc.totalCpfBalance(c), Calc.num(a.stocks), Calc.num(a.etfs), Calc.num(a.unitTrusts), Calc.num(a.crypto), Calc.num(a.cpfIs), Calc.num(a.srsInvestments), Calc.propertyValueTotal(c) - Calc.propertyLoanTotal(c), Calc.num(a.business), Calc.num(a.insuranceCashValue)],
+              backgroundColor: t.palette.concat(['#E0A458', '#6FA394', '#B98BB0', '#8B7EC8', '#5B8FA8'])
             }]
           },
           options: Object.assign({ scales: { x: false, y: false } }, Charts.leaderLineDonutOptions(t.text))

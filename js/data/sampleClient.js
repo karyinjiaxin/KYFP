@@ -152,6 +152,8 @@ var SampleClient = {
     etfs: 48000,
     unitTrusts: 35000,
     crypto: 8000,
+    cpfIs: 40000,
+    srsInvestments: 15000,
     business: 0,
     insuranceCashValue: 21000,
     property: [
