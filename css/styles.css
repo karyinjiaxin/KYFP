@@ -358,11 +358,20 @@ table.data-table.compact-table td { padding: 6px 8px; }
 
 /* Print (Proposal export) */
 .print-multi-root { display: none; }
+.print-only { display: none; }
 @media print {
   .sidebar, .topbar { display: none !important; }
+  /* .app-shell is "height: 100vh" on screen (so the sidebar/content fill
+     the window) — print never reset it, so every printout reserved one
+     full blank viewport-height block before any real content, whether
+     printed the old way (straight through .content) or via the tab
+     picker's .print-multi-root (a sibling appended to <body>, so it was
+     pushed below that same blank block). */
+  .app-shell { height: auto !important; overflow: visible !important; }
   .main-area, .content { overflow: visible !important; height: auto !important; }
   .content { padding: 0 !important; }
   .no-print { display: none !important; }
+  .print-only { display: block !important; }
   body { background: #fff; }
 
   /* Multi-tab print picker: the live route (.content) is hidden in favor

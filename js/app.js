@@ -231,9 +231,15 @@ var App = (function () {
     root.className = 'print-multi-root';
     var unsubs = [];
     selected.forEach(function (item) {
-      var page = Dom.el('div', { class: 'print-page' }, [
-        Dom.el('div', { class: 'print-page-title' }, [item.title])
-      ]);
+      var page = Dom.el('div', { class: 'print-page' });
+      // Proposals already renders its own centered document title + "Prepared
+      // for <client>" subtitle as the first thing on the page — stacking the
+      // generic page-title heading on top of that just duplicated it and
+      // left an ugly gap before the real title. Every other page has no
+      // title of its own, so it still gets the generic heading.
+      if (item.key !== 'proposals') {
+        page.appendChild(Dom.el('div', { class: 'print-page-title' }, [item.title]));
+      }
       var body = Dom.el('div');
       page.appendChild(body);
       root.appendChild(page);
