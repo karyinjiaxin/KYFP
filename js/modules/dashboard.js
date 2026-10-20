@@ -127,19 +127,36 @@ var ModuleDashboard = (function () {
         options: Object.assign({ scales: { x: false, y: false } }, Charts.leaderLineDonutOptions(t.text))
       });
 
-      // Assets, Debt & Net Worth — from monthly history
+      // Assets, Debt & Net Worth — from monthly history. With fewer than 2
+      // points a line chart just draws a dot, so show today's figures as a
+      // simple bar instead; the line chart takes over once there's a real
+      // trend to show.
       var hist = Calc.netWorthHistorySeries(c);
-      Charts.render(document.getElementById('chartNwHistory'), {
-        type: 'line',
-        data: {
-          labels: hist.map(function (h) { return h.month; }),
-          datasets: [
-            { label: 'Assets', data: hist.map(function (h) { return h.assets; }), borderColor: t.palette[1], backgroundColor: 'rgba(26,85,93,0.12)', fill: true, tension: 0.3 },
-            { label: 'Net Worth', data: hist.map(function (h) { return h.netWorth; }), borderColor: t.palette[2], backgroundColor: 'rgba(28,145,102,0.18)', fill: true, tension: 0.3 },
-            { label: 'Liabilities', data: hist.map(function (h) { return -h.liabilities; }), borderColor: t.palette[3], backgroundColor: 'rgba(214,72,74,0.15)', fill: true, tension: 0.3 }
-          ]
-        }
-      });
+      if (hist.length < 2) {
+        Charts.render(document.getElementById('chartNwHistory'), {
+          type: 'bar',
+          data: {
+            labels: ['Assets', 'Net Worth', 'Liabilities'],
+            datasets: [{
+              data: [Calc.totalAssets(c), Calc.netWorth(c), Calc.totalLiabilities(c)],
+              backgroundColor: [t.palette[1], t.palette[2], t.palette[3]]
+            }]
+          },
+          options: { plugins: { legend: { display: false } } }
+        });
+      } else {
+        Charts.render(document.getElementById('chartNwHistory'), {
+          type: 'line',
+          data: {
+            labels: hist.map(function (h) { return h.month; }),
+            datasets: [
+              { label: 'Assets', data: hist.map(function (h) { return h.assets; }), borderColor: t.palette[1], backgroundColor: 'rgba(26,85,93,0.12)', fill: true, tension: 0.3 },
+              { label: 'Net Worth', data: hist.map(function (h) { return h.netWorth; }), borderColor: t.palette[2], backgroundColor: 'rgba(28,145,102,0.18)', fill: true, tension: 0.3 },
+              { label: 'Liabilities', data: hist.map(function (h) { return -h.liabilities; }), borderColor: t.palette[3], backgroundColor: 'rgba(214,72,74,0.15)', fill: true, tension: 0.3 }
+            ]
+          }
+        });
+      }
 
       // Saving Rate: Goal vs Actual
       var savingsGoal = Calc.num((c.budgetGoals || {}).savingsRateGoal);
