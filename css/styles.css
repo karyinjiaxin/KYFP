@@ -146,14 +146,14 @@ button { font-family: inherit; cursor: pointer; }
 }
 .card.hoverable:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .grid { display: grid; gap: 16px; }
-.grid-kpi { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.grid-kpi { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 .grid-2 { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
 .grid-3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 
-.kpi-card { display: flex; flex-direction: column; gap: 8px; border-left: 3px solid transparent; }
-.kpi-card .kpi-label { font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-.kpi-card .kpi-value { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; font-family: var(--font-serif); }
-.kpi-card .kpi-delta { font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.kpi-card { display: flex; flex-direction: column; gap: 5px; border-left: 3px solid transparent; padding: 13px 14px; }
+.kpi-card .kpi-label { font-size: 10px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+.kpi-card .kpi-value { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; font-family: var(--font-serif); white-space: nowrap; }
+.kpi-card .kpi-delta { font-size: 10.5px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
 .kpi-delta.up { color: var(--good); } .kpi-delta.down { color: var(--bad); } .kpi-delta.flat { color: var(--text-tertiary); }
 
 /* ---------- Accent system ----------
