@@ -1533,11 +1533,26 @@ var Calc = (function () {
     // (defaults on) for an advisor who'd rather assume the client leaves
     // it in CPF instead of withdrawing.
     var includeCpfExcess = rm.includeCpfExcessAt55 !== false;
-    var cpfTransitionRow = includeCpfExcess
-      ? cpfProjectionFull(c).filter(function (r) { return r.transitioned55; })[0]
-      : null;
-    var cpfExcessAge = cpfTransitionRow ? cpfTransitionRow.age : null;
-    var cpfExcessAmount = cpfTransitionRow ? cpfTransitionRow.oa : 0;
+    var cpfExcessAge = null, cpfExcessAmount = 0;
+    if (includeCpfExcess) {
+      if (currentAge < 55) {
+        var cpfTransitionRow = cpfProjectionFull(c).filter(function (r) { return r.transitioned55; })[0];
+        cpfExcessAge = cpfTransitionRow ? cpfTransitionRow.age : null;
+        cpfExcessAmount = cpfTransitionRow ? cpfTransitionRow.oa : 0;
+      } else {
+        // Client is already 55+, so the age-54→55 transition already
+        // happened in real life and cpfProjectionFull (which only
+        // simulates forward from the client's CURRENT age) never
+        // produces a transitioned55 row to read it from — the excess
+        // silently never got credited for anyone already past 55. The
+        // CPF tab's current OA balance already reflects whatever's left
+        // after Retirement Account formation, so credit it immediately
+        // as a one-time lump at the client's current age instead of
+        // waiting for a transition that's already in the past.
+        cpfExcessAge = currentAge;
+        cpfExcessAmount = num((c.cpf || {}).oa);
+      }
+    }
     var annualIncome = monthlyIncome(c) * 12;
     var annualExpenses = monthlyExpenses(c) * 12;
     var annualRetirementPayout = retirementPayoutMonthly * 12;

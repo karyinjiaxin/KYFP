@@ -40,7 +40,7 @@ var ModuleRoadmap = (function () {
           onclick: function () { Store.set('roadmap.includeCpfExcessAt55', !includeCpfExcess); }
         }, [includeCpfExcess ? '\u2713 Including CPF Excess Cash at 55' : 'Include CPF Excess Cash at 55']),
         Dom.el('div', { class: 'text-tertiary' }, [
-          'At 55, CPF forms the Retirement Account up to the ' + cpfTier + ' Retirement Sum (set on the CPF tab) \u2014 any OA left over after that is withdrawable in cash, not locked up. When on, that one-time amount (from the CPF tab\u2019s own projection) credits into this roadmap\u2019s Savings Balance the year it happens.'
+          'At 55, CPF forms the Retirement Account up to the ' + cpfTier + ' Retirement Sum (set on the CPF tab) \u2014 any OA left over after that is withdrawable in cash, not locked up. When on, that one-time amount (from the CPF tab\u2019s own projection) credits into this roadmap\u2019s Savings Balance the year it happens. For a client already 55 or older, that transition already happened in real life, so the CPF tab\u2019s current OA balance is credited immediately instead, at the client\u2019s current age.'
         ])
       ]));
       container.appendChild(assumeCard);
