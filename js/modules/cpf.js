@@ -73,26 +73,39 @@ var ModuleCpf = (function () {
         contribCard.appendChild(row('\u2192 to Medisave Account (MA)', Dom.fmtMoney(breakdownMA)));
       } else if (status === 'Unemployed') {
         contribCard.appendChild(row('Basis', 'No income — no CPF contribution'));
+        contribCard.appendChild(row('Total Monthly Contribution', Dom.fmtMoney(0)));
       } else {
+        // Shows where the money actually lands (OA/SA/MA) rather than who
+        // pays it (employee vs employer) — the allocation split is the
+        // figure an advisor needs for OA-funded mortgage/downpayment
+        // planning and SA/MA growth projections; Employee/Employer and the
+        // Ordinary Wage base are both still visible in "Age band" above and
+        // in the detailed Yearly Contribution Breakdown table below.
         contribCard.appendChild(row('Age band', age + ' yrs (' + (contrib.rates.employee * 100).toFixed(1) + '% EE / ' + (contrib.rates.employer * 100).toFixed(1) + '% ER)'));
-        contribCard.appendChild(row('Ordinary Wage base (capped at S$' + SG.OW_CEILING.toLocaleString() + ')', Dom.fmtMoney(contrib.wageBase)));
-        contribCard.appendChild(row('Employee Contribution', Dom.fmtMoney(contrib.employee)));
-        contribCard.appendChild(row('Employer Contribution', Dom.fmtMoney(contrib.employer)));
+        contribCard.appendChild(row('→ to Ordinary Account (OA)', Dom.fmtMoney(contrib.total * contrib.allocation.oa)));
+        contribCard.appendChild(row('→ to Special Account (SA)', Dom.fmtMoney(contrib.total * contrib.allocation.sa)));
+        contribCard.appendChild(row('→ to Medisave Account (MA)', Dom.fmtMoney(contrib.total * contrib.allocation.ma)));
       }
-      contribCard.appendChild(row('Total Monthly Contribution', Dom.fmtMoney(contrib.medisaveOnly ? Calc.autoCpfContribution(c) : contrib.total)));
+      if (contrib.medisaveOnly) {
+        contribCard.appendChild(row('Total Monthly Contribution', Dom.fmtMoney(Calc.autoCpfContribution(c))));
+      }
       if (!contrib.medisaveOnly && status !== 'Unemployed') {
         var awInfo = Calc.annualAdditionalWageCpf(c, age);
+        var awOA = awInfo.contribution * contrib.allocation.oa;
+        var awSA = awInfo.contribution * contrib.allocation.sa;
+        var awMA = awInfo.contribution * contrib.allocation.ma;
         // Deliberately smaller/lighter than the main contribution rows above
         // — this is a once-a-year supplementary figure for reference, not
         // part of the Monthly Contribution total, so it shouldn't carry the
-        // same visual weight. "ANNUAL" is spelled out in the label itself
-        // (not just the caption below) since S$2,220 with no unit reads as
-        // ambiguous — easy to mistake for a second monthly figure.
-        contribCard.appendChild(Dom.el('div', { class: 'flex justify-between items-center', style: 'padding:5px 0;border-bottom:1px solid var(--border)' }, [
-          Dom.el('div', { class: 'text-tertiary', style: 'font-size:11.5px' }, ['+ Bonus CPF — ANNUAL, this year only (from Additional Wage)']),
-          Dom.el('div', { style: 'font-weight:700;font-size:12px;color:var(--text-secondary)' }, [Dom.fmtMoney(awInfo.contribution) + ' /yr'])
-        ]));
-        contribCard.appendChild(Dom.el('div', { class: 'text-tertiary', style: 'margin-top:4px;padding-bottom:8px' }, [
+        // same visual weight.
+        contribCard.appendChild(Dom.el('div', { class: 'text-tertiary mt-2', style: 'font-size:11.5px' }, ['+ Bonus CPF — ANNUAL, this year only (from Additional Wage)']));
+        [['OA', awOA], ['SA', awSA], ['MA', awMA]].forEach(function (pair) {
+          contribCard.appendChild(Dom.el('div', { class: 'flex justify-between items-center', style: 'padding:3px 0' }, [
+            Dom.el('div', { class: 'text-tertiary', style: 'font-size:11.5px' }, ['→ ' + pair[0]]),
+            Dom.el('div', { style: 'font-weight:700;font-size:12px;color:var(--text-secondary)' }, [Dom.fmtMoney(pair[1]) + ' /yr'])
+          ]));
+        });
+        contribCard.appendChild(Dom.el('div', { class: 'text-tertiary', style: 'margin-top:6px;padding-bottom:8px;border-bottom:1px solid var(--border)' }, [
           'Monthly Contribution above is Ordinary Wage (salary) only — bonus CPF is a separate once-a-year amount, included in the Projection below. Bonus subject to CPF this year: ' + Dom.fmtMoney(awInfo.subjectToCpf) + ' of ' + Dom.fmtMoney(Calc.num((c.income || {}).bonus)) + ' bonus, capped by the ' + Dom.fmtMoney(awInfo.ceiling) + ' Additional Wage ceiling (' + Dom.fmtMoney(Calc.CPF_TOTAL_WAGE_CEILING) + ' combined OW+AW ceiling minus ' + Dom.fmtMoney(contrib.wageBase * 12) + ' Ordinary Wages this year).'
         ]));
       }
@@ -247,10 +260,14 @@ var ModuleCpf = (function () {
       return wrap;
     }
 
+    // Stacked label-above-value, not side-by-side — this card is a quarter
+    // of the row's width (see .grid-cpf-contrib), too narrow for a long
+    // label and a bold value to share one line without squeezing/wrapping
+    // awkwardly.
     function row(label, value) {
-      return Dom.el('div', { class: 'flex justify-between items-center', style: 'padding:8px 0;border-bottom:1px solid var(--border)' }, [
-        Dom.el('div', { class: 'text-secondary' }, [label]),
-        Dom.el('div', { style: 'font-weight:700;font-size:14px' }, [value])
+      return Dom.el('div', { style: 'padding:8px 0;border-bottom:1px solid var(--border)' }, [
+        Dom.el('div', { class: 'text-secondary', style: 'font-size:12px' }, [label]),
+        Dom.el('div', { style: 'font-weight:700;font-size:14px;margin-top:2px' }, [value])
       ]);
     }
     function kpiMini(label, value, caption) {
