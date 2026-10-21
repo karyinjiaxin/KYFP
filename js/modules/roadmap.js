@@ -261,15 +261,23 @@ var ModuleRoadmap = (function () {
       // ---- The roadmap table ----
       container.appendChild(Dom.el('div', { class: 'section-title' }, ['\ud83d\udcc5 Year-by-Year Roadmap']));
       var retirementAge = Calc.num((c.retirement || {}).retirementAge);
+      var showHospitalCol = rm.showHospitalPremiumColumn !== false;
       var tableCard = Dom.el('div', { class: 'card' });
+      tableCard.appendChild(Dom.el('div', { class: 'flex items-center gap-2 mb-3' }, [
+        Dom.el('button', {
+          class: 'btn btn-sm ' + (showHospitalCol ? 'btn-primary' : 'btn-secondary'),
+          onclick: function () { Store.set('roadmap.showHospitalPremiumColumn', !showHospitalCol); }
+        }, [showHospitalCol ? '\u2713 Showing Hospital Plan Premiums Column' : 'Show Hospital Plan Premiums Column'])
+      ]));
       if (rows.length === 0) {
         tableCard.appendChild(Dom.el('div', { class: 'text-tertiary' }, ['Set Current Age, Retirement Age, and Life Expectancy on Retirement Planning first.']));
       } else {
         var tableWrap = Dom.el('div', { class: 'table-scroll' });
         var table = Dom.el('table', { class: 'data-table' });
-        table.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, [
-          'Year', 'Age', 'Savings Balance', 'Interest', 'Income Credited', 'Retirement Payout', 'CPF Excess (age 55)', 'Hospital Plan Premiums', 'Expenses Deducted', 'Life Event'
-        ].map(function (h) { return Dom.el('th', {}, [h]); }))]));
+        var headers = ['Year', 'Age', 'Savings Balance', 'Interest', 'Income Credited', 'Retirement Payout', 'CPF Excess (age 55)'];
+        if (showHospitalCol) headers.push('Hospital Plan Premiums');
+        headers.push('Expenses Deducted', 'Life Event');
+        table.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, headers.map(function (h) { return Dom.el('th', {}, [h]); }))]));
         var tbody = Dom.el('tbody');
         rows.forEach(function (r) {
           var isNegative = r.balance < 0;
@@ -279,24 +287,27 @@ var ModuleRoadmap = (function () {
           }).join(', ') : '\u2014';
           var eventColor = r.eventNet > 0 ? 'color:var(--good);font-weight:700' : r.eventNet < 0 ? 'color:var(--burgundy);font-weight:700' : '';
           var isTransitionYear = r.age === retirementAge;
-          tbody.appendChild(Dom.el('tr', { style: isTransitionYear ? 'background:var(--accent-soft)' : '' }, [
+          var cells = [
             Dom.el('td', {}, [String(r.year)]),
             Dom.el('td', { style: 'font-weight:600' }, [String(r.age) + (isTransitionYear ? ' \u2192 Retires' : '')]),
             Dom.el('td', { style: 'font-weight:700;' + (isNegative ? 'color:var(--bad)' : '') }, [Dom.fmtMoney(r.balance)]),
             Dom.el('td', {}, [Dom.fmtMoney(r.interest)]),
             Dom.el('td', {}, [r.incomeCredited > 0 ? Dom.fmtMoney(r.incomeCredited) : '\u2014']),
             Dom.el('td', {}, [r.retirementPayoutCredited > 0 ? Dom.fmtMoney(r.retirementPayoutCredited) : '\u2014']),
-            Dom.el('td', { style: r.cpfExcessCredited > 0 ? 'color:var(--good);font-weight:700' : '' }, [r.cpfExcessCredited > 0 ? '+' + Dom.fmtMoney(r.cpfExcessCredited) : '\u2014']),
-            Dom.el('td', { style: r.hospitalPremiumCash > 0 || r.hospitalPremiumMedisave > 0 ? 'color:var(--burgundy)' : '' }, [
+            Dom.el('td', { style: r.cpfExcessCredited > 0 ? 'color:var(--good);font-weight:700' : '' }, [r.cpfExcessCredited > 0 ? '+' + Dom.fmtMoney(r.cpfExcessCredited) : '\u2014'])
+          ];
+          if (showHospitalCol) {
+            cells.push(Dom.el('td', { style: r.hospitalPremiumCash > 0 || r.hospitalPremiumMedisave > 0 ? 'color:var(--burgundy)' : '' }, [
               r.hospitalPremiumCash > 0 ? '\u2212' + Dom.fmtMoney(r.hospitalPremiumCash) : '\u2014',
               r.hospitalPremiumMedisave > 0 ? Dom.el('div', { class: 'text-tertiary', style: 'font-size:10.5px' }, [Dom.fmtMoney(r.hospitalPremiumMedisave) + ' from MediSave']) : null
-            ].filter(Boolean)),
-            Dom.el('td', { style: 'color:var(--burgundy)' }, [
-              '\u2212' + Dom.fmtMoney(r.expensesDeducted),
-              r.stoppedExpenses.length ? Dom.el('div', { style: 'font-size:10.5px;color:var(--good);font-weight:700' }, ['\u2713 ' + r.stoppedExpenses.map(function (es) { return es.name; }).join(', ') + ' stopped']) : null
-            ].filter(Boolean)),
-            Dom.el('td', { style: eventColor }, [eventLabel])
-          ]));
+            ].filter(Boolean)));
+          }
+          cells.push(Dom.el('td', { style: 'color:var(--burgundy)' }, [
+            '\u2212' + Dom.fmtMoney(r.expensesDeducted),
+            r.stoppedExpenses.length ? Dom.el('div', { style: 'font-size:10.5px;color:var(--good);font-weight:700' }, ['\u2713 ' + r.stoppedExpenses.map(function (es) { return es.name; }).join(', ') + ' stopped']) : null
+          ].filter(Boolean)));
+          cells.push(Dom.el('td', { style: eventColor }, [eventLabel]));
+          tbody.appendChild(Dom.el('tr', { style: isTransitionYear ? 'background:var(--accent-soft)' : '' }, cells));
         });
         table.appendChild(tbody); tableWrap.appendChild(table); tableCard.appendChild(tableWrap);
         tableCard.appendChild(Dom.el('div', { class: 'text-tertiary mt-3' }, [
