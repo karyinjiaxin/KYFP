@@ -1923,8 +1923,10 @@ var Calc = (function () {
     var maxMonthlyPayment = caps.length ? Math.min.apply(Math, caps) : Infinity;
     var maxLoanAmount = maxLoanForPayment(maxMonthlyPayment, stressRate, tenureYears);
     return {
-      grossMonthlyIncome: grossMonthlyIncome, otherMonthlyDebt: otherMonthlyDebt, stressRate: stressRate,
-      msrCap: msrCap, tdsrCap: tdsrCap, maxMonthlyPayment: maxMonthlyPayment, maxLoanAmount: maxLoanAmount
+      grossMonthlyIncome: round2(grossMonthlyIncome), otherMonthlyDebt: round2(otherMonthlyDebt), stressRate: stressRate,
+      msrCap: msrCap != null ? round2(msrCap) : null, tdsrCap: tdsrCap != null ? round2(tdsrCap) : null,
+      maxMonthlyPayment: isFinite(maxMonthlyPayment) ? round2(maxMonthlyPayment) : maxMonthlyPayment,
+      maxLoanAmount: round2(maxLoanAmount)
     };
   }
   // Full cost/financing breakdown for the House Purchase planner — single
@@ -1966,14 +1968,22 @@ var Calc = (function () {
     var totalUpfrontCash = Math.max(0, downpaymentCash + otherUpfrontCosts - grants);
     var eligibility = housePurchaseLoanEligibility(c, loanType, isHdbEligible, tenureYears);
     var loanExceedsEligibility = eligibility.maxLoanAmount < loanAmount - 1;
+    // Every money figure is rounded to at most 2 decimal places (cents)
+    // here at the source, not just where it's displayed — most of these
+    // values also get written straight into plain editable money fields
+    // elsewhere (Net Worth's Mortgage Details, CPF's Est. Downpayment From
+    // OA) via the app-wide sync, and those fields show whatever's in the
+    // Store verbatim, with no Dom.fmtMoney rounding of their own. An
+    // amortization-formula result like 1996.145831665202 would otherwise
+    // display with its full floating-point tail in those fields.
     return {
-      price: price, bsd: bsd, absd: absd, grants: grants, loanRules: loanRules, loanType: loanType,
-      downpaymentPct: downpaymentPct, downpaymentAmount: downpaymentAmount, minCashAmount: minCashAmount,
-      downpaymentCashPct: downpaymentCashPct, downpaymentCash: downpaymentCash, downpaymentCpf: downpaymentCpf,
-      loanAmount: loanAmount, interestRate: interestRate, tenureYears: tenureYears,
+      price: round2(price), bsd: round2(bsd), absd: round2(absd), grants: round2(grants), loanRules: loanRules, loanType: loanType,
+      downpaymentPct: downpaymentPct, downpaymentAmount: round2(downpaymentAmount), minCashAmount: round2(minCashAmount),
+      downpaymentCashPct: downpaymentCashPct, downpaymentCash: round2(downpaymentCash), downpaymentCpf: round2(downpaymentCpf),
+      loanAmount: round2(loanAmount), interestRate: interestRate, tenureYears: tenureYears,
       eligibility: eligibility, loanExceedsEligibility: loanExceedsEligibility,
-      monthlyMortgage: monthlyMortgage, monthlyCpfPct: monthlyCpfPct, monthlyCpf: monthlyCpf, monthlyCash: monthlyCash,
-      otherUpfrontCosts: otherUpfrontCosts, totalUpfrontCash: totalUpfrontCash
+      monthlyMortgage: round2(monthlyMortgage), monthlyCpfPct: monthlyCpfPct, monthlyCpf: round2(monthlyCpf), monthlyCash: round2(monthlyCash),
+      otherUpfrontCosts: round2(otherUpfrontCosts), totalUpfrontCash: round2(totalUpfrontCash)
     };
   }
 
