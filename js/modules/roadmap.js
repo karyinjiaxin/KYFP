@@ -268,7 +268,7 @@ var ModuleRoadmap = (function () {
         var tableWrap = Dom.el('div', { class: 'table-scroll' });
         var table = Dom.el('table', { class: 'data-table' });
         table.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, [
-          'Year', 'Age', 'Savings Balance', 'Interest', 'Income Credited', 'Retirement Payout', 'CPF Excess (age 55)', 'Expenses Deducted', 'Life Event'
+          'Year', 'Age', 'Savings Balance', 'Interest', 'Income Credited', 'Retirement Payout', 'CPF Excess (age 55)', 'Hospital Plan Premiums', 'Expenses Deducted', 'Life Event'
         ].map(function (h) { return Dom.el('th', {}, [h]); }))]));
         var tbody = Dom.el('tbody');
         rows.forEach(function (r) {
@@ -287,6 +287,10 @@ var ModuleRoadmap = (function () {
             Dom.el('td', {}, [r.incomeCredited > 0 ? Dom.fmtMoney(r.incomeCredited) : '\u2014']),
             Dom.el('td', {}, [r.retirementPayoutCredited > 0 ? Dom.fmtMoney(r.retirementPayoutCredited) : '\u2014']),
             Dom.el('td', { style: r.cpfExcessCredited > 0 ? 'color:var(--good);font-weight:700' : '' }, [r.cpfExcessCredited > 0 ? '+' + Dom.fmtMoney(r.cpfExcessCredited) : '\u2014']),
+            Dom.el('td', { style: r.hospitalPremiumCash > 0 || r.hospitalPremiumMedisave > 0 ? 'color:var(--burgundy)' : '' }, [
+              r.hospitalPremiumCash > 0 ? '\u2212' + Dom.fmtMoney(r.hospitalPremiumCash) : '\u2014',
+              r.hospitalPremiumMedisave > 0 ? Dom.el('div', { class: 'text-tertiary', style: 'font-size:10.5px' }, [Dom.fmtMoney(r.hospitalPremiumMedisave) + ' from MediSave']) : null
+            ].filter(Boolean)),
             Dom.el('td', { style: 'color:var(--burgundy)' }, [
               '\u2212' + Dom.fmtMoney(r.expensesDeducted),
               r.stoppedExpenses.length ? Dom.el('div', { style: 'font-size:10.5px;color:var(--good);font-weight:700' }, ['\u2713 ' + r.stoppedExpenses.map(function (es) { return es.name; }).join(', ') + ' stopped']) : null
@@ -296,7 +300,7 @@ var ModuleRoadmap = (function () {
         });
         table.appendChild(tbody); tableWrap.appendChild(table); tableCard.appendChild(tableWrap);
         tableCard.appendChild(Dom.el('div', { class: 'text-tertiary mt-3' }, [
-          'Negative balances shown in red \u2014 a warning that the plan as modelled runs out of savings in that year. Expenses Deducted and any Life Event drawdown are shown in burgundy. The highlighted row marks the year the client retires (income stops, Retirement Payout starts).'
+          'Negative balances shown in red \u2014 a warning that the plan as modelled runs out of savings in that year. Expenses Deducted and any Life Event drawdown are shown in burgundy. Hospital Plan Premiums come from the Hospital Plan Premiums tab for each plan the client holds; only the Cash portion reduces this Savings Balance \u2014 the MediSave portion (shown as a note below it) is paid from CPF MediSave, a separate account, not from cash. The highlighted row marks the year the client retires (income stops, Retirement Payout starts).'
         ]));
       }
       container.appendChild(tableCard);

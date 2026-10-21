@@ -316,35 +316,25 @@ var ModuleHospitalPlans = (function () {
       Store.set('hospitalPlans', arr);
     }
 
+    // projectionRange/geProjection delegate to Calc's shared hospital plan
+    // helpers (used by the Cash Flow Roadmap too) so this page and the
+    // Roadmap can never disagree on a plan's premium.
     function projectionRange(policy, todaysAge) {
-      var from = (policy.projectFrom === "Today's Age" || policy.projectFrom === 'today') ? todaysAge : Calc.num((policy.projectFrom || '').replace('Age ', ''));
-      var to = Calc.num(policy.endAge) || 99;
-      if (from > to) from = to;
-      return { from: from, to: to };
+      return Calc.hospitalPlanActiveRange(policy, todaysAge);
     }
 
     function geProjection(policy, fromAge, toAge) {
       var rows = [];
       var cumCash = 0, cumMedisave = 0, cumGshCash = 0, cumGtcCash = 0;
-      var isFullCash = policy.paymentMode === 'Full Cash' || policy.paymentMode === 'Full Cash Only (Foreigners)';
       for (var age = fromAge; age <= toAge; age++) {
-        var gsh = InsurerRates.gshRate(policy.gshPlan, age);
-        var riderPremium = InsurerRates.riderRate(policy.riderFamily, policy.riderKey, age);
-        // Foreigners generally can't use MediSave (it's for Singapore
-        // Citizens/PRs) — folding the MediSave portion into cash instead
-        // of showing it as a payable-by-MediSave amount gives an
-        // accurate "what will this actually cost me in cash" view.
-        var gshCash = gsh.cash + (isFullCash ? gsh.medisave : 0);
-        var gtcCash = riderPremium; // rider is fully cash-payable, no MediSave component at all
-        var cash = gshCash + gtcCash;
-        var medisave = isFullCash ? 0 : gsh.medisave;
-        cumCash += cash;
-        cumGshCash += gshCash;
-        cumGtcCash += gtcCash;
-        cumMedisave += medisave;
+        var r = Calc.hospitalPlanPremiumRow(policy, age);
+        cumCash += r.cash;
+        cumGshCash += r.gshCash;
+        cumGtcCash += r.gtcCash;
+        cumMedisave += r.medisave;
         rows.push({
-          age: age, totalPremium: gsh.premium + riderPremium, cash: cash, medisave: medisave,
-          gshCash: gshCash, gtcCash: gtcCash, cumCash: cumCash, cumMedisave: cumMedisave,
+          age: age, totalPremium: r.totalPremium, cash: r.cash, medisave: r.medisave,
+          gshCash: r.gshCash, gtcCash: r.gtcCash, cumCash: cumCash, cumMedisave: cumMedisave,
           cumGshCash: cumGshCash, cumGtcCash: cumGtcCash
         });
       }
