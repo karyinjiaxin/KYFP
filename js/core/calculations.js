@@ -1850,14 +1850,18 @@ var Calc = (function () {
     var rate = ABSD_RATES[profile] != null ? ABSD_RATES[profile] : 0;
     return num(price) * rate;
   }
-  // Loan-to-Value limits: HDB Concessionary Loan 80% (20% downpayment, can
-  // be fully CPF), Bank Loan 75% (25% downpayment, at least 5% must be cash
-  // per MAS rules) — first-loan assumptions; an existing/concurrent
-  // property loan lowers these further, which this simplified planner
-  // doesn't model.
+  // Loan-to-Value limits: HDB Concessionary Loan and Bank Loan are both
+  // 75% (25% downpayment) since HDB lowered its LTV from 80% to 75% on
+  // 20 Aug 2024, aligning it with the bank-loan cap. The two loan types
+  // still differ on CASH: an HDB loan's 25% downpayment can be paid
+  // entirely from CPF OA (0% mandatory cash), while a bank loan requires
+  // at least 5% of the price in cash (MAS rule) — the remaining 20% can
+  // be CPF or cash either way. First-loan assumptions; an existing/
+  // concurrent property loan lowers these further, which this simplified
+  // planner doesn't model.
   function housePurchaseLoanRules(loanType) {
     return loanType === 'HDB'
-      ? { ltvPct: 80, minCashPct: 0 }
+      ? { ltvPct: 75, minCashPct: 0 }
       : { ltvPct: 75, minCashPct: 5 };
   }
   // Standard mortgage amortization — same formula used for any level-
@@ -1887,8 +1891,8 @@ var Calc = (function () {
     // Only HDB BTO/Resale are eligible for an HDB Concessionary Loan — any
     // other property type can only take a Bank Loan, so that's the right
     // default for them when the advisor hasn't explicitly picked a loan
-    // type yet (rather than always defaulting to the HDB loan's more
-    // generous 80% LTV, which would understate the downpayment needed).
+    // type yet (rather than always defaulting to the HDB loan's 0% minimum
+    // cash, which would understate the cash actually needed).
     var isHdbEligible = String(hp.propertyType || '').indexOf('HDB') === 0;
     var loanType = hp.loanType || (isHdbEligible ? 'HDB' : 'Bank');
     var loanRules = housePurchaseLoanRules(loanType);

@@ -176,7 +176,7 @@ var ModuleHousePurchase = (function () {
         Fields.numberInput('housePurchase.loanTenureYears', 'Loan Tenure (yrs)', { placeholder: '25' })
       ]));
       loanCard.appendChild(Dom.el('div', { class: 'text-tertiary mt-1 mb-3' }, [
-        'HDB Concessionary Loan: 80% LTV (20% downpayment, can be fully CPF), rate = CPF OA rate + 0.1% (currently ~2.6%). Bank Loan: 75% LTV (25% downpayment), at least 5% of the price must be cash (rest CPF or cash), rate varies by package.'
+        'Both loan types are 75% LTV (25% downpayment) since HDB lowered its limit from 80% to 75% on 20 Aug 2024, matching the bank-loan cap. They still differ on cash: HDB Concessionary Loan (rate = CPF OA rate + 0.1%, currently ~2.6%) can have its downpayment paid entirely from CPF OA. Bank Loan requires at least 5% of the price in cash; rate varies by package.'
       ]));
 
       loanCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:13px;margin-bottom:8px' }, ['Downpayment (' + Dom.fmtMoney(s.downpaymentAmount) + ' total, ' + s.downpaymentPct + '%)']));
@@ -204,6 +204,8 @@ var ModuleHousePurchase = (function () {
           '✓ Net Worth → Mortgage Details: Monthly Payment (Cash) = ' + Dom.fmtMoney(s.monthlyCash) + ', Monthly Payment (CPF/OA) = ' + Dom.fmtMoney(s.monthlyCpf) + ', Loan Tenure = ' + s.tenureYears + ' yrs, Interest Rate = ' + s.interestRate + '%.',
           Dom.el('br'),
           '✓ CPF → Monthly OA Deduction for Mortgage (via the existing Net Worth → CPF link).',
+          Dom.el('br'),
+          '✓ CPF → Future Home Purchase At Age = ' + (housePurchaseAge(c) != null ? housePurchaseAge(c) : '—') + ', Est. Downpayment From OA = ' + Dom.fmtMoney(s.downpaymentCpf) + ' (one-time OA withdrawal in the CPF projection).',
           Dom.el('br'),
           '✓ Cashflow → a "Mortgage (Cash) — House Purchase" line item under Home, kept in sync automatically.',
           Dom.el('br'),

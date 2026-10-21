@@ -169,6 +169,7 @@ var App = (function () {
     var hp = c.housePurchase || {};
     var active = Calc.num(hp.purchasePrice) > 0;
     var s = active ? Calc.housePurchaseSummary(c) : null;
+    var purchaseAge = active && ModuleHousePurchase ? ModuleHousePurchase.housePurchaseAge(c) : null;
 
     // 1) Mortgage Details -> CPF (via syncMortgageCpfDeduction)
     if (active) {
@@ -179,6 +180,19 @@ var App = (function () {
         Store.set('liabilities.mortgageDetails.monthlyCPF', s.monthlyCpf);
         Store.set('liabilities.mortgageDetails.tenureYears', s.tenureYears);
         Store.set('liabilities.mortgageDetails.interestRate', s.interestRate);
+      }
+    }
+
+    // 1b) One-time CPF OA downpayment -> CPF's own "Future Home Purchase At
+    // Age" / "Est. Downpayment From OA" fields, which cpfProjectionFull
+    // already withdraws from the OA balance at that exact age — previously
+    // unconnected to this page, so the downpayment's CPF portion never
+    // showed up as reducing the CPF projection at all.
+    if (active) {
+      var cpfData = c.cpf || {};
+      if (purchaseAge != null && (cpfData.homePurchaseAge !== purchaseAge || cpfData.homePurchaseDownpaymentOA !== s.downpaymentCpf)) {
+        Store.set('cpf.homePurchaseAge', purchaseAge);
+        Store.set('cpf.homePurchaseDownpaymentOA', s.downpaymentCpf);
       }
     }
 
@@ -215,15 +229,14 @@ var App = (function () {
     var existingEvent = nextEvents.filter(function (ev) { return ev.source === 'housePurchase'; })[0];
     var eventsChanged = false;
     if (active) {
-      var age = ModuleHousePurchase ? ModuleHousePurchase.housePurchaseAge(c) : null;
       var amount = Math.round(s.totalUpfrontCash * 100) / 100;
-      if (age != null) {
+      if (purchaseAge != null) {
         if (existingEvent) {
-          if (existingEvent.age !== age || existingEvent.amount !== amount) {
-            existingEvent.age = age; existingEvent.amount = amount; existingEvent.direction = 'Outflow'; existingEvent.durationYears = 1; eventsChanged = true;
+          if (existingEvent.age !== purchaseAge || existingEvent.amount !== amount) {
+            existingEvent.age = purchaseAge; existingEvent.amount = amount; existingEvent.direction = 'Outflow'; existingEvent.durationYears = 1; eventsChanged = true;
           }
         } else {
-          nextEvents.push({ name: 'House Purchase — Upfront Cash', age: age, amount: amount, direction: 'Outflow', durationYears: 1, source: 'housePurchase' });
+          nextEvents.push({ name: 'House Purchase — Upfront Cash', age: purchaseAge, amount: amount, direction: 'Outflow', durationYears: 1, source: 'housePurchase' });
           eventsChanged = true;
         }
       }
