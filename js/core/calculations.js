@@ -1878,12 +1878,23 @@ var Calc = (function () {
   function housePurchaseGrantsTotal(hp) {
     return sum(HOUSE_PURCHASE_GRANT_FIELDS.map(function (k) { return hp[k]; }), function (v) { return v; });
   }
-  // Rounds to at most 2 decimal places — used for the handful of
-  // House Purchase numbers (interest rate, loan tenure) that are plain
-  // user-editable fields rather than money run through Dom.fmtMoney, so a
-  // pasted or computed value with long floating-point tails (e.g.
-  // 3.499999999999) doesn't display as-is.
+  // Rounds to at most 2 decimal places — used for Interest Rate, which is
+  // a plain user-editable rate field (not money run through Dom.fmtMoney),
+  // where the decimals are meaningful (2.6% vs 3% is a real difference),
+  // so a pasted or computed value with long floating-point tails (e.g.
+  // 3.499999999999) still needs *some* rounding, just not down to a whole
+  // number.
   function round2(n) { return Math.round(num(n) * 100) / 100; }
+  // Rounds to the nearest whole dollar — every House Purchase MONEY value
+  // uses this, not round2. These values aren't just displayed here (where
+  // Dom.fmtMoney already rounds to 0 decimals for display); several also
+  // get written straight into plain editable money fields elsewhere (Net
+  // Worth's Mortgage Details, CPF's "Monthly OA Deduction for Mortgage"
+  // and "Est. Downpayment From OA"), and those fields show whatever's in
+  // the Store verbatim — so the underlying number itself needs to already
+  // be a whole dollar, not just rounded to cents, for "simple" numbers
+  // throughout.
+  function round0(n) { return Math.round(num(n)); }
   // Inverse of mortgageMonthlyPayment — the loan principal that a given
   // monthly payment can service at a given rate/tenure. Used to work out
   // the MAXIMUM loan a client's income can qualify for under TDSR/MSR,
@@ -1923,10 +1934,10 @@ var Calc = (function () {
     var maxMonthlyPayment = caps.length ? Math.min.apply(Math, caps) : Infinity;
     var maxLoanAmount = maxLoanForPayment(maxMonthlyPayment, stressRate, tenureYears);
     return {
-      grossMonthlyIncome: round2(grossMonthlyIncome), otherMonthlyDebt: round2(otherMonthlyDebt), stressRate: stressRate,
-      msrCap: msrCap != null ? round2(msrCap) : null, tdsrCap: tdsrCap != null ? round2(tdsrCap) : null,
-      maxMonthlyPayment: isFinite(maxMonthlyPayment) ? round2(maxMonthlyPayment) : maxMonthlyPayment,
-      maxLoanAmount: round2(maxLoanAmount)
+      grossMonthlyIncome: round0(grossMonthlyIncome), otherMonthlyDebt: round0(otherMonthlyDebt), stressRate: stressRate,
+      msrCap: msrCap != null ? round0(msrCap) : null, tdsrCap: tdsrCap != null ? round0(tdsrCap) : null,
+      maxMonthlyPayment: isFinite(maxMonthlyPayment) ? round0(maxMonthlyPayment) : maxMonthlyPayment,
+      maxLoanAmount: round0(maxLoanAmount)
     };
   }
   // Full cost/financing breakdown for the House Purchase planner — single
@@ -1955,7 +1966,7 @@ var Calc = (function () {
     var downpaymentCpf = downpaymentAmount - downpaymentCash;
     var loanAmount = Math.max(0, price - downpaymentAmount);
     var interestRate = round2(hp.interestRate != null && hp.interestRate !== '' ? num(hp.interestRate) : (loanType === 'Bank' ? 3.5 : 2.6));
-    var tenureYears = round2(num(hp.loanTenureYears) || 25);
+    var tenureYears = round0(num(hp.loanTenureYears) || 25);
     var monthlyMortgage = mortgageMonthlyPayment(loanAmount, interestRate, tenureYears);
     var monthlyCpfPct = Dom_clamp(hp.monthlyCpfPct != null && hp.monthlyCpfPct !== '' ? num(hp.monthlyCpfPct) : 100, 0, 100);
     var monthlyCpf = monthlyMortgage * monthlyCpfPct / 100;
@@ -1977,13 +1988,13 @@ var Calc = (function () {
     // amortization-formula result like 1996.145831665202 would otherwise
     // display with its full floating-point tail in those fields.
     return {
-      price: round2(price), bsd: round2(bsd), absd: round2(absd), grants: round2(grants), loanRules: loanRules, loanType: loanType,
-      downpaymentPct: downpaymentPct, downpaymentAmount: round2(downpaymentAmount), minCashAmount: round2(minCashAmount),
-      downpaymentCashPct: downpaymentCashPct, downpaymentCash: round2(downpaymentCash), downpaymentCpf: round2(downpaymentCpf),
-      loanAmount: round2(loanAmount), interestRate: interestRate, tenureYears: tenureYears,
+      price: round0(price), bsd: round0(bsd), absd: round0(absd), grants: round0(grants), loanRules: loanRules, loanType: loanType,
+      downpaymentPct: downpaymentPct, downpaymentAmount: round0(downpaymentAmount), minCashAmount: round0(minCashAmount),
+      downpaymentCashPct: downpaymentCashPct, downpaymentCash: round0(downpaymentCash), downpaymentCpf: round0(downpaymentCpf),
+      loanAmount: round0(loanAmount), interestRate: interestRate, tenureYears: tenureYears,
       eligibility: eligibility, loanExceedsEligibility: loanExceedsEligibility,
-      monthlyMortgage: round2(monthlyMortgage), monthlyCpfPct: monthlyCpfPct, monthlyCpf: round2(monthlyCpf), monthlyCash: round2(monthlyCash),
-      otherUpfrontCosts: round2(otherUpfrontCosts), totalUpfrontCash: round2(totalUpfrontCash)
+      monthlyMortgage: round0(monthlyMortgage), monthlyCpfPct: monthlyCpfPct, monthlyCpf: round0(monthlyCpf), monthlyCash: round0(monthlyCash),
+      otherUpfrontCosts: round0(otherUpfrontCosts), totalUpfrontCash: round0(totalUpfrontCash)
     };
   }
 
