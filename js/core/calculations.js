@@ -1382,32 +1382,44 @@ var Calc = (function () {
   }
 
   // ---------- HOSPITAL PLAN PREMIUM FINANCING ----------
-  // Integrated Shield Plan-style premiums escalate steeply with age (both
-  // because rates go up by age band, and because claims risk rises).
-  // Rather than hardcode any insurer's actual current rates — which vary
-  // by rider, change often, and require pulling from that insurer's own
-  // portal for accuracy in front of a real client — this models the
-  // escalation with a single annual growth rate the advisor sets from the
-  // insurer's current illustration, split into the CPF-MediSave-payable
-  // and cash-payable portions.
-  function hospitalPremiumProjection(policy) {
-    var startAge = num(policy.startAge) || 30;
-    var endAge = num(policy.endAge) || 99;
-    var annualPremium = policyAnnualPremium(policy);
-    var escalation = num(policy.annualEscalationRate) / 100;
-    var medisavePercent = Dom_clamp(num(policy.medisavePercent), 0, 100) / 100;
-    var rows = [];
-    var cumCash = 0, cumMedisave = 0;
-    for (var age = startAge; age <= endAge; age++) {
-      var yearsElapsed = age - startAge;
-      var thisYearPremium = annualPremium * Math.pow(1 + escalation, yearsElapsed);
-      var medisavePortion = thisYearPremium * medisavePercent;
-      var cashPortion = thisYearPremium - medisavePortion;
-      cumCash += cashPortion;
-      cumMedisave += medisavePortion;
-      rows.push({ age: age, totalPremium: thisYearPremium, cash: cashPortion, medisave: medisavePortion, cumCash: cumCash, cumMedisave: cumMedisave });
-    }
-    return rows;
+  // Shares the exact GSH/GTC/MediShield Life lookup tables (InsurerRates,
+  // a global defined in hospitalPlans.js) that the Hospital Plan Premiums
+  // page itself uses, so this and that page can never disagree on a
+  // given plan's premium. Foreigners on "Full Cash" payment mode can't
+  // use MediSave, so their MediSave-eligible portion folds into cash.
+  function hospitalPlanPremiumRow(policy, age) {
+    var gsh = InsurerRates.gshRate(policy.gshPlan, age);
+    var riderPremium = InsurerRates.riderRate(policy.riderFamily, policy.riderKey, age);
+    var isFullCash = policy.paymentMode === 'Full Cash' || policy.paymentMode === 'Full Cash Only (Foreigners)';
+    var gshCash = gsh.cash + (isFullCash ? gsh.medisave : 0);
+    var gtcCash = riderPremium;
+    var cash = gshCash + gtcCash;
+    var medisave = isFullCash ? 0 : gsh.medisave;
+    return { age: age, totalPremium: gsh.premium + riderPremium, cash: cash, medisave: medisave, gshCash: gshCash, gtcCash: gtcCash };
+  }
+  // "Today's Age" (the default projectFrom) anchors to the client's
+  // CURRENT age so a plan started years ago still projects forward from
+  // now, not from some fixed past age.
+  function hospitalPlanActiveRange(policy, currentAge) {
+    var from = (policy.projectFrom === "Today's Age" || policy.projectFrom === 'today' || !policy.projectFrom) ? currentAge : num((policy.projectFrom || '').replace('Age ', ''));
+    var to = num(policy.endAge) || 99;
+    if (from > to) from = to;
+    return { from: from, to: to };
+  }
+  // Sums every held hospital plan's premium at a given age. The Cash
+  // portion is a real annual cash outflow; the MediSave portion is paid
+  // from CPF MediSave, not cash, so it's returned for transparency but
+  // never meant to be subtracted from a cash balance.
+  function hospitalPlansAnnualAtAge(c, age, currentAge) {
+    var totalCash = 0, totalMedisave = 0;
+    (c.hospitalPlans || []).forEach(function (policy) {
+      var range = hospitalPlanActiveRange(policy, currentAge);
+      if (age < range.from || age > range.to) return;
+      var row = hospitalPlanPremiumRow(policy, age);
+      totalCash += row.cash;
+      totalMedisave += row.medisave;
+    });
+    return { cash: totalCash, medisave: totalMedisave };
   }
 
   // ---------- NET WORTH GOAL HELPER ----------
@@ -1629,11 +1641,19 @@ var Calc = (function () {
       var cpfExcessCredited = (includeCpfExcess && age === cpfExcessAge) ? cpfExcessAmount : 0;
       balance += cpfExcessCredited;
 
+      // Hospital plan premiums (from the Hospital Plan Premiums tab) —
+      // only the Cash portion is a real draw on this cash balance; the
+      // MediSave portion is paid from CPF MediSave, a separate account,
+      // so it's surfaced alongside but not deducted here.
+      var hospitalPremium = hospitalPlansAnnualAtAge(c, age, currentAge);
+      balance -= hospitalPremium.cash;
+
       rows.push({
         year: yearLabel, age: age, balance: balance, interest: interest,
         incomeCredited: incomeCredited, retirementPayoutCredited: retirementPayoutCredited,
         expensesDeducted: expensesDeducted, events: eventsThisYear, eventNet: eventNet, stoppedExpenses: stoppedThisYear,
-        cpfExcessCredited: cpfExcessCredited, isWorking: isWorking
+        cpfExcessCredited: cpfExcessCredited, isWorking: isWorking,
+        hospitalPremiumCash: hospitalPremium.cash, hospitalPremiumMedisave: hospitalPremium.medisave
       });
 
       if (isWorking) annualIncome *= (1 + incomeGrowthRate);
@@ -2031,7 +2051,7 @@ var Calc = (function () {
     CPF_ANNUAL_LIMIT: CPF_ANNUAL_LIMIT, CPF_TOTAL_WAGE_CEILING: CPF_TOTAL_WAGE_CEILING, CPF_BHS_GROWTH_RATE: BHS_GROWTH_RATE, frsAtClientAge55: frsAtClientAge55,
     estimatedCpfLifePayout: estimatedCpfLifePayout,
     retirementSumForYear: retirementSumForYear, cpfProjectionFull: cpfProjectionFull, bhsForYear: bhsForYear,
-    hospitalPremiumProjection: hospitalPremiumProjection,
+    hospitalPlanPremiumRow: hospitalPlanPremiumRow, hospitalPlanActiveRange: hospitalPlanActiveRange, hospitalPlansAnnualAtAge: hospitalPlansAnnualAtAge,
     netWorthGoalHelper: netWorthGoalHelper,
     qualifyingChildRelief: qualifyingChildRelief, totalTaxReliefs: totalTaxReliefs, PERSONAL_RELIEF_CAP: PERSONAL_RELIEF_CAP,
     estimatedNetIncomeTax: estimatedNetIncomeTax,
