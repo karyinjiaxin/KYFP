@@ -26,7 +26,7 @@ var ModuleCpf = (function () {
         kpiMini('Total CPF Balance', Dom.fmtMoney(Calc.num(cpfData.oa) + Calc.num(cpfData.sa) + Calc.num(cpfData.ma) + Calc.num(cpfData.ra)))
       ]));
 
-      var grid = Dom.el('div', { class: 'grid grid-2' });
+      var grid = Dom.el('div', { class: 'grid grid-cpf-contrib' });
       var balCard = Dom.el('div', { class: 'card' }, [Dom.el('div', { class: 'section-title', style: 'margin-top:0' }, ['💳 Account Balances'])]);
       balCard.appendChild(Dom.el('div', { class: 'input-row' }, [
         Fields.moneyInput('cpf.oa', 'Ordinary Account (OA)'),

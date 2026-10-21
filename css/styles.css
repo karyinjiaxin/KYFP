@@ -383,9 +383,16 @@ table.data-table.compact-table td { padding: 6px 8px; }
   .print-multi-root .print-page-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
 }
 
+/* CPF page: Account Balances vs Monthly Contribution — the contribution
+   card's content (label/value rows) never needed half the row's width,
+   so it sat mostly empty next to Account Balances. 3fr/1fr gives it a
+   quarter of the row (half its previous 50% share) instead. */
+.grid-cpf-contrib { grid-template-columns: 3fr 1fr; }
+
 /* Responsive */
 @media (max-width: 900px) {
   .sidebar { position: fixed; z-index: 40; height: 100vh; }
   .content { padding: 20px 16px 48px; }
   .topbar { padding: 14px 16px; }
+  .grid-cpf-contrib { grid-template-columns: 1fr; }
 }
