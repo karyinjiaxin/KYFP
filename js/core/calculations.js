@@ -1988,8 +1988,13 @@ var Calc = (function () {
     var interestRate = round2(hp.interestRate != null && hp.interestRate !== '' ? num(hp.interestRate) : (loanType === 'Bank' ? 3.5 : 2.6));
     var tenureYears = round0(num(hp.loanTenureYears) || 25);
     var monthlyMortgage = mortgageMonthlyPayment(loanAmount, interestRate, tenureYears);
-    var monthlyCpfPct = Dom_clamp(hp.monthlyCpfPct != null && hp.monthlyCpfPct !== '' ? num(hp.monthlyCpfPct) : 100, 0, 100);
-    var monthlyCpf = monthlyMortgage * monthlyCpfPct / 100;
+    // CPF portion is keyed in as a dollar amount, not a percentage — the
+    // advisor usually knows "the CPF OA deduction is $1,500/mo" more
+    // readily than what % of the mortgage that is. Cash is then whatever
+    // of the mortgage isn't covered by that CPF amount (never negative,
+    // never more than the mortgage itself). Blank defaults to the whole
+    // mortgage coming from CPF (0 cash), matching the old 100%-CPF default.
+    var monthlyCpf = Dom_clamp(hp.monthlyCpfAmount != null && hp.monthlyCpfAmount !== '' ? num(hp.monthlyCpfAmount) : monthlyMortgage, 0, monthlyMortgage);
     var monthlyCash = monthlyMortgage - monthlyCpf;
     // One-off costs due in cash at/around purchase — everything that
     // isn't the downpayment or loan-financed. Grants offset cash needed
@@ -2013,7 +2018,7 @@ var Calc = (function () {
       downpaymentCashPct: downpaymentCashPct, downpaymentCash: round0(downpaymentCash), downpaymentCpf: round0(downpaymentCpf),
       loanAmount: round0(loanAmount), interestRate: interestRate, tenureYears: tenureYears,
       eligibility: eligibility, loanExceedsEligibility: loanExceedsEligibility,
-      monthlyMortgage: round0(monthlyMortgage), monthlyCpfPct: monthlyCpfPct, monthlyCpf: round0(monthlyCpf), monthlyCash: round0(monthlyCash),
+      monthlyMortgage: round0(monthlyMortgage), monthlyCpf: round0(monthlyCpf), monthlyCash: round0(monthlyCash),
       otherUpfrontCosts: round0(otherUpfrontCosts), totalUpfrontCash: round0(totalUpfrontCash)
     };
   }

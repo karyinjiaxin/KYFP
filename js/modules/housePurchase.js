@@ -189,10 +189,14 @@ var ModuleHousePurchase = (function () {
 
       loanCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:13px;margin-bottom:8px' }, ['Monthly Mortgage (' + Dom.fmtMoney(s.monthlyMortgage) + ')']));
       loanCard.appendChild(Dom.el('div', { class: 'input-row' }, [
-        Fields.numberInput('housePurchase.monthlyCpfPct', 'Paid via CPF OA %', { step: '1', placeholder: '100' })
+        Fields.moneyInput('housePurchase.monthlyCpfAmount', 'Paid via CPF OA ($/mo)'),
+        Dom.el('div', { class: 'field' }, [
+          Dom.el('label', { class: 'field-label' }, ['Paid via Cash ($/mo)']),
+          Dom.el('div', { class: 'input-prefix' }, [Dom.el('span', {}, ['S$']), Dom.el('input', { type: 'text', value: Dom.fmtMoney(s.monthlyCash).replace('S$', ''), disabled: true })])
+        ])
       ]));
       loanCard.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, [
-        'Currently: ' + Dom.fmtMoney(s.monthlyCpf) + '/mo from CPF OA, ' + Dom.fmtMoney(s.monthlyCash) + '/mo cash.'
+        'Cash is whatever of the Monthly Mortgage isn’t covered by the CPF OA amount entered — it fills in automatically and can’t be edited directly. Currently: ' + Dom.fmtMoney(s.monthlyCpf) + '/mo from CPF OA, ' + Dom.fmtMoney(s.monthlyCash) + '/mo cash.'
       ]));
       container.appendChild(loanCard);
 

@@ -171,8 +171,9 @@ var App = (function () {
     var s = active ? Calc.housePurchaseSummary(c) : null;
     var purchaseAge = active && ModuleHousePurchase ? ModuleHousePurchase.housePurchaseAge(c) : null;
 
-    // Interest Rate, Loan Tenure, Cash Portion of Downpayment % and Paid
-    // via CPF OA % are plain editable fields that fall back to a sensible
+    // Interest Rate, Loan Tenure, Cash Portion of Downpayment % and
+    // Monthly Mortgage Paid via CPF OA ($) are plain editable fields
+    // that fall back to a sensible
     // default whenever left blank — but a blank numeric field on screen
     // just displays "0", not the default actually being used, which reads
     // as a free, instant, 0-year loan funded entirely in cash. Writing the
@@ -184,7 +185,7 @@ var App = (function () {
       if (hp.interestRate == null || hp.interestRate === '') Store.set('housePurchase.interestRate', s.interestRate);
       if (!Calc.num(hp.loanTenureYears)) Store.set('housePurchase.loanTenureYears', s.tenureYears);
       if (hp.downpaymentCashPct == null || hp.downpaymentCashPct === '') Store.set('housePurchase.downpaymentCashPct', s.downpaymentCashPct);
-      if (hp.monthlyCpfPct == null || hp.monthlyCpfPct === '') Store.set('housePurchase.monthlyCpfPct', s.monthlyCpfPct);
+      if (hp.monthlyCpfAmount == null || hp.monthlyCpfAmount === '') Store.set('housePurchase.monthlyCpfAmount', s.monthlyCpf);
     }
 
     // 1) Mortgage Details -> CPF (via syncMortgageCpfDeduction)
