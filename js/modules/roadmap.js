@@ -261,13 +261,19 @@ var ModuleRoadmap = (function () {
       // ---- The roadmap table ----
       container.appendChild(Dom.el('div', { class: 'section-title' }, ['\ud83d\udcc5 Year-by-Year Roadmap']));
       var retirementAge = Calc.num((c.retirement || {}).retirementAge);
-      var showHospitalCol = rm.showHospitalPremiumColumn !== false;
+      var showHospitalCash = rm.showHospitalPremiumCash !== false;
+      var showHospitalMedisave = rm.showHospitalPremiumMedisave !== false;
+      var showHospitalCol = showHospitalCash || showHospitalMedisave;
       var tableCard = Dom.el('div', { class: 'card' });
       tableCard.appendChild(Dom.el('div', { class: 'flex items-center gap-2 mb-3' }, [
         Dom.el('button', {
-          class: 'btn btn-sm ' + (showHospitalCol ? 'btn-primary' : 'btn-secondary'),
-          onclick: function () { Store.set('roadmap.showHospitalPremiumColumn', !showHospitalCol); }
-        }, [showHospitalCol ? '\u2713 Showing Hospital Plan Premiums Column' : 'Show Hospital Plan Premiums Column'])
+          class: 'btn btn-sm ' + (showHospitalCash ? 'btn-primary' : 'btn-secondary'),
+          onclick: function () { Store.set('roadmap.showHospitalPremiumCash', !showHospitalCash); }
+        }, [showHospitalCash ? '\u2713 Showing Hospital Premium (Cash)' : 'Show Hospital Premium (Cash)']),
+        Dom.el('button', {
+          class: 'btn btn-sm ' + (showHospitalMedisave ? 'btn-primary' : 'btn-secondary'),
+          onclick: function () { Store.set('roadmap.showHospitalPremiumMedisave', !showHospitalMedisave); }
+        }, [showHospitalMedisave ? '\u2713 Showing Hospital Premium (MediSave)' : 'Show Hospital Premium (MediSave)'])
       ]));
       if (rows.length === 0) {
         tableCard.appendChild(Dom.el('div', { class: 'text-tertiary' }, ['Set Current Age, Retirement Age, and Life Expectancy on Retirement Planning first.']));
@@ -298,9 +304,9 @@ var ModuleRoadmap = (function () {
           ];
           if (showHospitalCol) {
             cells.push(Dom.el('td', { style: r.hospitalPremiumCash > 0 || r.hospitalPremiumMedisave > 0 ? 'color:var(--burgundy)' : '' }, [
-              r.hospitalPremiumCash > 0 ? '\u2212' + Dom.fmtMoney(r.hospitalPremiumCash) : '\u2014',
-              r.hospitalPremiumMedisave > 0 ? Dom.el('div', { class: 'text-tertiary', style: 'font-size:10.5px' }, [Dom.fmtMoney(r.hospitalPremiumMedisave) + ' from MediSave']) : null
-            ].filter(Boolean)));
+              showHospitalCash ? (r.hospitalPremiumCash > 0 ? '\u2212' + Dom.fmtMoney(r.hospitalPremiumCash) : '\u2014') : null,
+              (showHospitalMedisave && r.hospitalPremiumMedisave > 0) ? Dom.el('div', { class: 'text-tertiary', style: 'font-size:10.5px' }, [Dom.fmtMoney(r.hospitalPremiumMedisave) + ' from MediSave']) : null
+            ].filter(function (x) { return x !== null; })));
           }
           cells.push(Dom.el('td', { style: 'color:var(--burgundy)' }, [
             '\u2212' + Dom.fmtMoney(r.expensesDeducted),
