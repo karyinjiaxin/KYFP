@@ -24,12 +24,12 @@ var ModuleTax = (function () {
       ]));
 
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
-        kpiMini('Annual Income', Dom.fmtMoney(annualIncome)),
-        kpiMini('Total Reliefs', Dom.fmtMoney(reliefsInfo.capped), reliefsInfo.wasCapped ? 'Capped at S$80,000' : null, 'flat'),
-        kpiMini('Chargeable Income', Dom.fmtMoney(chargeable)),
-        kpiMini('Gross Tax Payable', Dom.fmtMoney(tax)),
-        kpiMini('Net Tax Payable', Dom.fmtMoney(netTaxPayable), parenthoodRebate > 0 ? ('After S$' + parenthoodRebate.toLocaleString() + ' Parenthood Tax Rebate') : null, 'flat'),
-        kpiMini('Effective Rate', Dom.fmtPct(effRate))
+        kpiMini('Annual Income', Dom.fmtMoney(annualIncome), null, 'flat', 'green'),
+        kpiMini('Total Reliefs', Dom.fmtMoney(reliefsInfo.capped), reliefsInfo.wasCapped ? 'Capped at S$80,000' : null, 'flat', 'teal'),
+        kpiMini('Chargeable Income', Dom.fmtMoney(chargeable), null, 'flat', 'blue'),
+        kpiMini('Gross Tax Payable', Dom.fmtMoney(tax), null, 'flat', 'orange'),
+        kpiMini('Net Tax Payable', Dom.fmtMoney(netTaxPayable), parenthoodRebate > 0 ? ('After S$' + parenthoodRebate.toLocaleString() + ' Parenthood Tax Rebate') : null, 'flat', 'red'),
+        kpiMini('Effective Rate', Dom.fmtPct(effRate), null, 'flat', 'yellow')
       ]));
 
       var reliefCard = Dom.el('div', { class: 'card mb-3' }, [Dom.el('div', { class: 'section-title', style: 'margin-top:0' }, ['🧾 Reliefs'])]);
@@ -151,10 +151,10 @@ var ModuleTax = (function () {
       ]);
     }
 
-    function kpiMini(label, value, delta, dir) {
+    function kpiMini(label, value, delta, dir, accent) {
       var children = [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])];
       if (delta) children.push(Dom.el('div', { class: 'kpi-delta ' + (dir || 'flat') }, [delta]));
-      return Dom.el('div', { class: 'card kpi-card' }, children);
+      return Dom.el('div', { class: 'card kpi-card' + (accent ? ' kpi-accent-' + accent : '') }, children);
     }
     draw();
     return Store.subscribe('*', Dom.debounce(function () { Dom.withFocusPreserved(container, draw); }, 30));

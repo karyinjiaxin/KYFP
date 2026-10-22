@@ -56,11 +56,11 @@ var ModuleCouple = (function () {
       var nw = Calc.combinedNetWorth(c, partnerData);
       container.appendChild(Dom.el('div', { class: 'section-title', style: 'margin-top:0' }, ['\ud83c\udfe0 Combined Net Worth']));
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
-        kpiMini('Combined Net Worth', Dom.fmtMoney(nw.netWorth)),
-        kpiMini(currentName + '\u2019s Net Worth', Dom.fmtMoney(nw.assetsA - nw.liabA)),
-        kpiMini(partnerName + '\u2019s Net Worth', Dom.fmtMoney(nw.assetsB - nw.liabB)),
-        kpiMini('Combined Total Assets', Dom.fmtMoney(nw.totalAssets)),
-        kpiMini('Combined Total Liabilities', Dom.fmtMoney(nw.totalLiabilities))
+        kpiMini('Combined Net Worth', Dom.fmtMoney(nw.netWorth), null, 'violet'),
+        kpiMini(currentName + '\u2019s Net Worth', Dom.fmtMoney(nw.assetsA - nw.liabA), null, 'blue'),
+        kpiMini(partnerName + '\u2019s Net Worth', Dom.fmtMoney(nw.assetsB - nw.liabB), null, 'pink'),
+        kpiMini('Combined Total Assets', Dom.fmtMoney(nw.totalAssets), null, 'green'),
+        kpiMini('Combined Total Liabilities', Dom.fmtMoney(nw.totalLiabilities), null, 'red')
       ]));
 
       // ---- Combined Retirement Projection ----
@@ -70,10 +70,10 @@ var ModuleCouple = (function () {
         'Each partner\u2019s own Required Portfolio and Projected Assets (from their own Retirement Planning inputs \u2014 desired income, expected return, current age, etc.) are simply added together. If one partner\u2019s "Desired Monthly Income" already represents the FULL household lifestyle (with the other left at S$0), the combined total will still come out correctly \u2014 the math doesn\u2019t assume either convention specifically.'
       ]));
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
-        kpiMini('Combined Required Portfolio', Dom.fmtMoney(rp.requiredPortfolio), 'Future dollars, at each partner\u2019s own retirement age'),
-        kpiMini('Combined Projected Assets', Dom.fmtMoney(rp.projectedAssets)),
-        kpiMini('Combined Retirement Gap', Dom.fmtMoney(rp.retirementGap), rp.retirementGap > 0 ? 'A projected shortfall' : 'Negative means a projected surplus'),
-        kpiMini('Combined Readiness', rp.successProbability.toFixed(0) + '%', 'Combined Projected \u00f7 Combined Required')
+        kpiMini('Combined Required Portfolio', Dom.fmtMoney(rp.requiredPortfolio), 'Future dollars, at each partner\u2019s own retirement age', 'blue'),
+        kpiMini('Combined Projected Assets', Dom.fmtMoney(rp.projectedAssets), null, 'teal'),
+        kpiMini('Combined Retirement Gap', Dom.fmtMoney(rp.retirementGap), rp.retirementGap > 0 ? 'A projected shortfall' : 'Negative means a projected surplus', rp.retirementGap > 0 ? 'red' : 'green'),
+        kpiMini('Combined Readiness', rp.successProbability.toFixed(0) + '%', 'Combined Projected \u00f7 Combined Required', rp.successProbability >= 100 ? 'green' : 'yellow')
       ]));
 
       var breakdownCard = Dom.el('div', { class: 'card mb-3' });
@@ -102,10 +102,10 @@ var ModuleCouple = (function () {
       ]));
     }
 
-    function kpiMini(label, value, caption) {
+    function kpiMini(label, value, caption, accent) {
       var children = [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])];
       if (caption) children.push(Dom.el('div', { class: 'text-tertiary mt-1' }, [caption]));
-      return Dom.el('div', { class: 'card kpi-card' }, children);
+      return Dom.el('div', { class: 'card kpi-card' + (accent ? ' kpi-accent-' + accent : '') }, children);
     }
 
     draw();

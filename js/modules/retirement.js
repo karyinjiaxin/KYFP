@@ -82,11 +82,11 @@ var ModuleRetirement = (function () {
       container.appendChild(inputsCard);
 
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mt-3 mb-3' }, [
-        kpiMini('Required Portfolio', Dom.fmtMoney(rp.requiredPortfolio), 'What\u2019s needed at retirement age to fund the full desired income (inflated forward) for the rest of life expectancy \u2014 gross, not reduced by CPF LIFE or passive income (those are already counted inside Projected Assets)'),
-        kpiMini('Projected Assets', Dom.fmtMoney(rp.projectedAssets), 'Client\u2019s existing total portfolio (liquid + investments + full CPF balance), compounded at Expected Return, plus ongoing monthly investment \u2014 see breakdown below'),
-        kpiMini('Retirement Gap', Dom.fmtMoney(rp.retirementGap), 'Required Portfolio minus Projected Assets (future dollars) \u2014 negative means a projected surplus, not a gap'),
-        kpiMini('Years Remaining', rp.yearsToRetirement + ' yrs', 'Retirement Age minus Current Age'),
-        kpiMini('Success Probability', rp.successProbability.toFixed(0) + '%', 'Projected Assets \u00f7 Required Portfolio \u2014 a simple ratio, not a Monte Carlo simulation, so treat it as directional')
+        kpiMini('Required Portfolio', Dom.fmtMoney(rp.requiredPortfolio), 'What\u2019s needed at retirement age to fund the full desired income (inflated forward) for the rest of life expectancy \u2014 gross, not reduced by CPF LIFE or passive income (those are already counted inside Projected Assets)', 'blue'),
+        kpiMini('Projected Assets', Dom.fmtMoney(rp.projectedAssets), 'Client\u2019s existing total portfolio (liquid + investments + full CPF balance), compounded at Expected Return, plus ongoing monthly investment \u2014 see breakdown below', 'teal'),
+        kpiMini('Retirement Gap', Dom.fmtMoney(rp.retirementGap), 'Required Portfolio minus Projected Assets (future dollars) \u2014 negative means a projected surplus, not a gap', rp.retirementGap > 0 ? 'red' : 'green'),
+        kpiMini('Years Remaining', rp.yearsToRetirement + ' yrs', 'Retirement Age minus Current Age', 'indigo'),
+        kpiMini('Success Probability', rp.successProbability.toFixed(0) + '%', 'Projected Assets \u00f7 Required Portfolio \u2014 a simple ratio, not a Monte Carlo simulation, so treat it as directional', rp.successProbability >= 100 ? 'green' : 'yellow')
       ]));
 
       // ---- How Required Portfolio is actually calculated, step by step ----
@@ -263,10 +263,10 @@ var ModuleRetirement = (function () {
         });
       });
     }
-    function kpiMini(label, value, caption) {
+    function kpiMini(label, value, caption, accent) {
       var children = [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])];
       if (caption) children.push(Dom.el('div', { class: 'text-tertiary mt-1', style: 'line-height:1.4' }, [caption]));
-      return Dom.el('div', { class: 'card kpi-card' }, children);
+      return Dom.el('div', { class: 'card kpi-card' + (accent ? ' kpi-accent-' + accent : '') }, children);
     }
     function row(label, value) {
       return Dom.el('div', { class: 'flex justify-between items-center', style: 'padding:7px 0;border-bottom:1px solid var(--border)' }, [

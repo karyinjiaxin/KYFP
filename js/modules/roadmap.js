@@ -67,17 +67,17 @@ var ModuleRoadmap = (function () {
         container.appendChild(Dom.el('div', { class: 'section-title' }, ['\u2696\ufe0f Does Desired Income Match Projected Expenses?']));
         var checkCard = Dom.el('div', { class: 'card mb-3' });
         checkCard.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-2' }, [
-          Dom.el('div', { class: 'card kpi-card' }, [
+          Dom.el('div', { class: 'card kpi-card kpi-accent-orange' }, [
             Dom.el('div', { class: 'kpi-label' }, ['Projected Expenses at Retirement (age ' + retirementAgeForCheck + ')']),
             Dom.el('div', { class: 'kpi-value' }, [Dom.fmtMoney(projectedExpensesMonthly) + '/mo']),
             Dom.el('div', { class: 'text-tertiary mt-1' }, ['From Cashflow, grown at ' + Calc.num(rm.inflationRate || 2) + '%/yr, net of any Expenses That Stop by then'])
           ]),
-          Dom.el('div', { class: 'card kpi-card' }, [
+          Dom.el('div', { class: 'card kpi-card kpi-accent-blue' }, [
             Dom.el('div', { class: 'kpi-label' }, ['Desired Monthly Income (from Retirement Planning)']),
             Dom.el('div', { class: 'kpi-value' }, [Dom.fmtMoney(desiredIncomeMonthly) + '/mo']),
             Dom.el('div', { class: 'text-tertiary mt-1' }, ['Today\u2019s figure inflated to age ' + retirementAgeForCheck + ' at Retirement Planning\u2019s own Inflation % assumption'])
           ]),
-          Dom.el('div', { class: 'card kpi-card' }, [
+          Dom.el('div', { class: 'card kpi-card ' + (isCloseMatch ? 'kpi-accent-green' : 'kpi-accent-red') }, [
             Dom.el('div', { class: 'kpi-label' }, ['Gap']),
             Dom.el('div', { class: 'kpi-value', style: isCloseMatch ? 'color:var(--good)' : 'color:var(--bad)' }, [(gap >= 0 ? '+' : '\u2212') + Dom.fmtMoney(Math.abs(gap)) + '/mo']),
             Dom.el('div', { class: 'text-tertiary mt-1' }, [(gapPct >= 0 ? '+' : '') + gapPct.toFixed(0) + '% vs projected expenses'])

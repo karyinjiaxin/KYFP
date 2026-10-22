@@ -51,10 +51,10 @@ var ModuleBuckets = (function () {
       ]));
 
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
-        kpiMini('Bucket 1 — Bills', Dom.fmtMoney(bt.bills)),
-        kpiMini('Bucket 2 — Savings', Dom.fmtMoney(bt.savings)),
-        kpiMini('Bucket 3 — Fun', Dom.fmtMoney(bt.fun)),
-        kpiMini('Leftover', Dom.fmtMoney(bt.leftover))
+        kpiMini('Bucket 1 — Bills', Dom.fmtMoney(bt.bills), 'blue'),
+        kpiMini('Bucket 2 — Savings', Dom.fmtMoney(bt.savings), 'green'),
+        kpiMini('Bucket 3 — Fun', Dom.fmtMoney(bt.fun), 'pink'),
+        kpiMini('Leftover', Dom.fmtMoney(bt.leftover), 'yellow')
       ]));
 
       // Three bucket cards side by side, mirroring the classic bank-bucket spreadsheet layout
@@ -217,8 +217,8 @@ var ModuleBuckets = (function () {
       ]);
     }
 
-    function kpiMini(label, value) {
-      return Dom.el('div', { class: 'card kpi-card' }, [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])]);
+    function kpiMini(label, value, accent) {
+      return Dom.el('div', { class: 'card kpi-card' + (accent ? ' kpi-accent-' + accent : '') }, [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])]);
     }
 
     draw();

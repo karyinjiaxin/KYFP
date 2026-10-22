@@ -19,11 +19,11 @@ var ModuleCpf = (function () {
       ]));
 
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
-        kpiMini('Ordinary Account', Dom.fmtMoney(cpfData.oa)),
-        kpiMini('Special Account', Dom.fmtMoney(cpfData.sa)),
-        kpiMini('Medisave Account', Dom.fmtMoney(cpfData.ma)),
-        kpiMini('Retirement Account', Dom.fmtMoney(cpfData.ra)),
-        kpiMini('Total CPF Balance', Dom.fmtMoney(Calc.num(cpfData.oa) + Calc.num(cpfData.sa) + Calc.num(cpfData.ma) + Calc.num(cpfData.ra)))
+        kpiMini('Ordinary Account', Dom.fmtMoney(cpfData.oa), null, 'blue'),
+        kpiMini('Special Account', Dom.fmtMoney(cpfData.sa), null, 'green'),
+        kpiMini('Medisave Account', Dom.fmtMoney(cpfData.ma), null, 'pink'),
+        kpiMini('Retirement Account', Dom.fmtMoney(cpfData.ra), null, 'indigo'),
+        kpiMini('Total CPF Balance', Dom.fmtMoney(Calc.num(cpfData.oa) + Calc.num(cpfData.sa) + Calc.num(cpfData.ma) + Calc.num(cpfData.ra)), null, 'violet')
       ]));
 
       var grid = Dom.el('div', { class: 'grid grid-cpf-contrib' });
@@ -126,10 +126,10 @@ var ModuleCpf = (function () {
         var sumInfo = Calc.retirementSumForYear(tier, yearAt55, growthOverride);
 
         container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
-          kpiMini('Projected Total @ 55', transitionRow ? Dom.fmtMoney(transitionRow.total) : '\u2014'),
-          kpiMini('Projected Total @ 65', projAtAge(proj, 65) ? Dom.fmtMoney(projAtAge(proj, 65).total) : '\u2014'),
-          kpiMini('Projected Total @ 99', Dom.fmtMoney(last.total)),
-          kpiMini((tier === 'BRS' ? 'Basic' : tier === 'ERS' ? 'Enhanced' : 'Full') + ' Retirement Sum @ ' + yearAt55, Dom.fmtMoney(sumInfo.amount), sumInfo.isOfficial ? 'Officially announced by CPF Board' : 'Estimated at ~3.5%/yr from 2027\u2019s announced figure \u2014 not yet officially set')
+          kpiMini('Projected Total @ 55', transitionRow ? Dom.fmtMoney(transitionRow.total) : '\u2014', null, 'teal'),
+          kpiMini('Projected Total @ 65', projAtAge(proj, 65) ? Dom.fmtMoney(projAtAge(proj, 65).total) : '\u2014', null, 'cyan'),
+          kpiMini('Projected Total @ 99', Dom.fmtMoney(last.total), null, 'violet'),
+          kpiMini((tier === 'BRS' ? 'Basic' : tier === 'ERS' ? 'Enhanced' : 'Full') + ' Retirement Sum @ ' + yearAt55, Dom.fmtMoney(sumInfo.amount), sumInfo.isOfficial ? 'Officially announced by CPF Board' : 'Estimated at ~3.5%/yr from 2027\u2019s announced figure \u2014 not yet officially set', 'yellow')
         ]));
 
         if (transitionRow) {
@@ -252,10 +252,10 @@ var ModuleCpf = (function () {
         Dom.el('div', { style: 'font-weight:700;font-size:14px;margin-top:2px' }, [value])
       ]);
     }
-    function kpiMini(label, value, caption) {
+    function kpiMini(label, value, caption, accent) {
       var children = [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])];
       if (caption) children.push(Dom.el('div', { class: 'text-tertiary mt-1', style: 'line-height:1.3' }, [caption]));
-      return Dom.el('div', { class: 'card kpi-card' }, children);
+      return Dom.el('div', { class: 'card kpi-card' + (accent ? ' kpi-accent-' + accent : '') }, children);
     }
     draw();
     return Store.subscribe('*', Dom.debounce(function () { Dom.withFocusPreserved(container, draw); }, 30));

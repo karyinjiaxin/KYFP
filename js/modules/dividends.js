@@ -21,10 +21,10 @@ var ModuleDividends = (function () {
       var projectedCashValue = Calc.sum(participating, function (p) { return Calc.insuranceCashValueProjected(p, atAge); });
 
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
-        kpiMini('Investment Dividend (annual)', Dom.fmtMoney(investDividend)),
-        kpiMini('Participating Policies', String(participating.length)),
-        kpiMini('Projected Cash Value @ ' + atAge, Dom.fmtMoney(projectedCashValue)),
-        kpiMini('Total Passive Income / mo', Dom.fmtMoney(Calc.passiveIncomeMonthly(c)))
+        kpiMini('Investment Dividend (annual)', Dom.fmtMoney(investDividend), 'green'),
+        kpiMini('Participating Policies', String(participating.length), 'indigo'),
+        kpiMini('Projected Cash Value @ ' + atAge, Dom.fmtMoney(projectedCashValue), 'teal'),
+        kpiMini('Total Passive Income / mo', Dom.fmtMoney(Calc.passiveIncomeMonthly(c)), 'cyan')
       ]));
 
       container.appendChild(Dom.el('div', { class: 'section-title', style: 'margin-top:0' }, ['📜 Participating Policies (Dividend / Cash Value)']));
@@ -75,8 +75,8 @@ var ModuleDividends = (function () {
         });
       });
     }
-    function kpiMini(label, value) {
-      return Dom.el('div', { class: 'card kpi-card' }, [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])]);
+    function kpiMini(label, value, accent) {
+      return Dom.el('div', { class: 'card kpi-card' + (accent ? ' kpi-accent-' + accent : '') }, [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])]);
     }
     draw();
     return Store.subscribe('*', Dom.debounce(function () { Dom.withFocusPreserved(container, draw); }, 30));
