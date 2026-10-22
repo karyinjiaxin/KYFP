@@ -72,10 +72,10 @@ var ModuleHousePurchase = (function () {
 
       if (s.price > 0) {
         container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
-          kpiMini('Total Upfront Cash Needed', Dom.fmtMoney(s.totalUpfrontCash), 'Downpayment (cash) + fees/duties − grants'),
-          kpiMini('Downpayment (CPF)', Dom.fmtMoney(s.downpaymentCpf)),
-          kpiMini('Loan Amount', Dom.fmtMoney(s.loanAmount), s.loanRules.ltvPct + '% LTV' + (s.loanExceedsEligibility ? ' — ⚠ may exceed TDSR/MSR eligibility' : '')),
-          kpiMini('Monthly Mortgage', Dom.fmtMoney(s.monthlyMortgage), Dom.fmtMoney(s.monthlyCpf) + ' CPF + ' + Dom.fmtMoney(s.monthlyCash) + ' cash')
+          kpiMini('Total Upfront Cash Needed', Dom.fmtMoney(s.totalUpfrontCash), 'Downpayment (cash) + fees/duties − grants', 'orange'),
+          kpiMini('Downpayment (CPF)', Dom.fmtMoney(s.downpaymentCpf), null, 'blue'),
+          kpiMini('Loan Amount', Dom.fmtMoney(s.loanAmount), s.loanRules.ltvPct + '% LTV' + (s.loanExceedsEligibility ? ' — ⚠ may exceed TDSR/MSR eligibility' : ''), s.loanExceedsEligibility ? 'red' : 'teal'),
+          kpiMini('Monthly Mortgage', Dom.fmtMoney(s.monthlyMortgage), Dom.fmtMoney(s.monthlyCpf) + ' CPF + ' + Dom.fmtMoney(s.monthlyCash) + ' cash', 'violet')
         ]));
       }
 
@@ -207,9 +207,9 @@ var ModuleHousePurchase = (function () {
         'TDSR: all monthly debt (incl. this mortgage) capped at 55% of gross monthly income — applies to bank loans only, not a direct HDB Loan. MSR: this mortgage alone capped at 30% of gross monthly income — applies only to HDB/EC, whichever loan type. Both are assessed at a stress-tested interest rate (' + elig.stressRate + '% for this loan type), not the actual rate above — the stress rate only affects how much you can borrow, not what you’ll actually pay.'
       ]));
       eligCard.appendChild(Dom.el('div', { class: 'grid grid-3' }, [
-        kpiMini('Gross Monthly Income', Dom.fmtMoney(elig.grossMonthlyIncome)),
-        kpiMini('MSR Cap (30%)', elig.msrCap != null ? Dom.fmtMoney(elig.msrCap) + '/mo' : 'N/A (not HDB/EC)'),
-        kpiMini('TDSR Cap (55%)', elig.tdsrCap != null ? Dom.fmtMoney(elig.tdsrCap) + '/mo' : 'N/A (HDB Loan)')
+        kpiMini('Gross Monthly Income', Dom.fmtMoney(elig.grossMonthlyIncome), null, 'green'),
+        kpiMini('MSR Cap (30%)', elig.msrCap != null ? Dom.fmtMoney(elig.msrCap) + '/mo' : 'N/A (not HDB/EC)', null, 'yellow'),
+        kpiMini('TDSR Cap (55%)', elig.tdsrCap != null ? Dom.fmtMoney(elig.tdsrCap) + '/mo' : 'N/A (HDB Loan)', null, 'cyan')
       ]));
       eligCard.appendChild(Dom.el('div', { class: 'flex justify-between items-center mt-3', style: 'padding:10px 0;border-top:1px solid var(--border)' }, [
         Dom.el('div', { class: 'text-secondary' }, ['Maximum Loan Amount (at ' + elig.stressRate + '% stress rate, ' + s.tenureYears + ' yrs)']),
@@ -283,10 +283,10 @@ var ModuleHousePurchase = (function () {
       return tbl;
     }
 
-    function kpiMini(label, value, caption) {
+    function kpiMini(label, value, caption, accent) {
       var children = [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])];
       if (caption) children.push(Dom.el('div', { class: 'text-tertiary mt-1' }, [caption]));
-      return Dom.el('div', { class: 'card kpi-card' }, children);
+      return Dom.el('div', { class: 'card kpi-card' + (accent ? ' kpi-accent-' + accent : '') }, children);
     }
 
     draw();

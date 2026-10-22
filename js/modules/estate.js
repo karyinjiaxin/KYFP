@@ -14,9 +14,9 @@ var ModuleEstate = (function () {
       ]));
 
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
-        kpiMini('Estate Size (Net Worth)', Dom.fmtMoney(Calc.netWorth(c))),
-        kpiMini('Will Status', e.hasWill || 'Not set'),
-        kpiMini('LPA Status', e.hasLPA || 'Not set')
+        kpiMini('Estate Size (Net Worth)', Dom.fmtMoney(Calc.netWorth(c)), 'violet'),
+        kpiMini('Will Status', e.hasWill || 'Not set', 'blue'),
+        kpiMini('LPA Status', e.hasLPA || 'Not set', 'teal')
       ]));
 
       var card = Dom.el('div', { class: 'card' }, [Dom.el('div', { class: 'section-title', style: 'margin-top:0' }, ['⚖️ Estate Details'])]);
@@ -42,8 +42,8 @@ var ModuleEstate = (function () {
       });
       table.appendChild(tbody); wrap.appendChild(table); container.appendChild(wrap);
     }
-    function kpiMini(label, value) {
-      return Dom.el('div', { class: 'card kpi-card' }, [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])]);
+    function kpiMini(label, value, accent) {
+      return Dom.el('div', { class: 'card kpi-card' + (accent ? ' kpi-accent-' + accent : '') }, [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])]);
     }
     draw();
     return Store.subscribe('*', Dom.debounce(function () { Dom.withFocusPreserved(container, draw); }, 30));

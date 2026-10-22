@@ -51,12 +51,12 @@ var ModuleNetWorth = (function () {
       ]));
 
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
-        kpiMini('Net Worth', Dom.fmtMoney(Calc.netWorth(c))),
-        kpiMini('Total Assets', Dom.fmtMoney(Calc.totalAssets(c))),
-        kpiMini('Liquid Assets', Dom.fmtMoney(Calc.liquidAssets(c))),
-        kpiMini('Investment Assets', Dom.fmtMoney(Calc.investmentAssetsTotal(c)), 'Stocks + ETFs + Unit Trusts + Crypto + CPF IS + SRS Investments + Investment Plans (today\u2019s value)'),
-        kpiMini('Total Liabilities', Dom.fmtMoney(Calc.totalLiabilities(c))),
-        kpiMini('Debt Ratio', Dom.fmtPct(Calc.debtRatio(c)))
+        kpiMini('Net Worth', Dom.fmtMoney(Calc.netWorth(c)), null, 'violet'),
+        kpiMini('Total Assets', Dom.fmtMoney(Calc.totalAssets(c)), null, 'green'),
+        kpiMini('Liquid Assets', Dom.fmtMoney(Calc.liquidAssets(c)), null, 'cyan'),
+        kpiMini('Investment Assets', Dom.fmtMoney(Calc.investmentAssetsTotal(c)), 'Stocks + ETFs + Unit Trusts + Crypto + CPF IS + SRS Investments + Investment Plans (today\u2019s value)', 'teal'),
+        kpiMini('Total Liabilities', Dom.fmtMoney(Calc.totalLiabilities(c)), null, 'red'),
+        kpiMini('Debt Ratio', Dom.fmtPct(Calc.debtRatio(c)), null, 'orange')
       ]));
 
       var grid = Dom.el('div', { class: 'grid grid-2' });
@@ -191,10 +191,10 @@ var ModuleNetWorth = (function () {
       return wrap;
     }
 
-    function kpiMini(label, value, caption) {
+    function kpiMini(label, value, caption, accent) {
       var children = [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])];
       if (caption) children.push(Dom.el('div', { class: 'text-tertiary mt-1' }, [caption]));
-      return Dom.el('div', { class: 'card kpi-card' }, children);
+      return Dom.el('div', { class: 'card kpi-card' + (accent ? ' kpi-accent-' + accent : '') }, children);
     }
 
     draw();

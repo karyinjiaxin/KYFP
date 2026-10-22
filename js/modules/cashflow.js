@@ -41,11 +41,11 @@ var ModuleCashflow = (function () {
       ]));
 
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
-        kpiMini('Monthly Income', Dom.fmtMoney(Calc.monthlyIncome(c))),
-        kpiMini('Monthly Expenses', Dom.fmtMoney(Calc.monthlyExpenses(c))),
-        kpiMini('Monthly Surplus', Dom.fmtMoney(Calc.monthlySurplus(c))),
-        kpiMini('Savings Rate', Dom.fmtPct(Calc.savingsRate(c)), 'Savings-bucket categories + unallocated Leftover, \u00f7 income'),
-        kpiMini('Cashflow Ratio', Dom.fmtPct(Calc.cashflowRatio(c)), 'All categorized spending (Bills + Savings + Fun combined) \u00f7 income \u2014 the rest is unallocated Leftover')
+        kpiMini('Monthly Income', Dom.fmtMoney(Calc.monthlyIncome(c)), null, 'green'),
+        kpiMini('Monthly Expenses', Dom.fmtMoney(Calc.monthlyExpenses(c)), null, 'orange'),
+        kpiMini('Monthly Surplus', Dom.fmtMoney(Calc.monthlySurplus(c)), null, Calc.monthlySurplus(c) >= 0 ? 'blue' : 'red'),
+        kpiMini('Savings Rate', Dom.fmtPct(Calc.savingsRate(c)), 'Savings-bucket categories + unallocated Leftover, \u00f7 income', 'teal'),
+        kpiMini('Cashflow Ratio', Dom.fmtPct(Calc.cashflowRatio(c)), 'All categorized spending (Bills + Savings + Fun combined) \u00f7 income \u2014 the rest is unallocated Leftover', 'yellow')
       ]));
 
       container.appendChild(Dom.el('div', { class: 'section-title', style: 'margin-top:0' }, ['💰 Inflow']));
@@ -297,10 +297,10 @@ var ModuleCashflow = (function () {
       return row;
     }
 
-    function kpiMini(label, value, caption) {
+    function kpiMini(label, value, caption, accent) {
       var children = [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])];
       if (caption) children.push(Dom.el('div', { class: 'text-tertiary mt-1', style: 'line-height:1.3' }, [caption]));
-      return Dom.el('div', { class: 'card kpi-card' }, children);
+      return Dom.el('div', { class: 'card kpi-card' + (accent ? ' kpi-accent-' + accent : '') }, children);
     }
 
     draw();
