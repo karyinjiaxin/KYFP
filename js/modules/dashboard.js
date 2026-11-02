@@ -150,8 +150,8 @@ var ModuleDashboard = (function () {
           data: {
             labels: hist.map(function (h) { return h.month; }),
             datasets: [
-              { label: 'Assets', data: hist.map(function (h) { return h.assets; }), borderColor: t.palette[1], backgroundColor: 'rgba(26,85,93,0.12)', fill: true, tension: 0.3 },
-              { label: 'Net Worth', data: hist.map(function (h) { return h.netWorth; }), borderColor: t.palette[2], backgroundColor: 'rgba(28,145,102,0.18)', fill: true, tension: 0.3 },
+              { label: 'Assets', data: hist.map(function (h) { return h.assets; }), borderColor: t.palette[1], backgroundColor: 'rgba(82,35,45,0.12)', fill: true, tension: 0.3 },
+              { label: 'Net Worth', data: hist.map(function (h) { return h.netWorth; }), borderColor: t.brass, backgroundColor: t.brassSoft, fill: true, tension: 0.3 },
               { label: 'Liabilities', data: hist.map(function (h) { return -h.liabilities; }), borderColor: t.palette[3], backgroundColor: 'rgba(214,72,74,0.15)', fill: true, tension: 0.3 }
             ]
           }

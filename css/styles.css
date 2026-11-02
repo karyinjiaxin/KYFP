@@ -1,32 +1,35 @@
 /* ============================================================
    styles.css — design system
-   Palette: deep ink navy + burgundy accent (private-banking
+   Palette: deep burgundy-ink + burgundy accent (private-banking
    register), warm neutral paper in light mode, graphite in dark.
    Type: system font stack (Apple-native feel, zero CDN risk).
    ============================================================ */
 
 :root {
-  --ink-950: #08262A;
-  --ink-900: #0D343A;
-  --ink-800: #124249;
-  --ink-700: #1A555D;
+  /* Was a dark teal ramp — recolored warm/burgundy-neutral so the
+     sidebar, shadows, and every card border (all of which key off
+     this ramp) stop reading as "green" alongside the accent. */
+  --ink-950: #1F0E12;
+  --ink-900: #2E161B;
+  --ink-800: #3C1E24;
+  --ink-700: #52232D;
   /* Named --brass-* for historical reasons (every call site still
      reads these three variables) — the palette itself is burgundy. */
   --brass-500: #7A2331;
   --brass-400: #9C3A4A;
   --brass-300: #C97D89;
 
-  --bg: #F5F8F7;
+  --bg: #F7F5F5;
   --bg-elevated: #FFFFFF;
-  --bg-sidebar: #0D343A;
-  --text-primary: #142526;
-  --text-secondary: #57706F;
-  --text-tertiary: #86A09E;
-  --border: #DEE9E7;
-  --border-strong: #CBDCDA;
-  --shadow-sm: 0 1px 2px rgba(13, 52, 58, 0.06), 0 1px 1px rgba(13,52,58,0.04);
-  --shadow-md: 0 8px 24px rgba(13, 52, 58, 0.09), 0 2px 6px rgba(13,52,58,0.05);
-  --shadow-lg: 0 20px 48px rgba(13, 52, 58, 0.16), 0 6px 16px rgba(13,52,58,0.07);
+  --bg-sidebar: #2E161B;
+  --text-primary: #241518;
+  --text-secondary: #70605F;
+  --text-tertiary: #A08F8D;
+  --border: #EBE1E0;
+  --border-strong: #DBC9CA;
+  --shadow-sm: 0 1px 2px rgba(46, 22, 27, 0.06), 0 1px 1px rgba(46,22,27,0.04);
+  --shadow-md: 0 8px 24px rgba(46, 22, 27, 0.09), 0 2px 6px rgba(46,22,27,0.05);
+  --shadow-lg: 0 20px 48px rgba(46, 22, 27, 0.16), 0 6px 16px rgba(46,22,27,0.07);
   --accent: var(--brass-500);
   --accent-soft: rgba(122, 35, 49, 0.12);
   --good: #1C9166;
@@ -45,14 +48,14 @@
 }
 
 [data-theme="dark"] {
-  --bg: #081A1D;
-  --bg-elevated: #0F2528;
-  --bg-sidebar: #071619;
-  --text-primary: #EDF4F3;
-  --text-secondary: #A0B7B5;
-  --text-tertiary: #6E8A88;
-  --border: #1C3A3D;
-  --border-strong: #274B4E;
+  --bg: #150B0D;
+  --bg-elevated: #201215;
+  --bg-sidebar: #110A0B;
+  --text-primary: #F4ECEC;
+  --text-secondary: #B7A4A4;
+  --text-tertiary: #8F7A7B;
+  --border: #3A2328;
+  --border-strong: #4A2C32;
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
   --shadow-md: 0 8px 24px rgba(0,0,0,0.35);
   --shadow-lg: 0 20px 48px rgba(0,0,0,0.5);
@@ -339,7 +342,7 @@ table.data-table.compact-table td { padding: 6px 8px; }
 
 /* Custom modal dialogs (replacing window.confirm/prompt/alert) */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(13,52,58,0.45); z-index: 1000;
+  position: fixed; inset: 0; background: rgba(46,22,27,0.45); z-index: 1000;
   display: flex; align-items: center; justify-content: center; padding: 20px;
 }
 .modal-box {
