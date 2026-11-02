@@ -25,7 +25,7 @@ var ModuleTax = (function () {
 
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
         kpiMini('Annual Income', Dom.fmtMoney(annualIncome), null, 'flat', 'green'),
-        kpiMini('Total Reliefs', Dom.fmtMoney(reliefsInfo.capped), reliefsInfo.wasCapped ? 'Capped at S$80,000' : null, 'flat', 'teal'),
+        kpiMini('Total Reliefs', Dom.fmtMoney(reliefsInfo.capped), reliefsInfo.wasCapped ? 'Capped at S$80,000' : null, 'flat', 'burgundy'),
         kpiMini('Chargeable Income', Dom.fmtMoney(chargeable), null, 'flat', 'blue'),
         kpiMini('Gross Tax Payable', Dom.fmtMoney(tax), null, 'flat', 'orange'),
         kpiMini('Net Tax Payable', Dom.fmtMoney(netTaxPayable), parenthoodRebate > 0 ? ('After S$' + parenthoodRebate.toLocaleString() + ' Parenthood Tax Rebate') : null, 'flat', 'red'),

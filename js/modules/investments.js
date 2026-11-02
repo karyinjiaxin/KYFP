@@ -17,7 +17,7 @@ var ModuleInvestments = (function () {
 
       var currentAge = Calc.ageFromDob((c.personal || {}).dob) || (c.retirement || {}).currentAge;
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
-        kpiMini('Current Investment Value', Dom.fmtMoney(Calc.investmentValueAtAge(c, currentAge)), 'Today\u2019s value, not a future projection', 'teal'),
+        kpiMini('Current Investment Value', Dom.fmtMoney(Calc.investmentValueAtAge(c, currentAge)), 'Today\u2019s value, not a future projection', 'burgundy'),
         kpiMini('Current Annual Dividend', Dom.fmtMoney(Calc.totalAnnualDividendAtAge(c, currentAge)), null, 'green'),
         kpiMini('Current Monthly Dividend', Dom.fmtMoney(Calc.totalMonthlyDividendAtAge(c, currentAge)), null, 'pink')
       ]));

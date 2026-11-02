@@ -173,6 +173,7 @@ button { font-family: inherit; cursor: pointer; }
 .kpi-accent-red    { border-left-color: #d03b3b; } [data-theme="dark"] .kpi-accent-red    { border-left-color: #e66767; }
 .kpi-accent-indigo { border-left-color: #4f46e5; } [data-theme="dark"] .kpi-accent-indigo { border-left-color: #818cf8; }
 .kpi-accent-cyan   { border-left-color: #0e8a9c; } [data-theme="dark"] .kpi-accent-cyan   { border-left-color: #22b8cf; }
+.kpi-accent-burgundy { border-left-color: var(--burgundy); } [data-theme="dark"] .kpi-accent-burgundy { border-left-color: var(--brass-400); }
 
 /* Sidebar background is always dark (ink-navy), so nav icons always use the
    brighter "dark-surface" step regardless of the page theme. */

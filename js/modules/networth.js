@@ -54,7 +54,7 @@ var ModuleNetWorth = (function () {
         kpiMini('Net Worth', Dom.fmtMoney(Calc.netWorth(c)), null, 'violet'),
         kpiMini('Total Assets', Dom.fmtMoney(Calc.totalAssets(c)), null, 'green'),
         kpiMini('Liquid Assets', Dom.fmtMoney(Calc.liquidAssets(c)), null, 'cyan'),
-        kpiMini('Investment Assets', Dom.fmtMoney(Calc.investmentAssetsTotal(c)), 'Stocks + ETFs + Unit Trusts + Crypto + CPF IS + SRS Investments + Investment Plans (today\u2019s value)', 'teal'),
+        kpiMini('Investment Assets', Dom.fmtMoney(Calc.investmentAssetsTotal(c)), 'Stocks + ETFs + Unit Trusts + Crypto + CPF IS + SRS Investments + Investment Plans (today\u2019s value)', 'burgundy'),
         kpiMini('Total Liabilities', Dom.fmtMoney(Calc.totalLiabilities(c)), null, 'red'),
         kpiMini('Debt Ratio', Dom.fmtPct(Calc.debtRatio(c)), null, 'orange')
       ]));
