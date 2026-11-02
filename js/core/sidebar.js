@@ -8,7 +8,7 @@ var Sidebar = (function () {
       { key: 'dashboard', label: 'Dashboard', ic: 'grid', col: 'blue' },
       { key: 'profile', label: 'Client Profile', ic: 'user', col: 'indigo' },
       { key: 'couple', label: 'Couple Planning', ic: 'couple', col: 'pink' },
-      { key: 'cashflow', label: 'Cashflow', ic: 'arrows', col: 'green' },
+      { key: 'cashflow', label: 'Cashflow', ic: 'arrows', col: 'burgundy' },
       { key: 'buckets', label: 'Bank Account Buckets', ic: 'bucket', col: 'cyan' },
       { key: 'networth', label: 'Net Worth', ic: 'bar', col: 'violet' }
     ]},
@@ -17,19 +17,19 @@ var Sidebar = (function () {
       { key: 'insurance', label: 'Insurance Coverage', ic: 'shield', col: 'red' },
       { key: 'hospital', label: 'Hospital Plan Premiums', ic: 'cross', col: 'pink' },
       { key: 'retirement', label: 'Retirement Planning', ic: 'sun', col: 'yellow' },
-      { key: 'roadmap', label: 'Cash Flow Roadmap', ic: 'roadmap', col: 'teal' },
-      { key: 'investments', label: 'Investment Planning', ic: 'trend', col: 'teal' },
+      { key: 'roadmap', label: 'Cash Flow Roadmap', ic: 'roadmap', col: 'burgundy' },
+      { key: 'investments', label: 'Investment Planning', ic: 'trend', col: 'burgundy' },
       { key: 'dividends', label: 'Insurance + Dividends', ic: 'coin', col: 'orange' },
       { key: 'cpf', label: 'CPF', ic: 'building', col: 'orange' },
       { key: 'tax', label: 'Tax Planning', ic: 'doc', col: 'yellow' },
       { key: 'estate', label: 'Estate Planning', ic: 'scroll', col: 'blue' },
       { key: 'ratios', label: 'Financial Ratios', ic: 'gauge', col: 'violet' },
-      { key: 'goals', label: 'Goals & Milestones', ic: 'flag', col: 'green' }
+      { key: 'goals', label: 'Goals & Milestones', ic: 'flag', col: 'red' }
     ]},
     { section: 'Client', items: [
-      { key: 'sessionnotes', label: 'Session Notes', ic: 'note', col: 'green' },
+      { key: 'sessionnotes', label: 'Session Notes', ic: 'note', col: 'pink' },
       { key: 'meetingnotes', label: 'Meeting Notes', ic: 'cal', col: 'indigo' },
-      { key: 'proposals', label: 'Proposals', ic: 'file', col: 'teal' },
+      { key: 'proposals', label: 'Proposals', ic: 'file', col: 'cyan' },
       { key: 'settings', label: 'Settings', ic: 'gear', col: 'cyan' }
     ]}
   ];
