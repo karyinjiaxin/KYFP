@@ -128,7 +128,7 @@ var Charts = (function () {
     return {
       text: dark ? '#A0B7B5' : '#57706F',
       grid: dark ? 'rgba(255,255,255,0.07)' : 'rgba(13,52,58,0.07)',
-      brass: dark ? '#F58868' : '#F26B4D',
+      brass: dark ? '#9C3A4A' : '#7A2331',
       ink: dark ? '#EDF4F3' : '#142526',
       palette: dark ? PALETTE_DARK : PALETTE_LIGHT
     };

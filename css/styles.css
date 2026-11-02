@@ -1,6 +1,6 @@
 /* ============================================================
    styles.css — design system
-   Palette: deep ink navy + brushed brass accent (private-banking
+   Palette: deep ink navy + burgundy accent (private-banking
    register), warm neutral paper in light mode, graphite in dark.
    Type: system font stack (Apple-native feel, zero CDN risk).
    ============================================================ */
@@ -10,9 +10,11 @@
   --ink-900: #0D343A;
   --ink-800: #124249;
   --ink-700: #1A555D;
-  --brass-500: #F26B4D;
-  --brass-400: #F58868;
-  --brass-300: #F9AF98;
+  /* Named --brass-* for historical reasons (every call site still
+     reads these three variables) — the palette itself is burgundy. */
+  --brass-500: #7A2331;
+  --brass-400: #9C3A4A;
+  --brass-300: #C97D89;
 
   --bg: #F5F8F7;
   --bg-elevated: #FFFFFF;
@@ -26,7 +28,7 @@
   --shadow-md: 0 8px 24px rgba(13, 52, 58, 0.09), 0 2px 6px rgba(13,52,58,0.05);
   --shadow-lg: 0 20px 48px rgba(13, 52, 58, 0.16), 0 6px 16px rgba(13,52,58,0.07);
   --accent: var(--brass-500);
-  --accent-soft: rgba(242, 107, 77, 0.12);
+  --accent-soft: rgba(122, 35, 49, 0.12);
   --good: #1C9166;
   --good-soft: rgba(28, 145, 102, 0.12);
   --warn: #DB9426;
@@ -55,7 +57,7 @@
   --shadow-md: 0 8px 24px rgba(0,0,0,0.35);
   --shadow-lg: 0 20px 48px rgba(0,0,0,0.5);
   --accent: var(--brass-400);
-  --accent-soft: rgba(245, 136, 104, 0.18);
+  --accent-soft: rgba(156, 58, 74, 0.18);
   --good-soft: rgba(28, 145, 102, 0.22);
   --warn-soft: rgba(219, 148, 38, 0.22);
   --bad-soft: rgba(214, 72, 74, 0.22);
