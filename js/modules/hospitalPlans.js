@@ -390,7 +390,7 @@ var ModuleHospitalPlans = (function () {
 
       // ---- Today's premium ----
       card.appendChild(Dom.el('div', { class: 'grid grid-3', style: 'margin-bottom:12px' }, [
-        heroStat("Today's Premium (Age " + todaysAge + ")", Dom.fmtMoney(todayRow.cash + todayRow.medisave), 'GSH cash ' + Dom.fmtMoney(todayRow.gshCash) + ' + GTC cash ' + Dom.fmtMoney(todayRow.gtcCash) + ' + MediSave ' + Dom.fmtMoney(todayRow.medisave), '#F26B4D'),
+        heroStat("Today's Premium (Age " + todaysAge + ")", Dom.fmtMoney(todayRow.cash + todayRow.medisave), 'GSH cash ' + Dom.fmtMoney(todayRow.gshCash) + ' + GTC cash ' + Dom.fmtMoney(todayRow.gtcCash) + ' + MediSave ' + Dom.fmtMoney(todayRow.medisave), '#7A2331'),
         heroStat('Total MediSave Premiums', Dom.fmtMoney(last.cumMedisave), range.from + '\u2013' + range.to + ' cumulative, GSH only', '#3E8FB1'),
         heroStat('Total Cash Premiums (GSH + GTC)', Dom.fmtMoney(last.cumCash), range.from + '\u2013' + range.to + ' cumulative', '#1A555D')
       ]));
