@@ -21,9 +21,9 @@ var ModuleDividends = (function () {
       var projectedCashValue = Calc.sum(participating, function (p) { return Calc.insuranceCashValueProjected(p, atAge); });
 
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
-        kpiMini('Investment Dividend (annual)', Dom.fmtMoney(investDividend), 'green'),
+        kpiMini('Investment Dividend (annual)', Dom.fmtMoney(investDividend), 'burgundy'),
         kpiMini('Participating Policies', String(participating.length), 'indigo'),
-        kpiMini('Projected Cash Value @ ' + atAge, Dom.fmtMoney(projectedCashValue), 'teal'),
+        kpiMini('Projected Cash Value @ ' + atAge, Dom.fmtMoney(projectedCashValue), 'blue'),
         kpiMini('Total Passive Income / mo', Dom.fmtMoney(Calc.passiveIncomeMonthly(c)), 'cyan')
       ]));
 

@@ -44,7 +44,7 @@ var ModuleCashflow = (function () {
         kpiMini('Monthly Income', Dom.fmtMoney(Calc.monthlyIncome(c)), null, 'green'),
         kpiMini('Monthly Expenses', Dom.fmtMoney(Calc.monthlyExpenses(c)), null, 'orange'),
         kpiMini('Monthly Surplus', Dom.fmtMoney(Calc.monthlySurplus(c)), null, Calc.monthlySurplus(c) >= 0 ? 'blue' : 'red'),
-        kpiMini('Savings Rate', Dom.fmtPct(Calc.savingsRate(c)), 'Savings-bucket categories + unallocated Leftover, \u00f7 income', 'teal'),
+        kpiMini('Savings Rate', Dom.fmtPct(Calc.savingsRate(c)), 'Savings-bucket categories + unallocated Leftover, \u00f7 income', 'burgundy'),
         kpiMini('Cashflow Ratio', Dom.fmtPct(Calc.cashflowRatio(c)), 'All categorized spending (Bills + Savings + Fun combined) \u00f7 income \u2014 the rest is unallocated Leftover', 'yellow')
       ]));
 

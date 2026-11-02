@@ -97,7 +97,7 @@ var ModuleDashboard = (function () {
         kpi('Monthly Expenses', Dom.fmtMoney(Calc.monthlyExpenses(c)), null, null, 'orange'),
         kpi('Savings Rate', Dom.fmtPct(savingsRate), savingsRate >= 20 ? 'Healthy' : 'Below target', savingsRate >= 20 ? 'up' : 'down', 'blue'),
         kpi('Net Worth', Dom.fmtMoney(nw), null, null, 'violet'),
-        kpi('Investment Value (today)', Dom.fmtMoney(invValue), null, null, 'teal'),
+        kpi('Investment Value (today)', Dom.fmtMoney(invValue), null, null, 'burgundy'),
         kpi('Insurance Coverage', Dom.fmtMoney(coverage), null, null, 'red'),
         kpi('Retirement Progress', Dom.fmtPct(rp.requiredPortfolio > 0 ? (rp.projectedAssets / rp.requiredPortfolio) * 100 : 100), '% of required portfolio projected by age ' + targetRetireAge, 'flat', 'yellow'),
         kpi('Passive Income / mo', Dom.fmtMoney(passiveIncome), 'Rental + investment dividends + other investment income', 'flat', 'cyan'),

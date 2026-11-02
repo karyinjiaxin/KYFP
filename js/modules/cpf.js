@@ -20,7 +20,7 @@ var ModuleCpf = (function () {
 
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
         kpiMini('Ordinary Account', Dom.fmtMoney(cpfData.oa), null, 'blue'),
-        kpiMini('Special Account', Dom.fmtMoney(cpfData.sa), null, 'green'),
+        kpiMini('Special Account', Dom.fmtMoney(cpfData.sa), null, 'burgundy'),
         kpiMini('Medisave Account', Dom.fmtMoney(cpfData.ma), null, 'pink'),
         kpiMini('Retirement Account', Dom.fmtMoney(cpfData.ra), null, 'indigo'),
         kpiMini('Total CPF Balance', Dom.fmtMoney(Calc.num(cpfData.oa) + Calc.num(cpfData.sa) + Calc.num(cpfData.ma) + Calc.num(cpfData.ra)), null, 'violet')

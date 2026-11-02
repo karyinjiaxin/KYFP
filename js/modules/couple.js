@@ -71,7 +71,7 @@ var ModuleCouple = (function () {
       ]));
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
         kpiMini('Combined Required Portfolio', Dom.fmtMoney(rp.requiredPortfolio), 'Future dollars, at each partner\u2019s own retirement age', 'blue'),
-        kpiMini('Combined Projected Assets', Dom.fmtMoney(rp.projectedAssets), null, 'teal'),
+        kpiMini('Combined Projected Assets', Dom.fmtMoney(rp.projectedAssets), null, 'burgundy'),
         kpiMini('Combined Retirement Gap', Dom.fmtMoney(rp.retirementGap), rp.retirementGap > 0 ? 'A projected shortfall' : 'Negative means a projected surplus', rp.retirementGap > 0 ? 'red' : 'green'),
         kpiMini('Combined Readiness', rp.successProbability.toFixed(0) + '%', 'Combined Projected \u00f7 Combined Required', rp.successProbability >= 100 ? 'green' : 'yellow')
       ]));
