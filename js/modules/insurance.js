@@ -43,7 +43,7 @@ var ModuleInsurance = (function () {
       container.appendChild(Dom.el('button', {
         class: 'btn btn-secondary mt-3', onclick: function () {
           var arr = Store.get('insurance') || [];
-          arr.push({ id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0 });
+          arr.push({ id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', policyNo: '', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0, screenshot: '' });
           Store.set('insurance', arr);
         }
       }, ['+ Add Policy']));
@@ -158,6 +158,9 @@ var ModuleInsurance = (function () {
         Fields.textInput(base + 'policyName', 'Policy Name'),
         Fields.selectInput(base + 'type', 'Type', TYPES)
       ]);
+      var formRow1b = Dom.el('div', { class: 'input-row mt-2' }, [
+        maskedPolicyNoInput(base + 'policyNo')
+      ]);
       var formRow2 = Dom.el('div', { class: 'input-row mt-2' }, [
         Fields.moneyInput(base + 'premium', 'Premium'),
         Fields.selectInput(base + 'premiumFrequency', 'Frequency', ['Monthly', 'Annually']),
@@ -172,7 +175,8 @@ var ModuleInsurance = (function () {
         Fields.moneyInput(base + 'cashValue', 'Cash Value'),
         Fields.numberInput(base + 'dividend', 'Dividend Rate %', { step: '0.1' })
       ]);
-      card.appendChild(formRow1); card.appendChild(formRow2); card.appendChild(formRow3); card.appendChild(formRow4);
+      card.appendChild(formRow1); card.appendChild(formRow1b); card.appendChild(formRow2); card.appendChild(formRow3); card.appendChild(formRow4);
+      card.appendChild(screenshotAttachment(base, p));
       if (isLife) {
         card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
           Fields.moneyInput(base + 'coverageTpd', 'TPD Coverage'),
@@ -188,6 +192,90 @@ var ModuleInsurance = (function () {
         ]));
       }
       return card;
+    }
+
+    // Shows only the last 4 characters when not focused (e.g.
+    // "••••••1234") — the full number is still stored and editable, just
+    // not left visible on screen (over a shoulder, a screen-share) by
+    // default. Not a real text input from Fields.js since it needs this
+    // focus/blur-driven mask swap, which no other field does.
+    function maskValue(v) {
+      var s = String(v || '');
+      if (s.length <= 4) return s;
+      return '•'.repeat(s.length - 4) + s.slice(-4);
+    }
+    function maskedPolicyNoInput(path) {
+      var wrap = Dom.el('div', { class: 'field' });
+      wrap.appendChild(Dom.el('label', { class: 'field-label' }, ['Policy No.']));
+      var input = Dom.el('input', {
+        type: 'text', inputmode: 'text', autocomplete: 'off', 'data-path': path,
+        value: maskValue(Store.get(path)),
+        onfocus: function (e) { e.target.value = Store.get(path) || ''; },
+        oninput: function (e) {
+          var val = e.target.value;
+          Dom.scheduleCommit(path, function () { Store.set(path, val); }, 350);
+        },
+        onblur: function (e) { e.target.value = maskValue(e.target.value); }
+      });
+      wrap.appendChild(input);
+      return wrap;
+    }
+
+    // Downscales to keep localStorage/Supabase sync payloads reasonable —
+    // a raw phone-camera screenshot can be several MB; nothing here needs
+    // more than enough resolution to read the policy back off it.
+    function resizeImageFile(file, maxDim, quality, cb) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+          var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          var canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          cb(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function openImageLightbox(dataUrl) {
+      var overlay = Dom.el('div', { class: 'modal-overlay', onclick: function (e) { if (e.target === overlay) overlay.remove(); } });
+      overlay.appendChild(Dom.el('img', { src: dataUrl, style: 'max-width:92vw;max-height:92vh;border-radius:8px;box-shadow:var(--shadow-lg);display:block;margin:auto' }));
+      document.body.appendChild(overlay);
+    }
+
+    // No OCR/auto-fill here — just a reference image kept alongside the
+    // policy (e.g. a screenshot of the insurer's policy summary) so the
+    // advisor can glance at the source while keying each field in by
+    // hand, rather than switching between apps/windows.
+    function screenshotAttachment(base, p) {
+      var wrap = Dom.el('div', { class: 'mt-2' });
+      wrap.appendChild(Dom.el('div', { class: 'field-label', style: 'margin-bottom:6px' }, ['Policy Summary Screenshot (reference only, not auto-filled)']));
+      if (p.screenshot) {
+        var row = Dom.el('div', { class: 'flex items-center gap-2' }, [
+          Dom.el('img', {
+            src: p.screenshot, style: 'width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer',
+            onclick: function () { openImageLightbox(p.screenshot); }
+          }),
+          Dom.el('button', { class: 'btn btn-ghost btn-sm', onclick: function () { Store.set(base + 'screenshot', ''); } }, ['Remove'])
+        ]);
+        wrap.appendChild(row);
+      } else {
+        var fileInput = Dom.el('input', {
+          type: 'file', accept: 'image/*', style: 'display:none',
+          onchange: function (e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            resizeImageFile(file, 1000, 0.75, function (dataUrl) { Store.set(base + 'screenshot', dataUrl); });
+          }
+        });
+        wrap.appendChild(fileInput);
+        wrap.appendChild(Dom.el('button', { class: 'btn btn-secondary btn-sm', onclick: function () { fileInput.click(); } }, ['📷 Attach Screenshot']));
+      }
+      return wrap;
     }
 
     function miniStat(label, value) {
