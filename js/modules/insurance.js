@@ -303,7 +303,8 @@ var ModuleInsurance = (function () {
       return {
         include: true, screenshot: screenshot || '',
         company: g.company || 'New Insurer', policyName: g.policyName || 'New Policy', policyNo: g.policyNo || '',
-        type: g.type || 'Life', premium: g.premium || 0, coverage: g.coverage || 0,
+        type: g.type || 'Life', premium: g.premium || 0, premiumFrequency: g.premiumFrequency || 'Annually',
+        paymentTerm: g.paymentTerm || 0, coverage: g.coverage || 0,
         coverageTpd: g.coverageTpd || 0, coverageCi: g.coverageCi || 0
       };
     }
@@ -401,7 +402,7 @@ var ModuleInsurance = (function () {
       var tableWrap = Dom.el('div', { class: 'table-scroll' });
       var table = Dom.el('table', { class: 'data-table' });
       table.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, [
-        '', 'Company', 'Policy Name', 'Policy No.', 'Type', 'Premium', 'Death Coverage', 'TPD Coverage', 'CI Coverage'
+        '', 'Company', 'Policy Name', 'Policy No.', 'Type', 'Premium', 'Frequency', 'Death Coverage', 'TPD Coverage', 'CI Coverage'
       ].map(function (h) { return Dom.el('th', {}, [h]); }))]));
       var tbody = Dom.el('tbody');
       pendingImport.forEach(function (row, i) {
@@ -412,6 +413,7 @@ var ModuleInsurance = (function () {
           Dom.el('td', {}, [reviewCell(row, i, 'policyNo')]),
           Dom.el('td', {}, [reviewTypeCell(row, i)]),
           Dom.el('td', {}, [reviewCell(row, i, 'premium', true)]),
+          Dom.el('td', {}, [reviewFrequencyCell(row, i)]),
           Dom.el('td', {}, [reviewCell(row, i, 'coverage', true)]),
           Dom.el('td', {}, [reviewCell(row, i, 'coverageTpd', true)]),
           Dom.el('td', {}, [reviewCell(row, i, 'coverageCi', true)])
@@ -428,9 +430,9 @@ var ModuleInsurance = (function () {
             toAdd.forEach(function (r) {
               arr.push({
                 id: Dom.uid('pol'), company: r.company, policyName: r.policyName, policyNo: r.policyNo,
-                type: r.type, premium: Calc.num(r.premium), premiumFrequency: 'Annually',
+                type: r.type, premium: Calc.num(r.premium), premiumFrequency: r.premiumFrequency || 'Annually',
                 coverage: Calc.num(r.coverage), coverageTpd: Calc.num(r.coverageTpd), coverageCi: Calc.num(r.coverageCi),
-                startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0,
+                startAge: 30, endAge: 99, paymentTerm: Calc.num(r.paymentTerm) || 20, cashValue: 0, dividend: 0,
                 screenshot: r.screenshot, ocrReviewed: false
               });
             });
@@ -455,6 +457,15 @@ var ModuleInsurance = (function () {
       TYPES.forEach(function (t) {
         var o = Dom.el('option', { value: t }, [t]);
         if (t === row.type) o.setAttribute('selected', 'selected');
+        sel.appendChild(o);
+      });
+      return sel;
+    }
+    function reviewFrequencyCell(row, i) {
+      var sel = Dom.el('select', { onchange: function (e) { row.premiumFrequency = e.target.value; } });
+      ['Monthly', 'Annually'].forEach(function (f) {
+        var o = Dom.el('option', { value: f }, [f]);
+        if (f === row.premiumFrequency) o.setAttribute('selected', 'selected');
         sel.appendChild(o);
       });
       return sel;
