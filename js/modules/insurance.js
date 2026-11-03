@@ -303,7 +303,8 @@ var ModuleInsurance = (function () {
       return {
         include: true, screenshot: screenshot || '',
         company: g.company || 'New Insurer', policyName: g.policyName || 'New Policy', policyNo: g.policyNo || '',
-        type: g.type || 'Life', premium: g.premium || 0, coverage: g.coverage || 0
+        type: g.type || 'Life', premium: g.premium || 0, coverage: g.coverage || 0,
+        coverageTpd: g.coverageTpd || 0, coverageCi: g.coverageCi || 0
       };
     }
 
@@ -326,6 +327,7 @@ var ModuleInsurance = (function () {
           Dom.el('div', { class: 'text-tertiary' }, ['Paste text, or paste/drop a screenshot below. You’ll review every row before it’s saved.'])
         ]),
         Dom.el('div', { class: 'flex gap-2' }, [
+          Dom.el('button', { class: 'btn btn-secondary btn-sm', onclick: function () { screenshotInput.click(); } }, ['📷 Screenshot']),
           Dom.el('button', { class: 'btn btn-secondary btn-sm', onclick: function () { addPolicyManually(); } }, ['+ Add Manually']),
           Dom.el('button', {
             class: 'btn btn-primary btn-sm', onclick: function () {
@@ -336,6 +338,12 @@ var ModuleInsurance = (function () {
         ])
       ]));
 
+      var screenshotInput = Dom.el('input', {
+        type: 'file', accept: 'image/*', style: 'display:none',
+        onchange: function (e) { var file = e.target.files[0]; if (file) handleImageFile(file); }
+      });
+      wrap.appendChild(screenshotInput);
+
       var statusLine = Dom.el('div', { class: 'text-tertiary mb-1', style: 'display:none' });
       wrap.appendChild(statusLine);
 
@@ -343,10 +351,13 @@ var ModuleInsurance = (function () {
         if (!OCR.available()) { Dom.modalAlert('OCR isn’t available right now (offline, or the library failed to load) — paste the policy text directly instead.'); return; }
         statusLine.style.display = '';
         statusLine.textContent = 'Reading screenshot…';
-        resizeImageFile(file, 1400, 0.85, function (dataUrl) {
-          OCR.extractPolicyFromImage(dataUrl, function (pct) { statusLine.textContent = 'Reading screenshot… ' + pct + '%'; })
+        // Higher resolution than the per-policy attachment thumbnail — the
+        // table reconstruction leans on word positions, so a sharper image
+        // gives Tesseract cleaner bounding boxes to work from.
+        resizeImageFile(file, 1800, 0.9, function (dataUrl) {
+          OCR.extractPoliciesFromImage(dataUrl, function (pct) { statusLine.textContent = 'Reading screenshot… ' + pct + '%'; })
             .then(function (result) {
-              pendingImport = OCR.guessMultiple(result.raw).map(function (g) { return toReviewRow(g, dataUrl); });
+              pendingImport = result.guesses.map(function (g) { return toReviewRow(g, dataUrl); });
               if (!pendingImport.length) pendingImport = [toReviewRow({}, dataUrl)];
               draw();
             })
@@ -390,7 +401,7 @@ var ModuleInsurance = (function () {
       var tableWrap = Dom.el('div', { class: 'table-scroll' });
       var table = Dom.el('table', { class: 'data-table' });
       table.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, [
-        '', 'Company', 'Policy Name', 'Policy No.', 'Type', 'Premium', 'Coverage'
+        '', 'Company', 'Policy Name', 'Policy No.', 'Type', 'Premium', 'Death Coverage', 'TPD Coverage', 'CI Coverage'
       ].map(function (h) { return Dom.el('th', {}, [h]); }))]));
       var tbody = Dom.el('tbody');
       pendingImport.forEach(function (row, i) {
@@ -401,7 +412,9 @@ var ModuleInsurance = (function () {
           Dom.el('td', {}, [reviewCell(row, i, 'policyNo')]),
           Dom.el('td', {}, [reviewTypeCell(row, i)]),
           Dom.el('td', {}, [reviewCell(row, i, 'premium', true)]),
-          Dom.el('td', {}, [reviewCell(row, i, 'coverage', true)])
+          Dom.el('td', {}, [reviewCell(row, i, 'coverage', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'coverageTpd', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'coverageCi', true)])
         ]));
       });
       table.appendChild(tbody); tableWrap.appendChild(table); box.appendChild(tableWrap);
@@ -416,7 +429,7 @@ var ModuleInsurance = (function () {
               arr.push({
                 id: Dom.uid('pol'), company: r.company, policyName: r.policyName, policyNo: r.policyNo,
                 type: r.type, premium: Calc.num(r.premium), premiumFrequency: 'Annually',
-                coverage: Calc.num(r.coverage), coverageTpd: 0, coverageCi: 0,
+                coverage: Calc.num(r.coverage), coverageTpd: Calc.num(r.coverageTpd), coverageCi: Calc.num(r.coverageCi),
                 startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0,
                 screenshot: r.screenshot, ocrReviewed: false
               });
