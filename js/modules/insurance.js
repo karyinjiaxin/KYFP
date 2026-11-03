@@ -40,13 +40,17 @@ var ModuleInsurance = (function () {
       (c.insurance || []).forEach(function (p, idx) { policyGrid.appendChild(policyCard(p, idx)); });
       container.appendChild(policyGrid);
 
-      container.appendChild(Dom.el('button', {
-        class: 'btn btn-secondary mt-3', onclick: function () {
-          var arr = Store.get('insurance') || [];
-          arr.push({ id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0 });
-          Store.set('insurance', arr);
-        }
-      }, ['+ Add Policy']));
+      var addRow = Dom.el('div', { class: 'flex items-center gap-2 mt-3' }, [
+        Dom.el('button', {
+          class: 'btn btn-secondary', onclick: function () {
+            var arr = Store.get('insurance') || [];
+            arr.push({ id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', policyNo: '', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0, screenshot: '' });
+            Store.set('insurance', arr);
+          }
+        }, ['+ Add Policy'])
+      ]);
+      if (OCR.available()) addRow.appendChild(ocrAddButton());
+      container.appendChild(addRow);
 
       container.appendChild(Dom.el('div', { class: 'section-title' }, ['🔎 Need Analysis']));
       var needCard = Dom.el('div', { class: 'card' }, [
@@ -139,6 +143,15 @@ var ModuleInsurance = (function () {
         Dom.el('button', { class: 'btn btn-ghost btn-sm', onclick: function () { var arr = Store.get('insurance'); arr.splice(idx, 1); Store.set('insurance', arr); } }, ['Remove'])
       ]));
 
+      if (p.ocrReviewed === false) {
+        card.appendChild(Dom.el('div', {
+          class: 'mb-2', style: 'padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;background:var(--warn-soft);color:var(--warn);display:flex;justify-content:space-between;align-items:center;gap:8px'
+        }, [
+          Dom.el('div', {}, ['⚠ Auto-filled by OCR from the attached screenshot — verify every field below, especially Policy No. and coverage amounts, before relying on this.']),
+          Dom.el('button', { class: 'btn btn-ghost btn-sm', style: 'flex:none', onclick: function () { Store.set(base + 'ocrReviewed', true); } }, ['✓ Reviewed'])
+        ]));
+      }
+
       var isLife = p.type === 'Life';
       var statsRow = isLife
         ? Dom.el('div', { class: 'grid grid-3', style: 'margin-bottom:14px' }, [
@@ -158,6 +171,9 @@ var ModuleInsurance = (function () {
         Fields.textInput(base + 'policyName', 'Policy Name'),
         Fields.selectInput(base + 'type', 'Type', TYPES)
       ]);
+      var formRow1b = Dom.el('div', { class: 'input-row mt-2' }, [
+        maskedPolicyNoInput(base + 'policyNo')
+      ]);
       var formRow2 = Dom.el('div', { class: 'input-row mt-2' }, [
         Fields.moneyInput(base + 'premium', 'Premium'),
         Fields.selectInput(base + 'premiumFrequency', 'Frequency', ['Monthly', 'Annually']),
@@ -172,7 +188,8 @@ var ModuleInsurance = (function () {
         Fields.moneyInput(base + 'cashValue', 'Cash Value'),
         Fields.numberInput(base + 'dividend', 'Dividend Rate %', { step: '0.1' })
       ]);
-      card.appendChild(formRow1); card.appendChild(formRow2); card.appendChild(formRow3); card.appendChild(formRow4);
+      card.appendChild(formRow1); card.appendChild(formRow1b); card.appendChild(formRow2); card.appendChild(formRow3); card.appendChild(formRow4);
+      card.appendChild(screenshotAttachment(base, p));
       if (isLife) {
         card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
           Fields.moneyInput(base + 'coverageTpd', 'TPD Coverage'),
@@ -188,6 +205,136 @@ var ModuleInsurance = (function () {
         ]));
       }
       return card;
+    }
+
+    // Shows only the last 4 characters when not focused (e.g.
+    // "••••••1234") — the full number is still stored and editable, just
+    // not left visible on screen (over a shoulder, a screen-share) by
+    // default. Not a real text input from Fields.js since it needs this
+    // focus/blur-driven mask swap, which no other field does.
+    function maskValue(v) {
+      var s = String(v || '');
+      if (s.length <= 4) return s;
+      return '•'.repeat(s.length - 4) + s.slice(-4);
+    }
+    function maskedPolicyNoInput(path) {
+      var wrap = Dom.el('div', { class: 'field' });
+      wrap.appendChild(Dom.el('label', { class: 'field-label' }, ['Policy No.']));
+      var input = Dom.el('input', {
+        type: 'text', inputmode: 'text', autocomplete: 'off', 'data-path': path,
+        value: maskValue(Store.get(path)),
+        onfocus: function (e) { e.target.value = Store.get(path) || ''; },
+        oninput: function (e) {
+          var val = e.target.value;
+          Dom.scheduleCommit(path, function () { Store.set(path, val); }, 350);
+        },
+        onblur: function (e) { e.target.value = maskValue(e.target.value); }
+      });
+      wrap.appendChild(input);
+      return wrap;
+    }
+
+    // Downscales to keep localStorage/Supabase sync payloads reasonable —
+    // a raw phone-camera screenshot can be several MB; nothing here needs
+    // more than enough resolution to read the policy back off it.
+    function resizeImageFile(file, maxDim, quality, cb) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+          var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          var canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          cb(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function openImageLightbox(dataUrl) {
+      var overlay = Dom.el('div', { class: 'modal-overlay', onclick: function (e) { if (e.target === overlay) overlay.remove(); } });
+      overlay.appendChild(Dom.el('img', { src: dataUrl, style: 'max-width:92vw;max-height:92vh;border-radius:8px;box-shadow:var(--shadow-lg);display:block;margin:auto' }));
+      document.body.appendChild(overlay);
+    }
+
+    // Just a reference image kept alongside an existing policy card (e.g.
+    // a screenshot of the insurer's policy summary) so the advisor can
+    // glance at the source while keying fields in by hand — no OCR runs
+    // here. Reading a screenshot to auto-fill a NEW policy is a separate
+    // entry point: see ocrAddButton() below.
+    function screenshotAttachment(base, p) {
+      var wrap = Dom.el('div', { class: 'mt-2' });
+      wrap.appendChild(Dom.el('div', { class: 'field-label', style: 'margin-bottom:6px' }, ['Policy Summary Screenshot (reference only, not auto-filled)']));
+      if (p.screenshot) {
+        var row = Dom.el('div', { class: 'flex items-center gap-2' }, [
+          Dom.el('img', {
+            src: p.screenshot, style: 'width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer',
+            onclick: function () { openImageLightbox(p.screenshot); }
+          }),
+          Dom.el('button', { class: 'btn btn-ghost btn-sm', onclick: function () { Store.set(base + 'screenshot', ''); } }, ['Remove'])
+        ]);
+        wrap.appendChild(row);
+      } else {
+        var fileInput = Dom.el('input', {
+          type: 'file', accept: 'image/*', style: 'display:none',
+          onchange: function (e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            resizeImageFile(file, 1000, 0.75, function (dataUrl) { Store.set(base + 'screenshot', dataUrl); });
+          }
+        });
+        wrap.appendChild(fileInput);
+        wrap.appendChild(Dom.el('button', { class: 'btn btn-secondary btn-sm', onclick: function () { fileInput.click(); } }, ['📷 Attach Screenshot']));
+      }
+      return wrap;
+    }
+
+    // Reads one policy-summary screenshot with in-browser OCR (Tesseract.js,
+    // no server/API key) and best-guesses a handful of fields from the raw
+    // text — company, policy name, policy no., premium, coverage, type.
+    // Pattern matching, not real document understanding: works reasonably
+    // for one clean, typed policy summary per screenshot; unreliable for
+    // photos/scans, and NOT meant to parse a single image containing a
+    // whole multi-row table of several policies (crop/screenshot one plan
+    // at a time for best results). The new policy always starts flagged
+    // ocrReviewed: false so the banner in policyCard() prompts a check
+    // before anyone relies on the guessed numbers.
+    function ocrAddButton() {
+      var btn = Dom.el('button', { class: 'btn btn-secondary', onclick: function () { fileInput.click(); } }, ['📷 Read Screenshot (OCR, beta)']);
+      var fileInput = Dom.el('input', {
+        type: 'file', accept: 'image/*', style: 'display:none',
+        onchange: function (e) {
+          var file = e.target.files[0];
+          if (!file) return;
+          btn.disabled = true;
+          btn.textContent = 'Reading…';
+          resizeImageFile(file, 1400, 0.85, function (dataUrl) {
+            OCR.extractPolicyFromImage(dataUrl, function (pct) { btn.textContent = 'Reading… ' + pct + '%'; })
+              .then(function (result) {
+                var g = result.guess;
+                var arr = Store.get('insurance') || [];
+                arr.push({
+                  id: Dom.uid('pol'),
+                  company: g.company || 'New Insurer', policyName: g.policyName || 'New Policy', policyNo: g.policyNo || '',
+                  type: g.type || 'Life', premium: g.premium || 0, premiumFrequency: 'Annually',
+                  coverage: g.coverage || 0, coverageTpd: 0, coverageCi: 0,
+                  startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0,
+                  screenshot: dataUrl, ocrReviewed: false
+                });
+                Store.set('insurance', arr);
+              })
+              .catch(function (err) {
+                Dom.modalAlert('Could not read that screenshot: ' + (err && err.message ? err.message : err));
+              })
+              .finally(function () { btn.disabled = false; btn.textContent = '📷 Read Screenshot (OCR, beta)'; });
+          });
+        }
+      });
+      var wrap = Dom.el('div', {}, [btn, fileInput]);
+      return wrap;
     }
 
     function miniStat(label, value) {
