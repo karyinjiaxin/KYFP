@@ -255,15 +255,29 @@ var OCR = (function () {
     });
   }
 
+  // A plan name is unbounded-length free text sitting right next to money
+  // columns, so even with expanded column boundaries, an unusually long
+  // one (e.g. "Supreme Early Multiplier 15") still occasionally drifts a
+  // word or two into the neighboring money column. Money columns only
+  // ever legitimately contain currency-shaped tokens (digits, $, commas,
+  // a decimal point, or a bare "-" for "none") — a word that isn't
+  // currency-shaped is almost certainly overflow from Plan Name, so it's
+  // rejected from a money column and tried against the remaining columns
+  // instead (ultimately landing back in Plan Name, its real column).
+  var MONEY_FIELDS = ['premium', 'premiumMonthly', 'coverage', 'coverageTpd', 'coverageCiAllStage', 'coverageCi', 'cashValue', 'dividend'];
+  var CURRENCY_TOKEN = /^\$$|^-$|^[$]?[\d][\d,]*\.?\d*$/;
+
   function assignRowToColumns(rowWords, columns) {
     var cells = {};
     rowWords.forEach(function (w) {
       var cx = (w.bbox.x0 + w.bbox.x1) / 2;
-      var best = null, bestDist = Infinity;
-      columns.forEach(function (col) {
-        var dist = cx < col.x0 ? col.x0 - cx : cx > col.x1 ? cx - col.x1 : 0;
-        if (dist < bestDist) { bestDist = dist; best = col; }
+      var ranked = columns.slice().sort(function (a, b) {
+        var da = cx < a.x0 ? a.x0 - cx : cx > a.x1 ? cx - a.x1 : 0;
+        var db = cx < b.x0 ? b.x0 - cx : cx > b.x1 ? cx - b.x1 : 0;
+        return da - db;
       });
+      var best = ranked[0];
+      if (best && MONEY_FIELDS.indexOf(best.field) !== -1 && !CURRENCY_TOKEN.test(w.text) && ranked[1]) best = ranked[1];
       if (!best) return;
       cells[best.field] = (cells[best.field] ? cells[best.field] + ' ' : '') + w.text;
     });
@@ -326,25 +340,41 @@ var OCR = (function () {
     });
 
     return merged.map(function (cells) {
-      var policyName = cells.policyName || null;
+      var rawName = cells.policyName || null;
       var company = null;
       for (var i = 0; i < KNOWN_INSURERS.length; i++) {
-        if (policyName && new RegExp(KNOWN_INSURERS[i], 'i').test(policyName)) { company = KNOWN_INSURERS[i]; break; }
+        if (rawName && new RegExp(KNOWN_INSURERS[i], 'i').test(rawName)) { company = KNOWN_INSURERS[i]; break; }
       }
-      if (policyName) {
-        // Policy No. often rides along inside the plan-name cell, e.g.
-        // "Great Eastern Smart Protect (RP) II (0201306307)".
-        var pn = policyName.match(/\(([A-Z]?\d{6,12})\)/);
-        var policyNo = pn ? pn[1] : null;
+      // Policy No. rides along inside the plan-name cell, e.g. "Great
+      // Eastern Smart Protect (RP) (0071920043)" — pull it and the
+      // company name back out so Plan Name is left clean ("Smart
+      // Protect (RP)"), matching how this app's own policy fields split
+      // company / policy name / policy no. into three separate inputs.
+      var policyNo = null, policyName = rawName;
+      if (rawName) {
+        var pn = rawName.match(/\(([A-Z]?\d{6,12})\)/);
+        if (pn) { policyNo = pn[1]; policyName = policyName.replace(pn[0], ''); }
+        if (company) policyName = policyName.replace(new RegExp(company, 'i'), '');
+        policyName = policyName.replace(/\s{2,}/g, ' ').trim();
       }
-      var premium = numFromCell(cells.premium) !== null ? numFromCell(cells.premium) : numFromCell(cells.premiumMonthly) !== null ? numFromCell(cells.premiumMonthly) * 12 : null;
+      // A Monthly Premium cell present means the policy is actually paid
+      // monthly (the Annual Premium column, when also shown, is just that
+      // monthly amount × 12 for reference) — only fall back to the Annual
+      // column, as an annually-paid policy, when Monthly is blank.
+      var premiumMonthly = numFromCell(cells.premiumMonthly);
+      var premiumAnnual = numFromCell(cells.premium);
+      var premiumFrequency = premiumMonthly !== null ? 'Monthly' : 'Annually';
+      var premium = premiumMonthly !== null ? premiumMonthly : premiumAnnual;
+      var paymentTermMatch = (cells.paymentTerm || '').match(/(\d+)\s*year/i);
+      var paymentTerm = paymentTermMatch ? Number(paymentTermMatch[1]) : 0;
       var coverage = numFromCell(cells.coverage);
       var coverageTpd = numFromCell(cells.coverageTpd);
       var coverageCi = numFromCell(cells.coverageCi) !== null ? numFromCell(cells.coverageCi) : numFromCell(cells.coverageCiAllStage);
       var type = coverageCi !== null && coverage === null ? 'CI' : 'Life';
       return {
         company: company, policyName: policyName, policyNo: policyNo || null,
-        premium: premium, coverage: coverage, coverageTpd: coverageTpd, coverageCi: coverageCi, type: type
+        premium: premium, premiumFrequency: premiumFrequency, paymentTerm: paymentTerm,
+        coverage: coverage, coverageTpd: coverageTpd, coverageCi: coverageCi, type: type
       };
     }).filter(function (g) { return g.policyName || g.coverage !== null; });
   }
