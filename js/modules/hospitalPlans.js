@@ -390,9 +390,9 @@ var ModuleHospitalPlans = (function () {
 
       // ---- Today's premium ----
       card.appendChild(Dom.el('div', { class: 'grid grid-3', style: 'margin-bottom:12px' }, [
-        heroStat("Today's Premium (Age " + todaysAge + ")", Dom.fmtMoney(todayRow.cash + todayRow.medisave), 'GSH cash ' + Dom.fmtMoney(todayRow.gshCash) + ' + GTC cash ' + Dom.fmtMoney(todayRow.gtcCash) + ' + MediSave ' + Dom.fmtMoney(todayRow.medisave), '#7A2331'),
+        heroStat("Today's Premium (Age " + todaysAge + ")", Dom.fmtMoney(todayRow.cash + todayRow.medisave), 'GSH cash ' + Dom.fmtMoney(todayRow.gshCash) + ' + GTC cash ' + Dom.fmtMoney(todayRow.gtcCash) + ' + MediSave ' + Dom.fmtMoney(todayRow.medisave), '#8E1D42'),
         heroStat('Total MediSave Premiums', Dom.fmtMoney(last.cumMedisave), range.from + '\u2013' + range.to + ' cumulative, GSH only', '#3E8FB1'),
-        heroStat('Total Cash Premiums (GSH + GTC)', Dom.fmtMoney(last.cumCash), range.from + '\u2013' + range.to + ' cumulative', '#52232D')
+        heroStat('Total Cash Premiums (GSH + GTC)', Dom.fmtMoney(last.cumCash), range.from + '\u2013' + range.to + ' cumulative', '#611C3C')
       ]));
       card.appendChild(Dom.el('div', { class: 'grid grid-2', style: 'margin-bottom:16px' }, [
         heroStat('\u2014 of which GSH Cash', Dom.fmtMoney(last.cumGshCash), 'GREAT SupremeHealth, above the CPF Additional Withdrawal Limit', '#7C6FB0'),

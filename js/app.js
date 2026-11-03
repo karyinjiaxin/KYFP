@@ -611,12 +611,12 @@ function startApp() {
     // page works" with no explanation is the hardest failure to diagnose.
     console.error('App failed to start:', err);
     var box = document.createElement('div');
-    box.style.cssText = 'position:fixed;top:70px;left:0;right:0;bottom:0;background:#F7F5F5;z-index:99999;padding:40px;font-family:sans-serif;overflow:auto;';
+    box.style.cssText = 'position:fixed;top:70px;left:0;right:0;bottom:0;background:#F8F4F5;z-index:99999;padding:40px;font-family:sans-serif;overflow:auto;';
     box.innerHTML = '<div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #D6484A;border-radius:12px;padding:24px;">' +
       '<div style="font-weight:700;font-size:18px;margin-bottom:12px;color:#D6484A;">The app failed to start</div>' +
       '<div style="font-size:14px;margin-bottom:12px;">' + (err && err.message ? err.message : String(err)) + '</div>' +
       '<div style="font-size:13px;color:#555;line-height:1.6;margin-bottom:16px;">This usually means the files are out of sync \u2014 e.g. an old index.html paired with newer JS files, or vice versa.</div>' +
-      '<div style="font-size:13px;color:#2E161B;background:#F7F5F5;border-radius:8px;padding:12px;line-height:1.6;">' +
+      '<div style="font-size:13px;color:#2B0A1C;background:#F8F4F5;border-radius:8px;padding:12px;line-height:1.6;">' +
       '<b>Check the build marker at the top-right of the screen, above this box.</b><br>' +
       'If it doesn\u2019t say the build you were just given, this confirms stale files \u2014 not a code issue. Fully delete the old extracted folder (not just overwrite it \u2014 some zip tools skip existing files instead of replacing them), extract the zip fresh into a brand-new empty folder, and open index.html from there in a new browser tab.' +
       '</div></div>';
