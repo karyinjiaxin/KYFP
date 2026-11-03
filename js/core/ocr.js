@@ -121,5 +121,44 @@ var OCR = (function () {
     });
   }
 
-  return { available: available, guessFields: guessFields, extractPolicyFromImage: extractPolicyFromImage };
+  // Splits text covering SEVERAL policies (e.g. a pasted multi-row policy
+  // summary table, where each policy's block is headed by its insurer's
+  // name on its own line — the common shape for this kind of document)
+  // into one chunk per policy. A line that is (trimmed, case-insensitively)
+  // just a known insurer's name starts a new chunk; everything else stays
+  // in the current one. Falls back to treating the whole text as a single
+  // policy when no such boundary is found.
+  function splitIntoPolicyBlocks(text) {
+    var lines = (text || '').split('\n');
+    var blocks = [];
+    var current = [];
+    lines.forEach(function (line) {
+      var trimmed = line.trim();
+      var isInsurerHeading = trimmed.length > 0 && KNOWN_INSURERS.some(function (ins) { return trimmed.toLowerCase() === ins.toLowerCase(); });
+      if (isInsurerHeading && current.length > 0) {
+        blocks.push(current.join('\n'));
+        current = [line];
+      } else {
+        current.push(line);
+      }
+    });
+    if (current.length) blocks.push(current.join('\n'));
+    return blocks.length ? blocks : [text || ''];
+  }
+
+  // Best-effort multi-policy read: pasted text (from copying a spreadsheet
+  // or PDF table directly) parses far more reliably than OCR'd text ever
+  // can, since it keeps every character exactly as typed — no guessing at
+  // smudged digits or jumbled table cells. Returns one guess object per
+  // detected policy, dropping any block where nothing useful was found.
+  function guessMultiple(text) {
+    return splitIntoPolicyBlocks(text)
+      .map(function (block) { return guessFields(block); })
+      .filter(function (g) { return g.company || g.policyName || g.policyNo; });
+  }
+
+  return {
+    available: available, guessFields: guessFields, guessMultiple: guessMultiple,
+    splitIntoPolicyBlocks: splitIntoPolicyBlocks, extractPolicyFromImage: extractPolicyFromImage
+  };
 })();

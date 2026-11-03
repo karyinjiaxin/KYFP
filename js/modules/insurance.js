@@ -6,6 +6,14 @@ var ModuleInsurance = (function () {
   var TYPES = ['Life', 'CI', 'ECI', 'Hospital', 'PA', 'Disability'];
 
   function render(container) {
+    // Transient review-before-save state for the Import panel — not
+    // Store-backed on purpose, so nothing is written until the advisor
+    // explicitly hits "Import". Survives re-draws (closure-scoped to this
+    // render() call, same lifetime as `container`) but resets on navigating
+    // away and back, same as any other in-progress, unsaved form.
+    var importRawText = '';
+    var pendingImport = null; // null = no review table shown yet; [] = parsed but nothing matched
+
     function draw() {
       var c = Store.getAll();
       container.innerHTML = '';
@@ -35,22 +43,13 @@ var ModuleInsurance = (function () {
       }
       container.appendChild(quickCard);
 
+      container.appendChild(Dom.el('div', { class: 'section-title' }, ['📥 Import Policies']));
+      container.appendChild(importPanel());
+
       container.appendChild(Dom.el('div', { class: 'section-title' }, ['📄 Individual Policies']));
       var policyGrid = Dom.el('div', { class: 'grid grid-2' });
       (c.insurance || []).forEach(function (p, idx) { policyGrid.appendChild(policyCard(p, idx)); });
       container.appendChild(policyGrid);
-
-      var addRow = Dom.el('div', { class: 'flex items-center gap-2 mt-3' }, [
-        Dom.el('button', {
-          class: 'btn btn-secondary', onclick: function () {
-            var arr = Store.get('insurance') || [];
-            arr.push({ id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', policyNo: '', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0, screenshot: '' });
-            Store.set('insurance', arr);
-          }
-        }, ['+ Add Policy'])
-      ]);
-      if (OCR.available()) addRow.appendChild(ocrAddButton());
-      container.appendChild(addRow);
 
       container.appendChild(Dom.el('div', { class: 'section-title' }, ['🔎 Need Analysis']));
       var needCard = Dom.el('div', { class: 'card' }, [
@@ -292,49 +291,160 @@ var ModuleInsurance = (function () {
       return wrap;
     }
 
-    // Reads one policy-summary screenshot with in-browser OCR (Tesseract.js,
-    // no server/API key) and best-guesses a handful of fields from the raw
-    // text — company, policy name, policy no., premium, coverage, type.
-    // Pattern matching, not real document understanding: works reasonably
-    // for one clean, typed policy summary per screenshot; unreliable for
-    // photos/scans, and NOT meant to parse a single image containing a
-    // whole multi-row table of several policies (crop/screenshot one plan
-    // at a time for best results). The new policy always starts flagged
-    // ocrReviewed: false so the banner in policyCard() prompts a check
-    // before anyone relies on the guessed numbers.
-    function ocrAddButton() {
-      var btn = Dom.el('button', { class: 'btn btn-secondary', onclick: function () { fileInput.click(); } }, ['📷 Read Screenshot (OCR, beta)']);
-      var fileInput = Dom.el('input', {
-        type: 'file', accept: 'image/*', style: 'display:none',
-        onchange: function (e) {
-          var file = e.target.files[0];
-          if (!file) return;
-          btn.disabled = true;
-          btn.textContent = 'Reading…';
-          resizeImageFile(file, 1400, 0.85, function (dataUrl) {
-            OCR.extractPolicyFromImage(dataUrl, function (pct) { btn.textContent = 'Reading… ' + pct + '%'; })
-              .then(function (result) {
-                var g = result.guess;
-                var arr = Store.get('insurance') || [];
-                arr.push({
-                  id: Dom.uid('pol'),
-                  company: g.company || 'New Insurer', policyName: g.policyName || 'New Policy', policyNo: g.policyNo || '',
-                  type: g.type || 'Life', premium: g.premium || 0, premiumFrequency: 'Annually',
-                  coverage: g.coverage || 0, coverageTpd: 0, coverageCi: 0,
-                  startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0,
-                  screenshot: dataUrl, ocrReviewed: false
-                });
-                Store.set('insurance', arr);
-              })
-              .catch(function (err) {
-                Dom.modalAlert('Could not read that screenshot: ' + (err && err.message ? err.message : err));
-              })
-              .finally(function () { btn.disabled = false; btn.textContent = '📷 Read Screenshot (OCR, beta)'; });
-          });
+    function addPolicyManually() {
+      var arr = Store.get('insurance') || [];
+      arr.push({ id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', policyNo: '', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0, screenshot: '' });
+      Store.set('insurance', arr);
+    }
+
+    // Turns one parsed guess into a review-row object (adds the `include`
+    // checkbox state and a fresh id) for the pending-import table.
+    function toReviewRow(g, screenshot) {
+      return {
+        include: true, screenshot: screenshot || '',
+        company: g.company || 'New Insurer', policyName: g.policyName || 'New Policy', policyNo: g.policyNo || '',
+        type: g.type || 'Life', premium: g.premium || 0, coverage: g.coverage || 0
+      };
+    }
+
+    function runImportParse(text) {
+      pendingImport = OCR.guessMultiple(text).map(function (g) { return toReviewRow(g, ''); });
+      if (!pendingImport.length) pendingImport = [toReviewRow({}, '')];
+      draw();
+    }
+
+    // Paste text (from a copied spreadsheet/PDF table) OR paste/drop a
+    // screenshot right onto the box — an image runs through OCR first,
+    // then both paths feed the same multi-policy text parser, surfaced in
+    // the review table below for the advisor to check/edit before any of
+    // it is written to the client's record.
+    function importPanel() {
+      var wrap = Dom.el('div', { class: 'card mb-3', style: 'border:2px dashed var(--border-strong);background:var(--accent-soft)' });
+      wrap.appendChild(Dom.el('div', { class: 'flex justify-between items-center mb-2', style: 'flex-wrap:wrap;gap:8px' }, [
+        Dom.el('div', {}, [
+          Dom.el('div', { style: 'font-weight:700;font-size:13.5px' }, ['Import Policies']),
+          Dom.el('div', { class: 'text-tertiary' }, ['Paste text, or paste/drop a screenshot below. You’ll review every row before it’s saved.'])
+        ]),
+        Dom.el('div', { class: 'flex gap-2' }, [
+          Dom.el('button', { class: 'btn btn-secondary btn-sm', onclick: function () { addPolicyManually(); } }, ['+ Add Manually']),
+          Dom.el('button', {
+            class: 'btn btn-primary btn-sm', onclick: function () {
+              if (!importRawText.trim()) { Dom.modalAlert('Paste some text, or a screenshot, into the box first.'); return; }
+              runImportParse(importRawText);
+            }
+          }, ['✨ Review & Import'])
+        ])
+      ]));
+
+      var statusLine = Dom.el('div', { class: 'text-tertiary mb-1', style: 'display:none' });
+      wrap.appendChild(statusLine);
+
+      function handleImageFile(file) {
+        if (!OCR.available()) { Dom.modalAlert('OCR isn’t available right now (offline, or the library failed to load) — paste the policy text directly instead.'); return; }
+        statusLine.style.display = '';
+        statusLine.textContent = 'Reading screenshot…';
+        resizeImageFile(file, 1400, 0.85, function (dataUrl) {
+          OCR.extractPolicyFromImage(dataUrl, function (pct) { statusLine.textContent = 'Reading screenshot… ' + pct + '%'; })
+            .then(function (result) {
+              pendingImport = OCR.guessMultiple(result.raw).map(function (g) { return toReviewRow(g, dataUrl); });
+              if (!pendingImport.length) pendingImport = [toReviewRow({}, dataUrl)];
+              draw();
+            })
+            .catch(function (err) { Dom.modalAlert('Could not read that screenshot: ' + (err && err.message ? err.message : err)); })
+            .finally(function () { statusLine.style.display = 'none'; });
+        });
+      }
+
+      var textarea = Dom.el('textarea', {
+        rows: 4, placeholder: 'Paste a policy summary here (text copied from a spreadsheet/PDF works best) — or paste (Ctrl/⌘+V) or drop a screenshot right here.',
+        style: 'width:100%;resize:vertical;font-family:var(--font-ui);font-size:12.5px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-primary)',
+        oninput: function (e) { importRawText = e.target.value; },
+        onpaste: function (e) {
+          var items = (e.clipboardData && e.clipboardData.items) || [];
+          for (var i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') === 0) {
+              e.preventDefault();
+              handleImageFile(items[i].getAsFile());
+              return;
+            }
+          }
+          // otherwise let the default text paste happen; oninput picks it up
+        },
+        ondragover: function (e) { e.preventDefault(); },
+        ondrop: function (e) {
+          e.preventDefault();
+          var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+          if (file && file.type.indexOf('image') === 0) handleImageFile(file);
         }
       });
-      var wrap = Dom.el('div', {}, [btn, fileInput]);
+      textarea.value = importRawText;
+      wrap.appendChild(textarea);
+
+      if (pendingImport && pendingImport.length) wrap.appendChild(importReviewTable());
       return wrap;
+    }
+
+    function importReviewTable() {
+      var box = Dom.el('div', { class: 'mt-3' });
+      box.appendChild(Dom.el('div', { class: 'text-secondary mb-2' }, [pendingImport.length + ' polic' + (pendingImport.length === 1 ? 'y' : 'ies') + ' found — uncheck any you don’t want, fix anything that looks wrong, then import.']));
+      var tableWrap = Dom.el('div', { class: 'table-scroll' });
+      var table = Dom.el('table', { class: 'data-table' });
+      table.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, [
+        '', 'Company', 'Policy Name', 'Policy No.', 'Type', 'Premium', 'Coverage'
+      ].map(function (h) { return Dom.el('th', {}, [h]); }))]));
+      var tbody = Dom.el('tbody');
+      pendingImport.forEach(function (row, i) {
+        tbody.appendChild(Dom.el('tr', {}, [
+          Dom.el('td', {}, [Dom.el('input', { type: 'checkbox', checked: row.include ? 'checked' : null, onchange: function (e) { row.include = e.target.checked; } })]),
+          Dom.el('td', {}, [reviewCell(row, i, 'company')]),
+          Dom.el('td', {}, [reviewCell(row, i, 'policyName')]),
+          Dom.el('td', {}, [reviewCell(row, i, 'policyNo')]),
+          Dom.el('td', {}, [reviewTypeCell(row, i)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'premium', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'coverage', true)])
+        ]));
+      });
+      table.appendChild(tbody); tableWrap.appendChild(table); box.appendChild(tableWrap);
+
+      box.appendChild(Dom.el('div', { class: 'flex gap-2 mt-2' }, [
+        Dom.el('button', {
+          class: 'btn btn-primary btn-sm', onclick: function () {
+            var toAdd = pendingImport.filter(function (r) { return r.include; });
+            if (!toAdd.length) { Dom.modalAlert('Nothing checked to import.'); return; }
+            var arr = Store.get('insurance') || [];
+            toAdd.forEach(function (r) {
+              arr.push({
+                id: Dom.uid('pol'), company: r.company, policyName: r.policyName, policyNo: r.policyNo,
+                type: r.type, premium: Calc.num(r.premium), premiumFrequency: 'Annually',
+                coverage: Calc.num(r.coverage), coverageTpd: 0, coverageCi: 0,
+                startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0,
+                screenshot: r.screenshot, ocrReviewed: false
+              });
+            });
+            Store.set('insurance', arr);
+            pendingImport = null; importRawText = '';
+            draw();
+          }
+        }, ['Import ' + pendingImport.filter(function (r) { return r.include; }).length + ' Selected']),
+        Dom.el('button', { class: 'btn btn-ghost btn-sm', onclick: function () { pendingImport = null; draw(); } }, ['Cancel'])
+      ]));
+      return box;
+    }
+
+    function reviewCell(row, i, field, isMoney) {
+      return Dom.el('input', {
+        type: 'text', value: isMoney ? String(row[field] || 0) : (row[field] || ''), style: 'width:100%;min-width:' + (isMoney ? '80px' : '110px'),
+        oninput: function (e) { row[field] = isMoney ? Calc.num(e.target.value) : e.target.value; }
+      });
+    }
+    function reviewTypeCell(row, i) {
+      var sel = Dom.el('select', { onchange: function (e) { row.type = e.target.value; } });
+      TYPES.forEach(function (t) {
+        var o = Dom.el('option', { value: t }, [t]);
+        if (t === row.type) o.setAttribute('selected', 'selected');
+        sel.appendChild(o);
+      });
+      return sel;
     }
 
     function miniStat(label, value) {
