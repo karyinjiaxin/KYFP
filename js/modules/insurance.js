@@ -253,6 +253,38 @@ var ModuleInsurance = (function () {
       reader.readAsDataURL(file);
     }
 
+    // Dedicated to feeding Tesseract, not to storing/displaying — a real
+    // multi-column policy table screenshotted at normal screen resolution
+    // (e.g. 1298×332px for a 13-column table) packs each row's text into
+    // ~15-20px of height, well under what OCR needs to read it reliably.
+    // Unlike resizeImageFile (which only ever shrinks), this always scales
+    // UP small/dense images, and saves as lossless PNG instead of JPEG —
+    // JPEG's chroma-subsampling blur is exactly the kind of noise that
+    // turns thin table text into garbage ("A I I ee emt men"-type OCR
+    // output). Separate from the dataUrl saved as the review row's
+    // screenshot thumbnail, which stays small for storage/display.
+    function prepareImageForOcr(file, cb) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+          var longest = Math.max(img.width, img.height);
+          var target = Math.min(3400, Math.max(1800, longest * 2));
+          var scale = target / longest;
+          var canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          var ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          cb(canvas.toDataURL('image/png'));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
     function openImageLightbox(dataUrl) {
       var overlay = Dom.el('div', { class: 'modal-overlay', onclick: function (e) { if (e.target === overlay) overlay.remove(); } });
       overlay.appendChild(Dom.el('img', { src: dataUrl, style: 'max-width:92vw;max-height:92vh;border-radius:8px;box-shadow:var(--shadow-lg);display:block;margin:auto' }));
@@ -352,18 +384,21 @@ var ModuleInsurance = (function () {
         if (!OCR.available()) { Dom.modalAlert('OCR isn’t available right now (offline, or the library failed to load) — paste the policy text directly instead.'); return; }
         statusLine.style.display = '';
         statusLine.textContent = 'Reading screenshot…';
-        // Higher resolution than the per-policy attachment thumbnail — the
-        // table reconstruction leans on word positions, so a sharper image
-        // gives Tesseract cleaner bounding boxes to work from.
+        // Two versions of the same image: a smaller JPEG for the review
+        // row's thumbnail (display/storage), and a separately upscaled,
+        // lossless-PNG version just for Tesseract to read off of — see
+        // prepareImageForOcr().
         resizeImageFile(file, 1800, 0.9, function (dataUrl) {
-          OCR.extractPoliciesFromImage(dataUrl, function (pct) { statusLine.textContent = 'Reading screenshot… ' + pct + '%'; })
-            .then(function (result) {
-              pendingImport = result.guesses.map(function (g) { return toReviewRow(g, dataUrl); });
-              if (!pendingImport.length) pendingImport = [toReviewRow({}, dataUrl)];
-              draw();
-            })
-            .catch(function (err) { Dom.modalAlert('Could not read that screenshot: ' + (err && err.message ? err.message : err)); })
-            .finally(function () { statusLine.style.display = 'none'; });
+          prepareImageForOcr(file, function (ocrDataUrl) {
+            OCR.extractPoliciesFromImage(ocrDataUrl, function (pct) { statusLine.textContent = 'Reading screenshot… ' + pct + '%'; })
+              .then(function (result) {
+                pendingImport = result.guesses.map(function (g) { return toReviewRow(g, dataUrl); });
+                if (!pendingImport.length) pendingImport = [toReviewRow({}, dataUrl)];
+                draw();
+              })
+              .catch(function (err) { Dom.modalAlert('Could not read that screenshot: ' + (err && err.message ? err.message : err)); })
+              .finally(function () { statusLine.style.display = 'none'; });
+          });
         });
       }
 
