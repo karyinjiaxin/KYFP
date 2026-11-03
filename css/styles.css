@@ -1,43 +1,43 @@
 /* ============================================================
    styles.css — design system
-   Palette: deep burgundy-ink + burgundy accent (private-banking
+   Palette: deep wine-ink + jewel burgundy accent (private-banking
    register), warm neutral paper in light mode, graphite in dark.
    Type: system font stack (Apple-native feel, zero CDN risk).
    ============================================================ */
 
 :root {
-  /* Was a dark teal ramp — recolored warm/burgundy-neutral so the
-     sidebar, shadows, and every card border (all of which key off
-     this ramp) stop reading as "green" alongside the accent. */
-  --ink-950: #1F0E12;
-  --ink-900: #2E161B;
-  --ink-800: #3C1E24;
-  --ink-700: #52232D;
+  /* A richer, more saturated wine ramp than the first burgundy pass —
+     that one read as brown/muddy (low saturation); this one pushes
+     saturation up and the hue toward wine/claret, away from brown. */
+  --ink-950: #190510;
+  --ink-900: #2B0A1C;
+  --ink-800: #42112A;
+  --ink-700: #611C3C;
   /* Named --brass-* for historical reasons (every call site still
      reads these three variables) — the palette itself is burgundy. */
-  --brass-500: #7A2331;
-  --brass-400: #9C3A4A;
-  --brass-300: #C97D89;
+  --brass-500: #8E1D42;
+  --brass-400: #B13A63;
+  --brass-300: #D98CAA;
 
-  --bg: #F7F5F5;
+  --bg: #F8F4F5;
   --bg-elevated: #FFFFFF;
-  --bg-sidebar: #2E161B;
-  --text-primary: #241518;
-  --text-secondary: #70605F;
-  --text-tertiary: #A08F8D;
-  --border: #EBE1E0;
-  --border-strong: #DBC9CA;
-  --shadow-sm: 0 1px 2px rgba(46, 22, 27, 0.06), 0 1px 1px rgba(46,22,27,0.04);
-  --shadow-md: 0 8px 24px rgba(46, 22, 27, 0.09), 0 2px 6px rgba(46,22,27,0.05);
-  --shadow-lg: 0 20px 48px rgba(46, 22, 27, 0.16), 0 6px 16px rgba(46,22,27,0.07);
+  --bg-sidebar: #2B0A1C;
+  --text-primary: #230A16;
+  --text-secondary: #74565F;
+  --text-tertiary: #A98B92;
+  --border: #F0DEE3;
+  --border-strong: #DDB8C2;
+  --shadow-sm: 0 1px 2px rgba(43, 10, 28, 0.08), 0 1px 1px rgba(43,10,28,0.05);
+  --shadow-md: 0 8px 24px rgba(43, 10, 28, 0.11), 0 2px 6px rgba(43,10,28,0.06);
+  --shadow-lg: 0 20px 48px rgba(43, 10, 28, 0.18), 0 6px 16px rgba(43,10,28,0.08);
   --accent: var(--brass-500);
-  --accent-soft: rgba(122, 35, 49, 0.12);
+  --accent-soft: rgba(142, 29, 66, 0.12);
   --good: #1C9166;
   --good-soft: rgba(28, 145, 102, 0.12);
   --warn: #DB9426;
   --warn-soft: rgba(219, 148, 38, 0.12);
   --bad: #D6484A;
-  --burgundy: #7A2331;
+  --burgundy: #8E1D42;
   --bad-soft: rgba(214, 72, 74, 0.12);
   --radius-sm: 10px;
   --radius-md: 16px;
@@ -48,19 +48,19 @@
 }
 
 [data-theme="dark"] {
-  --bg: #150B0D;
-  --bg-elevated: #201215;
-  --bg-sidebar: #110A0B;
-  --text-primary: #F4ECEC;
-  --text-secondary: #B7A4A4;
-  --text-tertiary: #8F7A7B;
-  --border: #3A2328;
-  --border-strong: #4A2C32;
+  --bg: #140308;
+  --bg-elevated: #220613;
+  --bg-sidebar: #0D0208;
+  --text-primary: #F6E9ED;
+  --text-secondary: #C2A0AB;
+  --text-tertiary: #8C6974;
+  --border: #3D1226;
+  --border-strong: #511A32;
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
   --shadow-md: 0 8px 24px rgba(0,0,0,0.35);
   --shadow-lg: 0 20px 48px rgba(0,0,0,0.5);
   --accent: var(--brass-400);
-  --accent-soft: rgba(156, 58, 74, 0.18);
+  --accent-soft: rgba(177, 58, 99, 0.2);
   --good-soft: rgba(28, 145, 102, 0.22);
   --warn-soft: rgba(219, 148, 38, 0.22);
   --bad-soft: rgba(214, 72, 74, 0.22);
@@ -110,7 +110,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 .nav-item .ic { width: 18px; height: 18px; flex: none; opacity: 0.85; }
 .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
-.nav-item.active { background: rgba(156,58,74,0.28); color: #FFF3EE; }
+.nav-item.active { background: rgba(177,58,99,0.3); color: #FFF0F5; }
 .nav-item.active::before {
   content: ''; position: absolute; left: -14px; top: 8px; bottom: 8px; width: 3px;
   background: var(--brass-400); border-radius: 2px;
@@ -190,7 +190,7 @@ button { font-family: inherit; cursor: pointer; }
 .nav-icon-red    { color: #EE8A8A; }
 .nav-icon-indigo { color: #9CA6F5; }
 .nav-icon-cyan   { color: #5FD0E0; }
-.nav-icon-burgundy { color: #D6949E; }
+.nav-icon-burgundy { color: #D98CAA; }
 .nav-item.active .nav-icon-blue,
 .nav-item.active .nav-icon-orange,
 .nav-item.active .nav-icon-teal,
@@ -342,7 +342,7 @@ table.data-table.compact-table td { padding: 6px 8px; }
 
 /* Custom modal dialogs (replacing window.confirm/prompt/alert) */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(46,22,27,0.45); z-index: 1000;
+  position: fixed; inset: 0; background: rgba(43,10,28,0.5); z-index: 1000;
   display: flex; align-items: center; justify-content: center; padding: 20px;
 }
 .modal-box {

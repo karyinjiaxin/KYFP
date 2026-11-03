@@ -126,11 +126,11 @@ var Charts = (function () {
   function themeColors() {
     var dark = document.documentElement.getAttribute('data-theme') === 'dark';
     return {
-      text: dark ? '#B7A4A4' : '#70605F',
-      grid: dark ? 'rgba(255,255,255,0.07)' : 'rgba(46,22,27,0.07)',
-      brass: dark ? '#9C3A4A' : '#7A2331',
-      brassSoft: dark ? 'rgba(156,58,74,0.22)' : 'rgba(122,35,49,0.18)',
-      ink: dark ? '#F4ECEC' : '#241518',
+      text: dark ? '#C2A0AB' : '#74565F',
+      grid: dark ? 'rgba(255,255,255,0.07)' : 'rgba(43,10,28,0.08)',
+      brass: dark ? '#B13A63' : '#8E1D42',
+      brassSoft: dark ? 'rgba(177,58,99,0.24)' : 'rgba(142,29,66,0.18)',
+      ink: dark ? '#F6E9ED' : '#230A16',
       palette: dark ? PALETTE_DARK : PALETTE_LIGHT
     };
   }

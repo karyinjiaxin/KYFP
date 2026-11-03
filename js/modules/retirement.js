@@ -256,8 +256,8 @@ var ModuleRetirement = (function () {
           data: {
             labels: projectedPoints.map(function (p) { return p.age; }),
             datasets: [
-              { label: 'Projected Assets', data: projectedPoints.map(function (p) { return p.value; }), borderColor: '#52232D', borderWidth: 3, backgroundColor: 'transparent', tension: 0.3 },
-              { label: 'Required Portfolio (steady pace)', data: pacePoints.map(function (p) { return p.value; }), borderColor: '#7A2331', borderWidth: 3, borderDash: [8, 5], backgroundColor: 'transparent', tension: 0 }
+              { label: 'Projected Assets', data: projectedPoints.map(function (p) { return p.value; }), borderColor: '#611C3C', borderWidth: 3, backgroundColor: 'transparent', tension: 0.3 },
+              { label: 'Required Portfolio (steady pace)', data: pacePoints.map(function (p) { return p.value; }), borderColor: '#8E1D42', borderWidth: 3, borderDash: [8, 5], backgroundColor: 'transparent', tension: 0 }
             ]
           }
         });
