@@ -40,13 +40,17 @@ var ModuleInsurance = (function () {
       (c.insurance || []).forEach(function (p, idx) { policyGrid.appendChild(policyCard(p, idx)); });
       container.appendChild(policyGrid);
 
-      container.appendChild(Dom.el('button', {
-        class: 'btn btn-secondary mt-3', onclick: function () {
-          var arr = Store.get('insurance') || [];
-          arr.push({ id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', policyNo: '', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0, screenshot: '' });
-          Store.set('insurance', arr);
-        }
-      }, ['+ Add Policy']));
+      var addRow = Dom.el('div', { class: 'flex items-center gap-2 mt-3' }, [
+        Dom.el('button', {
+          class: 'btn btn-secondary', onclick: function () {
+            var arr = Store.get('insurance') || [];
+            arr.push({ id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', policyNo: '', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0, screenshot: '' });
+            Store.set('insurance', arr);
+          }
+        }, ['+ Add Policy'])
+      ]);
+      if (OCR.available()) addRow.appendChild(ocrAddButton());
+      container.appendChild(addRow);
 
       container.appendChild(Dom.el('div', { class: 'section-title' }, ['🔎 Need Analysis']));
       var needCard = Dom.el('div', { class: 'card' }, [
@@ -138,6 +142,15 @@ var ModuleInsurance = (function () {
         ]),
         Dom.el('button', { class: 'btn btn-ghost btn-sm', onclick: function () { var arr = Store.get('insurance'); arr.splice(idx, 1); Store.set('insurance', arr); } }, ['Remove'])
       ]));
+
+      if (p.ocrReviewed === false) {
+        card.appendChild(Dom.el('div', {
+          class: 'mb-2', style: 'padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;background:var(--warn-soft);color:var(--warn);display:flex;justify-content:space-between;align-items:center;gap:8px'
+        }, [
+          Dom.el('div', {}, ['⚠ Auto-filled by OCR from the attached screenshot — verify every field below, especially Policy No. and coverage amounts, before relying on this.']),
+          Dom.el('button', { class: 'btn btn-ghost btn-sm', style: 'flex:none', onclick: function () { Store.set(base + 'ocrReviewed', true); } }, ['✓ Reviewed'])
+        ]));
+      }
 
       var isLife = p.type === 'Life';
       var statsRow = isLife
@@ -247,10 +260,11 @@ var ModuleInsurance = (function () {
       document.body.appendChild(overlay);
     }
 
-    // No OCR/auto-fill here — just a reference image kept alongside the
-    // policy (e.g. a screenshot of the insurer's policy summary) so the
-    // advisor can glance at the source while keying each field in by
-    // hand, rather than switching between apps/windows.
+    // Just a reference image kept alongside an existing policy card (e.g.
+    // a screenshot of the insurer's policy summary) so the advisor can
+    // glance at the source while keying fields in by hand — no OCR runs
+    // here. Reading a screenshot to auto-fill a NEW policy is a separate
+    // entry point: see ocrAddButton() below.
     function screenshotAttachment(base, p) {
       var wrap = Dom.el('div', { class: 'mt-2' });
       wrap.appendChild(Dom.el('div', { class: 'field-label', style: 'margin-bottom:6px' }, ['Policy Summary Screenshot (reference only, not auto-filled)']));
@@ -275,6 +289,51 @@ var ModuleInsurance = (function () {
         wrap.appendChild(fileInput);
         wrap.appendChild(Dom.el('button', { class: 'btn btn-secondary btn-sm', onclick: function () { fileInput.click(); } }, ['📷 Attach Screenshot']));
       }
+      return wrap;
+    }
+
+    // Reads one policy-summary screenshot with in-browser OCR (Tesseract.js,
+    // no server/API key) and best-guesses a handful of fields from the raw
+    // text — company, policy name, policy no., premium, coverage, type.
+    // Pattern matching, not real document understanding: works reasonably
+    // for one clean, typed policy summary per screenshot; unreliable for
+    // photos/scans, and NOT meant to parse a single image containing a
+    // whole multi-row table of several policies (crop/screenshot one plan
+    // at a time for best results). The new policy always starts flagged
+    // ocrReviewed: false so the banner in policyCard() prompts a check
+    // before anyone relies on the guessed numbers.
+    function ocrAddButton() {
+      var btn = Dom.el('button', { class: 'btn btn-secondary', onclick: function () { fileInput.click(); } }, ['📷 Read Screenshot (OCR, beta)']);
+      var fileInput = Dom.el('input', {
+        type: 'file', accept: 'image/*', style: 'display:none',
+        onchange: function (e) {
+          var file = e.target.files[0];
+          if (!file) return;
+          btn.disabled = true;
+          btn.textContent = 'Reading…';
+          resizeImageFile(file, 1400, 0.85, function (dataUrl) {
+            OCR.extractPolicyFromImage(dataUrl, function (pct) { btn.textContent = 'Reading… ' + pct + '%'; })
+              .then(function (result) {
+                var g = result.guess;
+                var arr = Store.get('insurance') || [];
+                arr.push({
+                  id: Dom.uid('pol'),
+                  company: g.company || 'New Insurer', policyName: g.policyName || 'New Policy', policyNo: g.policyNo || '',
+                  type: g.type || 'Life', premium: g.premium || 0, premiumFrequency: 'Annually',
+                  coverage: g.coverage || 0, coverageTpd: 0, coverageCi: 0,
+                  startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0,
+                  screenshot: dataUrl, ocrReviewed: false
+                });
+                Store.set('insurance', arr);
+              })
+              .catch(function (err) {
+                Dom.modalAlert('Could not read that screenshot: ' + (err && err.message ? err.message : err));
+              })
+              .finally(function () { btn.disabled = false; btn.textContent = '📷 Read Screenshot (OCR, beta)'; });
+          });
+        }
+      });
+      var wrap = Dom.el('div', {}, [btn, fileInput]);
       return wrap;
     }
 

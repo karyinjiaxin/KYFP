@@ -17,6 +17,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2/dist/chartjs-plugin-datalabels.min.js"></script>
 <!-- Supabase client — only used when js/core/supabaseConfig.js has real credentials -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- In-browser OCR for reading policy screenshots on Insurance Coverage — runs entirely client-side, no server/API key -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -63,6 +65,7 @@
 <script src="js/core/sgTax.js"></script>
 <script src="js/core/fields.js"></script>
 <script src="js/core/ai.js"></script>
+<script src="js/core/ocr.js"></script>
 <script src="js/core/sidebar.js"></script>
 <script src="js/core/router.js"></script>
 <script src="js/core/auth.js"></script>
