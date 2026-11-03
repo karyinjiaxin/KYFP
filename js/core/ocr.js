@@ -29,6 +29,48 @@ var OCR = (function () {
     // default: 'Life'
   ];
 
+  // Section captions ("Primary Coverage (Whole Life Coverage with Cash
+  // Value Returns)"), footnotes ("Insurance charges increase with age."),
+  // and the table's own "TOTAL" summary row all sit in the same text flow
+  // as the real policy rows once OCR'd — none of them is a plan name, but
+  // a naive "first substantial line" picker can't tell the difference.
+  // Used both to keep these out of a guessed policyName and to strip them
+  // from text before block-splitting, so they can't get glued onto a real
+  // policy's block either.
+  var HEADER_KEYWORDS = /plan|premium|coverage|death|tpd|\bci\b|critical|surr|yield|remarks|year|term|name/i;
+  var CAPTION_PATTERNS = [
+    /^(primary|secondary|additional|supplementary)\s+coverage/i,
+    /^(regular|single)\s+(investment|insurance)/i,
+    /insurance\s+charges\s+increase/i,
+    /^total\b/i,
+    /basic\s+sum\s+assured/i,
+    /riders?\s+are\s+attached/i
+  ];
+  // Just the explicit caption/footnote/total-row phrasing — safe to use
+  // anywhere, including to filter table rows BEFORE header-row detection,
+  // since it never matches the real header row itself (which is made of
+  // short column labels, not a sentence).
+  function looksLikeCaption(line) {
+    var l = (line || '').trim();
+    return !!l && CAPTION_PATTERNS.some(function (re) { return re.test(l); });
+  }
+  // Caption/footnote patterns, OR a line so dense with header-ish words
+  // that it's almost certainly a header/column-label line rather than an
+  // actual plan name — the density check alone would also flag the real
+  // header ROW (which is supposed to be dense with these words), so only
+  // use this where that's not a concern: picking a policyName candidate
+  // out of flattened OCR text, never to filter rows before header
+  // detection in the table-reconstruction path.
+  function looksLikeCaptionOrHeader(line) {
+    var l = (line || '').trim();
+    if (!l) return false;
+    if (looksLikeCaption(l)) return true;
+    var words = l.split(/\s+/);
+    if (words.length < 4) return false;
+    var headerWordCount = words.filter(function (w) { return HEADER_KEYWORDS.test(w); }).length;
+    return headerWordCount / words.length > 0.35;
+  }
+
   function firstMoneyNear(text, keywordRe) {
     var lines = text.split('\n');
     for (var i = 0; i < lines.length; i++) {
@@ -98,6 +140,7 @@ var OCR = (function () {
       if (l.length < 4) continue;
       if (company && l.toLowerCase() === company.toLowerCase()) continue;
       if (/^[\d\s\/\-,.$]+$/.test(l)) continue;
+      if (looksLikeCaptionOrHeader(l)) continue;
       policyName = l;
       break;
     }
@@ -129,7 +172,7 @@ var OCR = (function () {
   // in the current one. Falls back to treating the whole text as a single
   // policy when no such boundary is found.
   function splitIntoPolicyBlocks(text) {
-    var lines = (text || '').split('\n');
+    var lines = (text || '').split('\n').filter(function (line) { return !looksLikeCaptionOrHeader(line); });
     var blocks = [];
     var current = [];
     lines.forEach(function (line) {
@@ -171,7 +214,6 @@ var OCR = (function () {
   // columns, and misread digits will still produce a wrong row sometimes —
   // this is why every row lands in the editable review table, not straight
   // into the client's record.
-  var HEADER_KEYWORDS = /plan|premium|coverage|death|tpd|\bci\b|critical|surr|yield|remarks|year|term|name/i;
   var COLUMN_ALIASES = [
     { re: /plan\s*name|policy\s*name/i, field: 'policyName' },
     { re: /annual\s*premium/i, field: 'premium' },
@@ -295,7 +337,9 @@ var OCR = (function () {
   // columns was found — the caller falls back to splitIntoPolicyBlocks().
   function reconstructTable(words) {
     if (!words || words.length < 8) return null;
-    var rows = clusterRows(words);
+    var rows = clusterRows(words).filter(function (r) {
+      return !looksLikeCaption(r.words.map(function (w) { return w.text; }).join(' '));
+    });
     var headerIdx = -1, headerScore = 0;
     rows.forEach(function (r, i) {
       var score = r.words.filter(function (w) { return HEADER_KEYWORDS.test(w.text); }).length;
