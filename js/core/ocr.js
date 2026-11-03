@@ -195,6 +195,8 @@ var OCR = (function () {
   // smudged digits or jumbled table cells. Returns one guess object per
   // detected policy, dropping any block where nothing useful was found.
   function guessMultiple(text) {
+    var tsv = parseSpreadsheetText(text);
+    if (tsv && tsv.length) return tsv;
     return splitIntoPolicyBlocks(text)
       .map(function (block) { return guessFields(block); })
       .filter(function (g) { return g.company || g.policyName || g.policyNo; });
@@ -383,44 +385,150 @@ var OCR = (function () {
       merged[mi].policyName = i < nearestAnchor ? (cells.policyName + ' ' + existing).trim() : (existing + ' ' + cells.policyName).trim();
     });
 
-    return merged.map(function (cells) {
-      var rawName = cells.policyName || null;
-      var company = null;
-      for (var i = 0; i < KNOWN_INSURERS.length; i++) {
-        if (rawName && new RegExp(KNOWN_INSURERS[i], 'i').test(rawName)) { company = KNOWN_INSURERS[i]; break; }
+    return merged.map(cellsToPolicy).filter(function (g) { return g.policyName || g.coverage !== null; });
+  }
+
+  // Turns one row's assembled cell-text map (same {policyName, premium,
+  // premiumMonthly, paymentTerm, coverage, coverageTpd, coverageCi,
+  // coverageCiAllStage} shape, whether built from OCR word clusters or
+  // from a pasted spreadsheet row) into a policy guess — shared by
+  // reconstructTable() and parseSpreadsheetText() so both paths treat
+  // premium-frequency, coverage, and name/company/policy-no splitting
+  // identically.
+  function cellsToPolicy(cells) {
+    var rawName = cells.policyName || null;
+    var company = null;
+    for (var i = 0; i < KNOWN_INSURERS.length; i++) {
+      if (rawName && new RegExp(KNOWN_INSURERS[i], 'i').test(rawName)) { company = KNOWN_INSURERS[i]; break; }
+    }
+    // Policy No. rides along inside the plan-name cell, e.g. "Great
+    // Eastern Smart Protect (RP) (0071920043)" — pull it and the
+    // company name back out so Plan Name is left clean ("Smart
+    // Protect (RP)"), matching how this app's own policy fields split
+    // company / policy name / policy no. into three separate inputs.
+    var policyNo = null, policyName = rawName;
+    if (rawName) {
+      var pn = rawName.match(/\(([A-Z]?\d{6,12})\)/);
+      if (pn) { policyNo = pn[1]; policyName = policyName.replace(pn[0], ''); }
+      if (company) policyName = policyName.replace(new RegExp(company, 'i'), '');
+      policyName = policyName.replace(/\s{2,}/g, ' ').trim();
+    }
+    // A Monthly Premium cell present means the policy is actually paid
+    // monthly (the Annual Premium column, when also shown, is just that
+    // monthly amount × 12 for reference) — only fall back to the Annual
+    // column, as an annually-paid policy, when Monthly is blank.
+    var premiumMonthly = numFromCell(cells.premiumMonthly);
+    var premiumAnnual = numFromCell(cells.premium);
+    var premiumFrequency = premiumMonthly !== null ? 'Monthly' : 'Annually';
+    var premium = premiumMonthly !== null ? premiumMonthly : premiumAnnual;
+    var paymentTermMatch = (cells.paymentTerm || '').match(/(\d+)\s*year/i);
+    var paymentTerm = paymentTermMatch ? Number(paymentTermMatch[1]) : 0;
+    var coverage = numFromCell(cells.coverage);
+    var coverageTpd = numFromCell(cells.coverageTpd);
+    var coverageCi = numFromCell(cells.coverageCi) !== null ? numFromCell(cells.coverageCi) : numFromCell(cells.coverageCiAllStage);
+    var type = coverageCi !== null && coverage === null ? 'CI' : 'Life';
+    return {
+      company: company, policyName: policyName, policyNo: policyNo || null,
+      premium: premium, premiumFrequency: premiumFrequency, paymentTerm: paymentTerm,
+      coverage: coverage, coverageTpd: coverageTpd, coverageCi: coverageCi, type: type
+    };
+  }
+
+  // ---------- Pasted spreadsheet rows (tab-separated) ----------
+  // A row copied straight out of Excel/Sheets/a PDF table and pasted into
+  // the textarea keeps its real tab characters between cells, and wraps
+  // any cell containing a tab or newline of its own (e.g. a 3-line "Great
+  // Eastern / Smart Protect (RP) / (0071920043)" name cell) in double
+  // quotes — standard spreadsheet copy-paste shape. That tab structure is
+  // far more reliable than text-flow keyword matching (guessFields()),
+  // since every value is already in a known cell instead of jumbled by
+  // OCR or line-wrapping, so this is tried first whenever the pasted text
+  // actually contains a tab character.
+  function parseDelimitedRows(text) {
+    var rows = [], row = [], cell = '', inQuotes = false;
+    for (var i = 0; i < text.length; i++) {
+      var ch = text[i];
+      if (inQuotes) {
+        if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else inQuotes = false; }
+        else cell += ch;
+      } else if (ch === '"' && cell === '') {
+        inQuotes = true;
+      } else if (ch === '\t') {
+        row.push(cell); cell = '';
+      } else if (ch === '\n') {
+        row.push(cell); rows.push(row); row = []; cell = '';
+      } else if (ch !== '\r') {
+        cell += ch;
       }
-      // Policy No. rides along inside the plan-name cell, e.g. "Great
-      // Eastern Smart Protect (RP) (0071920043)" — pull it and the
-      // company name back out so Plan Name is left clean ("Smart
-      // Protect (RP)"), matching how this app's own policy fields split
-      // company / policy name / policy no. into three separate inputs.
-      var policyNo = null, policyName = rawName;
-      if (rawName) {
-        var pn = rawName.match(/\(([A-Z]?\d{6,12})\)/);
-        if (pn) { policyNo = pn[1]; policyName = policyName.replace(pn[0], ''); }
-        if (company) policyName = policyName.replace(new RegExp(company, 'i'), '');
-        policyName = policyName.replace(/\s{2,}/g, ' ').trim();
-      }
-      // A Monthly Premium cell present means the policy is actually paid
-      // monthly (the Annual Premium column, when also shown, is just that
-      // monthly amount × 12 for reference) — only fall back to the Annual
-      // column, as an annually-paid policy, when Monthly is blank.
-      var premiumMonthly = numFromCell(cells.premiumMonthly);
-      var premiumAnnual = numFromCell(cells.premium);
-      var premiumFrequency = premiumMonthly !== null ? 'Monthly' : 'Annually';
-      var premium = premiumMonthly !== null ? premiumMonthly : premiumAnnual;
-      var paymentTermMatch = (cells.paymentTerm || '').match(/(\d+)\s*year/i);
-      var paymentTerm = paymentTermMatch ? Number(paymentTermMatch[1]) : 0;
-      var coverage = numFromCell(cells.coverage);
-      var coverageTpd = numFromCell(cells.coverageTpd);
-      var coverageCi = numFromCell(cells.coverageCi) !== null ? numFromCell(cells.coverageCi) : numFromCell(cells.coverageCiAllStage);
-      var type = coverageCi !== null && coverage === null ? 'CI' : 'Life';
-      return {
-        company: company, policyName: policyName, policyNo: policyNo || null,
-        premium: premium, premiumFrequency: premiumFrequency, paymentTerm: paymentTerm,
-        coverage: coverage, coverageTpd: coverageTpd, coverageCi: coverageCi, type: type
+    }
+    row.push(cell); rows.push(row);
+    return rows.filter(function (r) { return r.some(function (c) { return c.trim(); }); });
+  }
+
+  // Returns an array of policy guesses from tab-separated pasted text, or
+  // null if the text has no tabs (i.e. isn't a spreadsheet-style paste at
+  // all — free-typed or copied-as-plain-paragraph text falls through to
+  // guessFields()/splitIntoPolicyBlocks() instead).
+  function parseSpreadsheetText(text) {
+    if (!text || text.indexOf('\t') === -1) return null;
+    var rows = parseDelimitedRows(text);
+    if (!rows.length) return null;
+
+    // Best case: the pasted range included the yellow header row, so each
+    // column's meaning is known by its own label — same column-alias
+    // matching reconstructTable() uses for OCR'd header words.
+    var headerIdx = -1, headerScore = 0;
+    rows.forEach(function (r, i) {
+      var score = r.filter(function (c) { return matchColumnField(c) !== null; }).length;
+      if (score > headerScore) { headerScore = score; headerIdx = i; }
+    });
+    if (headerIdx !== -1 && headerScore >= 3) {
+      var fields = rows[headerIdx].map(function (c) { return matchColumnField(c); });
+      var results = [];
+      rows.slice(headerIdx + 1).forEach(function (r) {
+        var cells = {};
+        r.forEach(function (c, i) {
+          var f = fields[i];
+          if (f && c.trim()) cells[f] = (cells[f] ? cells[f] + ' ' : '') + c.trim();
+        });
+        if (Object.keys(cells).length) results.push(cellsToPolicy(cells));
+      });
+      return results.filter(function (g) { return g.policyName || g.coverage !== null; });
+    }
+
+    // No header row in the paste (e.g. only one data row, or several rows
+    // without their header) — fall back to this app's one supported fixed
+    // column order, matching the policy-summary template these pastes
+    // come from: [No,] Name block, Year, Monthly Premium, Annual Premium,
+    // Premium Term, Death/TPD/All-stage-CI/CI coverage[, trailing columns
+    // ignored]. "Premium Term" ("Whole of life" / "N years") is the one
+    // reliably-recognizable anchor cell, so everything is positioned
+    // relative to it rather than assumed to always be at a fixed index —
+    // tolerant of a missing/extra column before it (e.g. no "No." cell).
+    var results2 = [];
+    rows.forEach(function (r) {
+      var cells = r.slice();
+      if (cells.length && /^\d{1,3}$/.test(cells[0].trim())) cells.shift(); // drop leading row-number column
+      var rawName = cells[0];
+      if (!rawName || !rawName.trim()) return;
+      var rest = cells.slice(1);
+      var termIdx = -1;
+      rest.forEach(function (c, i) { if (termIdx === -1 && /^(whole\s+of\s+life|\d+\s*years?)$/i.test(c.trim())) termIdx = i; });
+      var beforeTerm = (termIdx === -1 ? rest.slice(0, 2) : rest.slice(0, termIdx))
+        .filter(function (c) { return !/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(c.trim()); }); // drop the Year cell
+      var afterTerm = termIdx === -1 ? [] : rest.slice(termIdx + 1);
+      var cellsObj = {
+        policyName: rawName,
+        premiumMonthly: beforeTerm.length >= 2 ? beforeTerm[0] : '',
+        premium: beforeTerm.length >= 2 ? beforeTerm[1] : (beforeTerm[0] || ''),
+        paymentTerm: termIdx === -1 ? '' : rest[termIdx],
+        coverage: afterTerm[0] || '', coverageTpd: afterTerm[1] || '',
+        coverageCiAllStage: afterTerm[2] || '', coverageCi: afterTerm[3] || ''
       };
-    }).filter(function (g) { return g.policyName || g.coverage !== null; });
+      var policy = cellsToPolicy(cellsObj);
+      if (policy.policyName || policy.coverage !== null) results2.push(policy);
+    });
+    return results2.length ? results2 : null;
   }
 
   // onProgress(pct 0-100) is optional. Returns a Promise<{raw, guesses}> —
@@ -470,6 +578,7 @@ var OCR = (function () {
   return {
     available: available, guessFields: guessFields, guessMultiple: guessMultiple,
     splitIntoPolicyBlocks: splitIntoPolicyBlocks, extractPolicyFromImage: extractPolicyFromImage,
-    extractPoliciesFromImage: extractPoliciesFromImage, reconstructTable: reconstructTable
+    extractPoliciesFromImage: extractPoliciesFromImage, reconstructTable: reconstructTable,
+    parseSpreadsheetText: parseSpreadsheetText
   };
 })();
