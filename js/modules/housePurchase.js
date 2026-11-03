@@ -65,10 +65,21 @@ var ModuleHousePurchase = (function () {
       var s = Calc.housePurchaseSummary(c);
 
       container.innerHTML = '';
-      container.appendChild(Dom.el('div', { class: 'page-header' }, [
-        Dom.el('h1', {}, ['House Purchase']),
-        Dom.el('div', { class: 'sub' }, ['Model the full cost and financing of a property purchase — mortgage and one-off costs feed Net Worth’s Mortgage Details (which feeds CPF), Cashflow, and the Cash Flow Roadmap automatically once a Purchase Price is entered.'])
-      ]));
+      container.appendChild(Dom.el('div', { class: 'page-header flex justify-between items-center' }, [
+        Dom.el('div', {}, [
+          Dom.el('h1', {}, ['House Purchase']),
+          Dom.el('div', { class: 'sub' }, ['Model the full cost and financing of a property purchase — mortgage and one-off costs feed Net Worth’s Mortgage Details (which feeds CPF), Cashflow, and the Cash Flow Roadmap automatically once a Purchase Price is entered.'])
+        ]),
+        s.price > 0 ? Dom.el('button', {
+          class: 'btn btn-secondary', onclick: function () {
+            Dom.modalConfirm(
+              'Clear every House Purchase field on this page, for a fresh simulation? This also removes the mortgage figures it synced into Net Worth’s Mortgage Details, CPF’s Future Home Purchase fields, the auto Cashflow mortgage item, and the Roadmap’s upfront-cash event. Nothing else on the client is touched. This cannot be undone.',
+              function () { clearAll(); },
+              { confirmLabel: 'Clear All', danger: true }
+            );
+          }
+        }, ['Clear All']) : null
+      ].filter(Boolean)));
 
       if (s.price > 0) {
         container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
@@ -291,6 +302,26 @@ var ModuleHousePurchase = (function () {
       var children = [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])];
       if (caption) children.push(Dom.el('div', { class: 'text-tertiary mt-1' }, [caption]));
       return Dom.el('div', { class: 'card kpi-card' + (accent ? ' kpi-accent-' + accent : '') }, children);
+    }
+
+    // Clearing housePurchase alone (which the subscription in app.js
+    // reacts to) already strips the auto Cashflow item and Roadmap event
+    // it created, since those have an "inactive -> remove" branch. Net
+    // Worth's Mortgage Details and CPF's Future Home Purchase fields
+    // don't — this page always force-overwrites them while active, so
+    // once cleared here they'd otherwise linger as stale, unexplained
+    // figures nothing on screen still accounts for. Clearing them here,
+    // explicitly, only on this one confirmed user action, avoids also
+    // wiping them on every ordinary edit (e.g. an advisor who sets CPF's
+    // Future Home Purchase fields directly, without using this page).
+    function clearAll() {
+      Store.set('housePurchase', {});
+      Store.set('liabilities.mortgageDetails.monthlyCash', 0);
+      Store.set('liabilities.mortgageDetails.monthlyCPF', 0);
+      Store.set('liabilities.mortgageDetails.tenureYears', 0);
+      Store.set('liabilities.mortgageDetails.interestRate', 0);
+      Store.set('cpf.homePurchaseAge', '');
+      Store.set('cpf.homePurchaseDownpaymentOA', 0);
     }
 
     draw();
