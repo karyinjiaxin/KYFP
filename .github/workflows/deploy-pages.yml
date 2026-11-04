@@ -22,6 +22,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Stamp build version
+        run: |
+          SHA=$(git rev-parse --short HEAD)
+          TIME=$(date -u +"%-d %b, %H:%M UTC")
+          printf 'var APP_VERSION = { sha: %s, time: %s };\n' "$(node -e "console.log(JSON.stringify(process.argv[1]))" "$SHA")" "$(node -e "console.log(JSON.stringify(process.argv[1]))" "$TIME")" > js/core/version.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
