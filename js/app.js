@@ -411,7 +411,19 @@ var App = (function () {
     requestAnimationFrame(function () { setTimeout(function () { window.print(); }, 250); });
   }
 
+  // Shows which deploy is actually live, right where it's visible at a
+  // glance — js/core/version.js's placeholder ("dev") means this is a
+  // local/dev checkout that never went through the GitHub Pages deploy
+  // workflow, which stamps the real commit + timestamp in on every push.
+  function initBuildStamp() {
+    var el = document.getElementById('buildStamp');
+    if (!el) return;
+    var v = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : { sha: 'dev', time: '' };
+    el.textContent = v.sha === 'dev' ? 'dev build' : ('Build ' + v.sha + (v.time ? ' · ' + v.time : ''));
+  }
+
   function init() {
+    initBuildStamp();
     Store.init(SampleClient);
     initTheme();
     syncCurrentAgeFromDob();

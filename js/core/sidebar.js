@@ -93,15 +93,6 @@ var Sidebar = (function () {
       }
     });
     rootEl.appendChild(toggleBtn);
-
-    // Build identity — tells you whether the page you're looking at is
-    // actually running the latest deploy, without needing DevTools.
-    // version.js's placeholder values mean this is a local/dev checkout
-    // that hasn't gone through the GitHub Pages deploy workflow.
-    var v = (typeof APP_VERSION !== 'undefined') ? APP_VERSION : { sha: 'dev', time: '' };
-    rootEl.appendChild(Dom.el('div', {
-      class: 'sidebar-version', title: v.sha === 'dev' ? 'Local/dev build' : ('Deployed ' + v.time)
-    }, [v.sha === 'dev' ? 'dev build' : ('v ' + v.sha + (v.time ? ' · ' + v.time : ''))]));
   }
 
   return {
