@@ -192,10 +192,11 @@ var ModuleInsurance = (function () {
       if (isLife) {
         card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
           Fields.moneyInput(base + 'coverageTpd', 'TPD Coverage'),
-          Fields.moneyInput(base + 'coverageCi', 'CI Coverage (rider)')
+          Fields.moneyInput(base + 'coverageCiAllStage', 'All-Stage CI Coverage'),
+          Fields.moneyInput(base + 'coverageCi', 'Late-Stage CI Coverage (rider)')
         ]));
         card.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, [
-          'One Life plan can bundle Death, TPD and a CI rider under a single premium — leave TPD blank/0 if it simply matches Death Coverage. Death and TPD count toward the Death/TPD need as whichever is higher (not added together); CI Coverage counts toward the Critical Illness need.'
+          'One Life plan can bundle Death, TPD and a CI rider under a single premium — leave TPD blank/0 if it simply matches Death Coverage. Death and TPD count toward the Death/TPD need as whichever is higher (not added together); Late-Stage CI Coverage counts toward the Critical Illness need. All-Stage CI is tracked for reference but not yet counted in the needs calculation.'
         ]));
       }
       if (p.type === 'Hospital') {
@@ -325,7 +326,7 @@ var ModuleInsurance = (function () {
 
     function addPolicyManually() {
       var arr = Store.get('insurance') || [];
-      arr.push({ id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', policyNo: '', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0, screenshot: '' });
+      arr.push({ id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', policyNo: '', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCiAllStage: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0, screenshot: '' });
       Store.set('insurance', arr);
     }
 
@@ -337,7 +338,8 @@ var ModuleInsurance = (function () {
         company: g.company || 'New Insurer', policyName: g.policyName || 'New Policy', policyNo: g.policyNo || '',
         type: g.type || 'Life', premium: g.premium || 0, premiumFrequency: g.premiumFrequency || 'Annually',
         paymentTerm: g.paymentTerm || 0, coverage: g.coverage || 0,
-        coverageTpd: g.coverageTpd || 0, coverageCi: g.coverageCi || 0
+        coverageTpd: g.coverageTpd || 0, coverageCiAllStage: g.coverageCiAllStage || 0, coverageCi: g.coverageCi || 0,
+        cashValue: g.cashValue || 0
       };
     }
 
@@ -403,7 +405,7 @@ var ModuleInsurance = (function () {
       }
 
       var textarea = Dom.el('textarea', {
-        rows: 4, placeholder: 'Paste a policy summary here (text copied from a spreadsheet/PDF works best) — or paste (Ctrl/⌘+V) or drop a screenshot right here.',
+        rows: 4, placeholder: 'Paste a policy summary here (text copied from a spreadsheet/PDF works best) — or paste (Ctrl/⌘+V) or drop a screenshot right here.\n\nMost reliable: type one value per line in order (see tip below), blank line between policies.',
         style: 'width:100%;resize:vertical;font-family:var(--font-ui);font-size:12.5px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-primary)',
         oninput: function (e) { importRawText = e.target.value; },
         onpaste: function (e) {
@@ -426,6 +428,12 @@ var ModuleInsurance = (function () {
       });
       textarea.value = importRawText;
       wrap.appendChild(textarea);
+      wrap.appendChild(Dom.el('div', { class: 'text-tertiary mt-1', style: 'font-size:11.5px' }, [
+        'Tip — most reliable input: one value per line, in this exact order, blank line between policies — ' +
+        'Insurer, Policy Name, Policy No., Premium, Frequency (Monthly/Annually), Premium Term, Death Coverage, TPD Coverage, ' +
+        'All-Stage CI, Late-Stage CI, and optionally Projected Coverage @65 and Projected Surr Value @65. Type 0 for any ' +
+        'field that doesn’t apply (don’t leave it blank) — a blank line is read as the gap between policies.'
+      ]));
 
       if (pendingImport && pendingImport.length) wrap.appendChild(importReviewTable());
       return wrap;
@@ -437,7 +445,7 @@ var ModuleInsurance = (function () {
       var tableWrap = Dom.el('div', { class: 'table-scroll' });
       var table = Dom.el('table', { class: 'data-table' });
       table.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, [
-        '', 'Company', 'Policy Name', 'Policy No.', 'Type', 'Premium', 'Frequency', 'Death Coverage', 'TPD Coverage', 'CI Coverage'
+        '', 'Company', 'Policy Name', 'Policy No.', 'Type', 'Premium', 'Frequency', 'Death Coverage', 'TPD Coverage', 'All-Stage CI', 'Late-Stage CI', 'Cash Value'
       ].map(function (h) { return Dom.el('th', {}, [h]); }))]));
       var tbody = Dom.el('tbody');
       pendingImport.forEach(function (row, i) {
@@ -451,7 +459,9 @@ var ModuleInsurance = (function () {
           Dom.el('td', {}, [reviewFrequencyCell(row, i)]),
           Dom.el('td', {}, [reviewCell(row, i, 'coverage', true)]),
           Dom.el('td', {}, [reviewCell(row, i, 'coverageTpd', true)]),
-          Dom.el('td', {}, [reviewCell(row, i, 'coverageCi', true)])
+          Dom.el('td', {}, [reviewCell(row, i, 'coverageCiAllStage', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'coverageCi', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'cashValue', true)])
         ]));
       });
       table.appendChild(tbody); tableWrap.appendChild(table); box.appendChild(tableWrap);
@@ -466,8 +476,9 @@ var ModuleInsurance = (function () {
               arr.push({
                 id: Dom.uid('pol'), company: r.company, policyName: r.policyName, policyNo: r.policyNo,
                 type: r.type, premium: Calc.num(r.premium), premiumFrequency: r.premiumFrequency || 'Annually',
-                coverage: Calc.num(r.coverage), coverageTpd: Calc.num(r.coverageTpd), coverageCi: Calc.num(r.coverageCi),
-                startAge: 30, endAge: 99, paymentTerm: Calc.num(r.paymentTerm) || 20, cashValue: 0, dividend: 0,
+                coverage: Calc.num(r.coverage), coverageTpd: Calc.num(r.coverageTpd),
+                coverageCiAllStage: Calc.num(r.coverageCiAllStage), coverageCi: Calc.num(r.coverageCi),
+                startAge: 30, endAge: 99, paymentTerm: Calc.num(r.paymentTerm) || 20, cashValue: Calc.num(r.cashValue), dividend: 0,
                 screenshot: r.screenshot, ocrReviewed: false
               });
             });

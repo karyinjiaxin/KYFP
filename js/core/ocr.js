@@ -195,6 +195,8 @@ var OCR = (function () {
   // smudged digits or jumbled table cells. Returns one guess object per
   // detected policy, dropping any block where nothing useful was found.
   function guessMultiple(text) {
+    var fixedOrder = parseFixedOrderText(text);
+    if (fixedOrder && fixedOrder.length) return fixedOrder;
     var tsv = parseSpreadsheetText(text);
     if (tsv && tsv.length) return tsv;
     return splitIntoPolicyBlocks(text)
@@ -425,12 +427,15 @@ var OCR = (function () {
     var paymentTerm = paymentTermMatch ? Number(paymentTermMatch[1]) : 0;
     var coverage = numFromCell(cells.coverage);
     var coverageTpd = numFromCell(cells.coverageTpd);
-    var coverageCi = numFromCell(cells.coverageCi) !== null ? numFromCell(cells.coverageCi) : numFromCell(cells.coverageCiAllStage);
-    var type = coverageCi !== null && coverage === null ? 'CI' : 'Life';
+    var coverageCiAllStage = numFromCell(cells.coverageCiAllStage);
+    var coverageCi = numFromCell(cells.coverageCi);
+    var cashValue = numFromCell(cells.cashValue);
+    var type = (coverageCi !== null || coverageCiAllStage !== null) && coverage === null ? 'CI' : 'Life';
     return {
       company: company, policyName: policyName, policyNo: policyNo || null,
       premium: premium, premiumFrequency: premiumFrequency, paymentTerm: paymentTerm,
-      coverage: coverage, coverageTpd: coverageTpd, coverageCi: coverageCi, type: type
+      coverage: coverage, coverageTpd: coverageTpd, coverageCiAllStage: coverageCiAllStage,
+      coverageCi: coverageCi, cashValue: cashValue, type: type
     };
   }
 
@@ -531,6 +536,65 @@ var OCR = (function () {
     return results2.length ? results2 : null;
   }
 
+  // ---------- Explicit fixed-order text (no guessing at all) ----------
+  // The most reliable input of all: the advisor types or pastes one value
+  // per line, in this exact order, for each policy —
+  //   Insurer
+  //   Policy Name
+  //   Policy No.
+  //   Premium Amount
+  //   Premium Frequency (Monthly/Annually)
+  //   Premium Term
+  //   Death Coverage
+  //   TPD Coverage
+  //   All-Stage CI Coverage
+  //   Late-Stage CI Coverage
+  //   Projected Coverage @Age 65    (optional, informational only — no
+  //                                   single field to put it in, skipped)
+  //   Projected Surr Value @Age 65  (optional — maps to Cash Value)
+  // — with a blank line between policies. No column detection, no OCR, no
+  // keyword matching: this is the one path the advisor can always trust
+  // completely, since every value's meaning comes from its position, which
+  // they control directly.
+  function parseFixedOrderText(text) {
+    if (!text) return null;
+    var blocks = text.split(/\n\s*\n+/).map(function (b) {
+      return b.split('\n').map(function (l) { return l.trim(); }).filter(function (l) { return l.length; });
+    }).filter(function (b) { return b.length; });
+    if (!blocks.length) return null;
+
+    var results = [];
+    for (var bi = 0; bi < blocks.length; bi++) {
+      var lines = blocks[bi];
+      // Require enough lines to cover Insurer..Late-Stage CI, and the
+      // Premium Frequency line (position 4) must actually say Monthly or
+      // Annually — otherwise this isn't really fixed-order input (could be
+      // an ordinary pasted paragraph), so bail out entirely and let the
+      // caller fall through to the other parsing paths instead.
+      if (lines.length < 10 || !/^(monthly|annually|yearly|annual)$/i.test(lines[4])) return null;
+
+      // Company, Policy Name and Policy No. are already given separately
+      // here (unlike reconstructTable()/parseSpreadsheetText(), which have
+      // to split them back out of one combined cell) — so cellsToPolicy()
+      // only needs to handle the numeric fields; name/company/no. are set
+      // directly from what was typed, overriding its own fuzzier guesses.
+      var policy = cellsToPolicy({
+        policyName: lines[1], premium: lines[3], premiumFrequency: '', paymentTerm: lines[5] + ' years',
+        coverage: lines[6], coverageTpd: lines[7], coverageCiAllStage: lines[8], coverageCi: lines[9],
+        // Projected Coverage @65 (lines[10]) carries no single number worth
+        // keeping — skipped. Projected Surr Value @65 (lines[11]) is the
+        // one trailing optional field with a real home: Cash Value.
+        cashValue: lines.length >= 12 ? lines[11] : ''
+      });
+      policy.company = lines[0] || null;
+      policy.policyName = lines[1] || null;
+      policy.policyNo = lines[2] || null;
+      policy.premiumFrequency = /monthly/i.test(lines[4]) ? 'Monthly' : 'Annually';
+      results.push(policy);
+    }
+    return results.length ? results : null;
+  }
+
   // onProgress(pct 0-100) is optional. Returns a Promise<{raw, guesses}> —
   // `guesses` is the multi-row result (table reconstruction when the image
   // looks tabular, else the text-block fallback), always an array even for
@@ -579,6 +643,6 @@ var OCR = (function () {
     available: available, guessFields: guessFields, guessMultiple: guessMultiple,
     splitIntoPolicyBlocks: splitIntoPolicyBlocks, extractPolicyFromImage: extractPolicyFromImage,
     extractPoliciesFromImage: extractPoliciesFromImage, reconstructTable: reconstructTable,
-    parseSpreadsheetText: parseSpreadsheetText
+    parseSpreadsheetText: parseSpreadsheetText, parseFixedOrderText: parseFixedOrderText
   };
 })();
