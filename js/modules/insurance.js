@@ -199,7 +199,6 @@ var ModuleInsurance = (function () {
       // can genuinely carry an Accident Death rider or Hospital & Surgical
       // limit too. Not yet counted in the Dashboard's coverage-gap/needs
       // calculation — purely stored and displayed for now.
-      card.appendChild(Dom.el('div', { class: 'card-title mt-2' }, ['Additional Coverage (Secondary Coverage template)']));
       card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
         Fields.moneyInput(base + 'accidentDeathCoverage', 'Accident Death Coverage'),
         Fields.moneyInput(base + 'accidentMedicalExpense', 'Accident Medical Expense')
@@ -327,7 +326,6 @@ var ModuleInsurance = (function () {
     // entry point: see ocrAddButton() below.
     function screenshotAttachment(base, p) {
       var wrap = Dom.el('div', { class: 'mt-2' });
-      wrap.appendChild(Dom.el('div', { class: 'field-label', style: 'margin-bottom:6px' }, ['Policy Summary Screenshot (reference only, not auto-filled)']));
       if (p.screenshot) {
         var row = Dom.el('div', { class: 'flex items-center gap-2' }, [
           Dom.el('img', {
