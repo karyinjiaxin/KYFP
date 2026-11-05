@@ -670,7 +670,12 @@ var OCR = (function () {
       var policy = cellsToPolicy({
         policyName: cells.policyName, premium: cells.premium, premiumMonthly: cells.premiumMonthly,
         paymentTerm: /^(\d+)\s*years?$/i.test(termText) ? termText : '',
-        coverage: cells.coverage, coverageCiAllStage: cells.coverageCiAllStage, coverageCi: cells.coverageCi
+        // "Total Level Term (Death / TPD)" pays out on EITHER event for
+        // the same amount — not a Death figure with TPD left uncovered —
+        // so it goes in both, not just coverage, otherwise TPD Coverage
+        // would misleadingly read 0 on a policy that does cover TPD.
+        coverage: cells.coverage, coverageTpd: cells.coverage,
+        coverageCiAllStage: cells.coverageCiAllStage, coverageCi: cells.coverageCi
       });
       if (endAge !== null) policy.endAge = endAge;
       if (a.notes.length) policy.notes = a.notes.join('; ');
