@@ -489,7 +489,12 @@ var ModuleInsurance = (function () {
       var tableWrap = Dom.el('div', { class: 'table-scroll' });
       var table = Dom.el('table', { class: 'data-table' });
       table.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, [
-        '', 'Company', 'Policy Name', 'Policy No.', 'Type', 'Premium', 'Frequency', 'Death Coverage', 'TPD Coverage', 'All-Stage CI', 'Late-Stage CI', 'Cash Value', 'End Age', 'Notes'
+        // "Coverage" (not "Death Coverage") — same generic field the policy
+        // card itself uses for whichever Type is selected (Death for Life,
+        // the single coverage amount for CI/ECI/PA/Disability/Hospital).
+        // TPD/All-Stage/Late-Stage CI stay Life-specific supplementary
+        // fields, same as on the policy card.
+        '', 'Company', 'Policy Name', 'Policy No.', 'Type', 'Premium', 'Frequency', 'Coverage', 'TPD Coverage', 'All-Stage CI', 'Late-Stage CI', 'Cash Value', 'End Age', 'Notes'
       ].map(function (h) { return Dom.el('th', {}, [h]); }))]));
       var tbody = Dom.el('tbody');
       pendingImport.forEach(function (row, i) {

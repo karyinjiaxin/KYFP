@@ -562,9 +562,14 @@ var OCR = (function () {
     { re: /all\s*stage\s*ci/i, field: 'coverageCiAllStage' },
     { re: /critical\s*illness\s*coverage/i, field: 'coverageCi' },
     { re: /level\s*term.*(death|tpd)/i, field: 'coverage' },
-    { re: /income\s*protection/i, note: 'Income Protection (Monthly)' },
+    // These two get a real field (type + the generic Coverage amount for
+    // it — this app's policies are one Type with one Coverage number each,
+    // see parseSecondaryCoverageText's final mapping), not just a note,
+    // so PA/Disability coverage actually shows up rather than being
+    // readable only as text.
+    { re: /income\s*protection/i, field: 'incomeProtectionMonthly' },
+    { re: /accident\s*death/i, field: 'accidentDeath' },
     { re: /long\s*term\s*care/i, note: 'Long Term Care (Monthly)' },
-    { re: /accident\s*death/i, note: 'Accident Death Coverage' },
     { re: /accident\s*medical/i, note: 'Accident Medical Expense' },
     { re: /h\s*&?\s*s.*surgery|surgery.*room/i, note: 'H&S Surgery/Room & Board Limit' },
     { re: /h\s*&?\s*s.*annual|annual\s*limit/i, note: 'H&S Annual Limit' }
@@ -678,6 +683,23 @@ var OCR = (function () {
         coverageCiAllStage: cells.coverageCiAllStage, coverageCi: cells.coverageCi
       });
       if (endAge !== null) policy.endAge = endAge;
+      // No Death/TPD or CI figure on this row, but there IS an Accident
+      // Death or Income Protection one — this app's policies carry one
+      // Type and one generic Coverage amount each, so these become that
+      // row's real coverage (as PA / Disability) instead of just a note.
+      // Income Protection is given as a MONTHLY benefit in this template,
+      // unlike every other coverage column here, which is worth flagging
+      // rather than leaving the advisor to assume it's annual.
+      if (policy.coverage === null && policy.coverageCi === null && policy.coverageCiAllStage === null) {
+        var accidentDeath = numFromCell(cells.accidentDeath);
+        var incomeProtection = numFromCell(cells.incomeProtectionMonthly);
+        if (accidentDeath !== null) {
+          policy.type = 'PA'; policy.coverage = accidentDeath; policy.coverageTpd = null;
+        } else if (incomeProtection !== null) {
+          policy.type = 'Disability'; policy.coverage = incomeProtection; policy.coverageTpd = null;
+          a.notes.push('Coverage is a MONTHLY Income Protection benefit, not an annual/lump sum figure');
+        }
+      }
       if (a.notes.length) policy.notes = a.notes.join('; ');
       return policy;
     }).filter(function (g) { return g.policyName; });
