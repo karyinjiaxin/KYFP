@@ -187,15 +187,35 @@ var ModuleInsurance = (function () {
         Fields.moneyInput(base + 'cashValue', 'Cash Value'),
         Fields.numberInput(base + 'dividend', 'Dividend Rate %', { step: '0.1' })
       ]);
-      // Catches the coverages this app doesn't have a dedicated field for
-      // yet (Income Protection, Long Term Care, Accident Death/Medical,
-      // Hospital & Surgical limits, a Medisave/CPF premium breakdown) —
-      // the Secondary Coverage import path fills this in automatically
-      // rather than silently dropping those values; free text either way.
+      // Free-text catch-all for anything that genuinely doesn't fit one of
+      // this app's fields — the Secondary Coverage table's own columns all
+      // have dedicated fields below now, so this is for whatever's left.
       var formRow5 = Dom.el('div', { class: 'input-row mt-2' }, [
-        Fields.textInput(base + 'notes', 'Notes (other coverage not tracked as a field above)')
+        Fields.textInput(base + 'notes', 'Notes')
       ]);
       card.appendChild(formRow1); card.appendChild(formRow1b); card.appendChild(formRow2); card.appendChild(formRow3); card.appendChild(formRow4); card.appendChild(formRow5);
+      // Secondary Coverage template fields — stored on every policy, not
+      // just ones imported from that table, since an existing Life policy
+      // can genuinely carry an Accident Death rider or Hospital & Surgical
+      // limit too. Not yet counted in the Dashboard's coverage-gap/needs
+      // calculation — purely stored and displayed for now.
+      card.appendChild(Dom.el('div', { class: 'card-title mt-2' }, ['Additional Coverage (Secondary Coverage template)']));
+      card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
+        Fields.moneyInput(base + 'accidentDeathCoverage', 'Accident Death Coverage'),
+        Fields.moneyInput(base + 'accidentMedicalExpense', 'Accident Medical Expense')
+      ]));
+      card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
+        Fields.moneyInput(base + 'incomeProtectionMonthly', 'Income Protection (Monthly)'),
+        Fields.moneyInput(base + 'longTermCareMonthly', 'Long Term Care (Monthly)')
+      ]));
+      card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
+        Fields.textInput(base + 'hsSurgeryRoomBoardLimit', 'H&S Surgery/Room & Board Limit'),
+        Fields.moneyInput(base + 'hsAnnualLimit', 'H&S Annual Limit')
+      ]));
+      card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
+        Fields.textInput(base + 'projectedCoverageNote', 'Projected Coverage @65 (note)'),
+        Fields.textInput(base + 'remarks', 'Remarks')
+      ]));
       card.appendChild(screenshotAttachment(base, p));
       if (isLife) {
         card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
@@ -334,7 +354,10 @@ var ModuleInsurance = (function () {
 
     function addPolicyManually() {
       var arr = Store.get('insurance') || [];
-      arr.push({ id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', policyNo: '', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCiAllStage: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0, notes: '', screenshot: '' });
+      arr.push({
+        id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', policyNo: '', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCiAllStage: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0, notes: '', screenshot: '',
+        incomeProtectionMonthly: 0, longTermCareMonthly: 0, accidentDeathCoverage: 0, accidentMedicalExpense: 0, hsSurgeryRoomBoardLimit: '', hsAnnualLimit: 0, projectedCoverageNote: '', remarks: ''
+      });
       Store.set('insurance', arr);
     }
 
@@ -347,7 +370,11 @@ var ModuleInsurance = (function () {
         type: g.type || 'Life', premium: g.premium || 0, premiumFrequency: g.premiumFrequency || 'Annually',
         paymentTerm: g.paymentTerm || 0, coverage: g.coverage || 0,
         coverageTpd: g.coverageTpd || 0, coverageCiAllStage: g.coverageCiAllStage || 0, coverageCi: g.coverageCi || 0,
-        cashValue: g.cashValue || 0, endAge: g.endAge || 0, notes: g.notes || ''
+        cashValue: g.cashValue || 0, endAge: g.endAge || 0, notes: g.notes || '',
+        dividend: g.dividend || 0, projectedCoverageNote: g.projectedCoverageNote || '', remarks: g.remarks || '',
+        incomeProtectionMonthly: g.incomeProtectionMonthly || 0, longTermCareMonthly: g.longTermCareMonthly || 0,
+        accidentDeathCoverage: g.accidentDeathCoverage || 0, accidentMedicalExpense: g.accidentMedicalExpense || 0,
+        hsSurgeryRoomBoardLimit: g.hsSurgeryRoomBoardLimit || '', hsAnnualLimit: g.hsAnnualLimit || 0
       };
     }
 
@@ -494,7 +521,8 @@ var ModuleInsurance = (function () {
         // the single coverage amount for CI/ECI/PA/Disability/Hospital).
         // TPD/All-Stage/Late-Stage CI stay Life-specific supplementary
         // fields, same as on the policy card.
-        '', 'Company', 'Policy Name', 'Policy No.', 'Type', 'Premium', 'Frequency', 'Coverage', 'TPD Coverage', 'All-Stage CI', 'Late-Stage CI', 'Cash Value', 'End Age', 'Notes'
+        '', 'Company', 'Policy Name', 'Policy No.', 'Type', 'Premium', 'Frequency', 'Coverage', 'TPD Coverage', 'All-Stage CI', 'Late-Stage CI', 'Cash Value', 'Yield %', 'End Age',
+        'Income Protection (Monthly)', 'Long Term Care (Monthly)', 'Accident Death', 'Accident Medical', 'H&S Surgery/Room & Board', 'H&S Annual Limit', 'Projected Coverage @65', 'Remarks', 'Notes'
       ].map(function (h) { return Dom.el('th', {}, [h]); }))]));
       var tbody = Dom.el('tbody');
       pendingImport.forEach(function (row, i) {
@@ -511,7 +539,16 @@ var ModuleInsurance = (function () {
           Dom.el('td', {}, [reviewCell(row, i, 'coverageCiAllStage', true)]),
           Dom.el('td', {}, [reviewCell(row, i, 'coverageCi', true)]),
           Dom.el('td', {}, [reviewCell(row, i, 'cashValue', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'dividend', true)]),
           Dom.el('td', {}, [reviewCell(row, i, 'endAge', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'incomeProtectionMonthly', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'longTermCareMonthly', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'accidentDeathCoverage', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'accidentMedicalExpense', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'hsSurgeryRoomBoardLimit')]),
+          Dom.el('td', {}, [reviewCell(row, i, 'hsAnnualLimit', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'projectedCoverageNote')]),
+          Dom.el('td', {}, [reviewCell(row, i, 'remarks')]),
           Dom.el('td', {}, [reviewCell(row, i, 'notes')])
         ]));
       });
@@ -533,8 +570,12 @@ var ModuleInsurance = (function () {
                 // at all kinds of ages and premium terms, so a plausible-
                 // looking default (e.g. 30 / 20yrs) is more likely to go
                 // unnoticed and uncorrected than an obviously-empty field.
-                startAge: 0, endAge: Calc.num(r.endAge) || 99, paymentTerm: Calc.num(r.paymentTerm), cashValue: Calc.num(r.cashValue), dividend: 0,
-                notes: r.notes || '', screenshot: r.screenshot, ocrReviewed: false
+                startAge: 0, endAge: Calc.num(r.endAge) || 99, paymentTerm: Calc.num(r.paymentTerm), cashValue: Calc.num(r.cashValue), dividend: Calc.num(r.dividend),
+                notes: r.notes || '', screenshot: r.screenshot, ocrReviewed: false,
+                incomeProtectionMonthly: Calc.num(r.incomeProtectionMonthly), longTermCareMonthly: Calc.num(r.longTermCareMonthly),
+                accidentDeathCoverage: Calc.num(r.accidentDeathCoverage), accidentMedicalExpense: Calc.num(r.accidentMedicalExpense),
+                hsSurgeryRoomBoardLimit: r.hsSurgeryRoomBoardLimit || '', hsAnnualLimit: Calc.num(r.hsAnnualLimit),
+                projectedCoverageNote: r.projectedCoverageNote || '', remarks: r.remarks || ''
               });
             });
             Store.set('insurance', arr);

@@ -227,8 +227,13 @@ var OCR = (function () {
     { re: /total\s*tpd\s*coverage|^tpd\s*coverage/i, field: 'coverageTpd' },
     { re: /all\s*stage\s*ci/i, field: 'coverageCiAllStage' },
     { re: /critical\s*illness\s*coverage/i, field: 'coverageCi' },
+    // Checked before the Surr(ender) Value pattern below — "Projected
+    // Yield on Surr Value" contains "Surr Value" too, so it would
+    // otherwise be wrongly claimed by that pattern first.
+    { re: /yield/i, field: 'dividend' },
     { re: /surr(ender)?\s*value/i, field: 'cashValue' },
-    { re: /yield/i, field: 'dividend' }
+    { re: /projected\s*coverage/i, field: 'projectedCoverageNote' },
+    { re: /remarks/i, field: 'remarks' }
   ];
 
   function clusterRows(words) {
@@ -435,7 +440,16 @@ var OCR = (function () {
       company: company, policyName: policyName, policyNo: policyNo || null,
       premium: premium, premiumFrequency: premiumFrequency, paymentTerm: paymentTerm,
       coverage: coverage, coverageTpd: coverageTpd, coverageCiAllStage: coverageCiAllStage,
-      coverageCi: coverageCi, cashValue: cashValue, type: type
+      coverageCi: coverageCi, cashValue: cashValue, type: type,
+      dividend: numFromCell(cells.dividend),
+      projectedCoverageNote: (cells.projectedCoverageNote || '').trim() || null,
+      remarks: (cells.remarks || '').trim() || null,
+      incomeProtectionMonthly: numFromCell(cells.incomeProtectionMonthly),
+      longTermCareMonthly: numFromCell(cells.longTermCareMonthly),
+      accidentDeathCoverage: numFromCell(cells.accidentDeathCoverage),
+      accidentMedicalExpense: numFromCell(cells.accidentMedicalExpense),
+      hsSurgeryRoomBoardLimit: (cells.hsSurgeryRoomBoardLimit || '').trim() || null,
+      hsAnnualLimit: numFromCell(cells.hsAnnualLimit)
     };
   }
 
@@ -562,17 +576,14 @@ var OCR = (function () {
     { re: /all\s*stage\s*ci/i, field: 'coverageCiAllStage' },
     { re: /critical\s*illness\s*coverage/i, field: 'coverageCi' },
     { re: /level\s*term.*(death|tpd)/i, field: 'coverage' },
-    // These two get a real field (type + the generic Coverage amount for
-    // it — this app's policies are one Type with one Coverage number each,
-    // see parseSecondaryCoverageText's final mapping), not just a note,
-    // so PA/Disability coverage actually shows up rather than being
-    // readable only as text.
+    // Every column in this template now has a real field of its own — no
+    // more funnelling extras into a free-text Notes catch-all.
     { re: /income\s*protection/i, field: 'incomeProtectionMonthly' },
-    { re: /accident\s*death/i, field: 'accidentDeath' },
-    { re: /long\s*term\s*care/i, note: 'Long Term Care (Monthly)' },
-    { re: /accident\s*medical/i, note: 'Accident Medical Expense' },
-    { re: /h\s*&?\s*s.*surgery|surgery.*room/i, note: 'H&S Surgery/Room & Board Limit' },
-    { re: /h\s*&?\s*s.*annual|annual\s*limit/i, note: 'H&S Annual Limit' }
+    { re: /long\s*term\s*care/i, field: 'longTermCareMonthly' },
+    { re: /accident\s*death/i, field: 'accidentDeathCoverage' },
+    { re: /accident\s*medical/i, field: 'accidentMedicalExpense' },
+    { re: /h\s*&?\s*s.*surgery|surgery.*room/i, field: 'hsSurgeryRoomBoardLimit' },
+    { re: /h\s*&?\s*s.*annual|annual\s*limit/i, field: 'hsAnnualLimit' }
   ];
   function matchSecondaryColumnField(headerText) {
     for (var i = 0; i < SECONDARY_COLUMN_ALIASES.length; i++) {
@@ -643,23 +654,21 @@ var OCR = (function () {
       var hasName = (r[nameIdx] || '').trim().length > 0;
       if (!hasName) return; // caption/footnote row — no plan name, not money-only either
       var cells = {};
-      var notes = [];
       r.forEach(function (c, i) {
         var col = headerCols[i];
-        if (!col || !c.trim()) return;
-        if (col.field) cells[col.field] = (cells[col.field] ? cells[col.field] + ' ' : '') + c.trim();
-        else if (col.note) notes.push(col.note + ': ' + c.trim());
+        if (!col || !col.field || !c.trim()) return;
+        cells[col.field] = (cells[col.field] ? cells[col.field] + ' ' : '') + c.trim();
       });
       // A footnote/caption row (e.g. "Covers for Death, TPD, and Terminal
       // Illness...", "Riders to Smart Protect (RP)") lands its prose text
       // in the Plan Name column same as a real row would, but — unlike
       // every genuine policy/rider row in this template — carries no
-      // premium, coverage, term, or note data at all. That absence is
-      // what distinguishes it, not the wording, so this rule generalizes
+      // premium, coverage, or term data at all. That absence is what
+      // distinguishes it, not the wording, so this rule generalizes
       // beyond this table's own specific footnote phrasing.
-      var hasOtherData = Object.keys(cells).some(function (f) { return f !== 'policyName'; }) || notes.length > 0;
+      var hasOtherData = Object.keys(cells).some(function (f) { return f !== 'policyName'; });
       if (!hasOtherData) return;
-      anchors.push({ cells: cells, notes: notes });
+      anchors.push({ cells: cells, notes: [] });
     });
 
     return anchors.map(function (a) {
@@ -672,33 +681,19 @@ var OCR = (function () {
       var tillAgeMatch = termText.match(/till\s*age\s*(\d+)/i);
       if (tillAgeMatch) endAge = Number(tillAgeMatch[1]);
       else if (/lifetime/i.test(termText)) endAge = 99;
-      var policy = cellsToPolicy({
-        policyName: cells.policyName, premium: cells.premium, premiumMonthly: cells.premiumMonthly,
-        paymentTerm: /^(\d+)\s*years?$/i.test(termText) ? termText : '',
-        // "Total Level Term (Death / TPD)" pays out on EITHER event for
-        // the same amount — not a Death figure with TPD left uncovered —
-        // so it goes in both, not just coverage, otherwise TPD Coverage
-        // would misleadingly read 0 on a policy that does cover TPD.
-        coverage: cells.coverage, coverageTpd: cells.coverage,
-        coverageCiAllStage: cells.coverageCiAllStage, coverageCi: cells.coverageCi
-      });
+      cells.paymentTerm = /^(\d+)\s*years?$/i.test(termText) ? termText : '';
+      var policy = cellsToPolicy(cells);
       if (endAge !== null) policy.endAge = endAge;
-      // No Death/TPD or CI figure on this row, but there IS an Accident
-      // Death or Income Protection one — this app's policies carry one
-      // Type and one generic Coverage amount each, so these become that
-      // row's real coverage (as PA / Disability) instead of just a note.
+      // "Total Level Term (Death / TPD)" pays out on EITHER event for the
+      // same amount — not a Death figure with TPD left uncovered — so it
+      // goes in both, not just coverage, otherwise TPD Coverage would
+      // misleadingly read 0 on a policy that does cover TPD.
+      if (policy.coverage !== null) policy.coverageTpd = policy.coverage;
       // Income Protection is given as a MONTHLY benefit in this template,
-      // unlike every other coverage column here, which is worth flagging
-      // rather than leaving the advisor to assume it's annual.
-      if (policy.coverage === null && policy.coverageCi === null && policy.coverageCiAllStage === null) {
-        var accidentDeath = numFromCell(cells.accidentDeath);
-        var incomeProtection = numFromCell(cells.incomeProtectionMonthly);
-        if (accidentDeath !== null) {
-          policy.type = 'PA'; policy.coverage = accidentDeath; policy.coverageTpd = null;
-        } else if (incomeProtection !== null) {
-          policy.type = 'Disability'; policy.coverage = incomeProtection; policy.coverageTpd = null;
-          a.notes.push('Coverage is a MONTHLY Income Protection benefit, not an annual/lump sum figure');
-        }
+      // unlike every other coverage figure here — worth flagging rather
+      // than leaving the advisor to assume it's annual.
+      if (policy.incomeProtectionMonthly !== null) {
+        a.notes.push('Income Protection is a MONTHLY benefit, not an annual/lump sum figure');
       }
       if (a.notes.length) policy.notes = a.notes.join('; ');
       return policy;
