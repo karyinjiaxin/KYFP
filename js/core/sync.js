@@ -23,6 +23,23 @@ var Sync = (function () {
   var pollTimer = null;
   var lastPushedJSON = null;
   var channel = null;
+  // Once a push/pull fails because the remote table itself isn't set up
+  // (e.g. supabase/schema.sql was never run against this Supabase
+  // project), every retry will keep failing the same way — stop hammering
+  // it every 2.5s forever (which just floods the console and can bury
+  // other, actionable errors) and say so once instead.
+  var halted = false;
+  function haltSync(reason, err) {
+    if (halted) return;
+    halted = true;
+    clearInterval(pollTimer);
+    clearTimeout(pushTimer);
+    console.error(
+      'Supabase sync stopped for this session: ' + reason + ' — your work still saves locally, ' +
+      'but won’t sync across devices until this is fixed. If the table is missing, run supabase/schema.sql ' +
+      'against your Supabase project (SQL Editor) and reload.', err
+    );
+  }
 
   function readLocalSnapshot() {
     var client = null, savedClients = null, currentClientId = null;
@@ -53,7 +70,11 @@ var Sync = (function () {
       var user = res.data && res.data.user;
       if (!user) return;
       return sb.from('app_state').select('data').eq('owner', user.id).maybeSingle().then(function (res2) {
-        if (res2.error) { console.error('Supabase pull failed, running local-only for this session', res2.error); return; }
+        if (res2.error) {
+          if (res2.error.code === 'PGRST205') { haltSync('the app_state table was not found', res2.error); return; }
+          console.error('Supabase pull failed, running local-only for this session', res2.error);
+          return;
+        }
         if (res2.data && res2.data.data) {
           writeLocalSnapshot(res2.data.data);
           lastPushedJSON = JSON.stringify(res2.data.data);
@@ -63,6 +84,7 @@ var Sync = (function () {
   }
 
   function pushNow() {
+    if (halted) return;
     var sb = Auth.getClient();
     if (!sb) return;
     sb.auth.getUser().then(function (res) {
@@ -73,12 +95,16 @@ var Sync = (function () {
       if (json === lastPushedJSON) return; // nothing changed since our last push
       lastPushedJSON = json;
       sb.from('app_state').upsert({ owner: user.id, data: snap, updated_at: new Date().toISOString() }).then(function (res3) {
-        if (res3.error) console.error('Supabase sync push failed', res3.error);
+        if (res3.error) {
+          if (res3.error.code === 'PGRST205') { haltSync('the app_state table was not found', res3.error); return; }
+          console.error('Supabase sync push failed', res3.error);
+        }
       });
     });
   }
 
   function scheduleDebouncedPush() {
+    if (halted) return;
     clearTimeout(pushTimer);
     pushTimer = setTimeout(pushNow, PUSH_DEBOUNCE_MS);
   }

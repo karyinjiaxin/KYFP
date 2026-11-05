@@ -152,15 +152,23 @@ var Charts = (function () {
     config.options = config.options || {};
     config.options.plugins = config.options.plugins || {};
     config.options.plugins.legend = Object.assign({ labels: { color: t.text, font: { size: 11.5 }, boxWidth: 10, usePointStyle: true } }, config.options.plugins.legend || {});
-    config.options.scales = config.options.scales || {};
-    ['x', 'y'].forEach(function (ax) {
-      if (config.options.scales[ax] !== false) {
-        config.options.scales[ax] = Object.assign({
-          ticks: { color: t.text, font: { size: 11 } },
-          grid: { color: t.grid, drawBorder: false }
-        }, config.options.scales[ax] || {});
-      }
-    });
+    // Pie/doughnut (and any other radial type) have no x/y cartesian axes at
+    // all — forcing scales.x/scales.y config onto them is what Chart.js was
+    // warning about ("Invalid scale configuration for scale: x/y") on every
+    // one of these charts, since it can't find a matching axis to apply the
+    // config to.
+    var RADIAL_TYPES = ['pie', 'doughnut', 'polarArea', 'radar'];
+    if (RADIAL_TYPES.indexOf(config.type) === -1) {
+      config.options.scales = config.options.scales || {};
+      ['x', 'y'].forEach(function (ax) {
+        if (config.options.scales[ax] !== false) {
+          config.options.scales[ax] = Object.assign({
+            ticks: { color: t.text, font: { size: 11 } },
+            grid: { color: t.grid, drawBorder: false }
+          }, config.options.scales[ax] || {});
+        }
+      });
+    }
     config.options.responsive = true;
     config.options.maintainAspectRatio = false;
     var chart = new Chart(canvas.getContext('2d'), config);
