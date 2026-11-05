@@ -187,7 +187,15 @@ var ModuleInsurance = (function () {
         Fields.moneyInput(base + 'cashValue', 'Cash Value'),
         Fields.numberInput(base + 'dividend', 'Dividend Rate %', { step: '0.1' })
       ]);
-      card.appendChild(formRow1); card.appendChild(formRow1b); card.appendChild(formRow2); card.appendChild(formRow3); card.appendChild(formRow4);
+      // Catches the coverages this app doesn't have a dedicated field for
+      // yet (Income Protection, Long Term Care, Accident Death/Medical,
+      // Hospital & Surgical limits, a Medisave/CPF premium breakdown) —
+      // the Secondary Coverage import path fills this in automatically
+      // rather than silently dropping those values; free text either way.
+      var formRow5 = Dom.el('div', { class: 'input-row mt-2' }, [
+        Fields.textInput(base + 'notes', 'Notes (other coverage not tracked as a field above)')
+      ]);
+      card.appendChild(formRow1); card.appendChild(formRow1b); card.appendChild(formRow2); card.appendChild(formRow3); card.appendChild(formRow4); card.appendChild(formRow5);
       card.appendChild(screenshotAttachment(base, p));
       if (isLife) {
         card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
@@ -326,7 +334,7 @@ var ModuleInsurance = (function () {
 
     function addPolicyManually() {
       var arr = Store.get('insurance') || [];
-      arr.push({ id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', policyNo: '', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCiAllStage: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0, screenshot: '' });
+      arr.push({ id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', policyNo: '', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCiAllStage: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0, notes: '', screenshot: '' });
       Store.set('insurance', arr);
     }
 
@@ -339,12 +347,24 @@ var ModuleInsurance = (function () {
         type: g.type || 'Life', premium: g.premium || 0, premiumFrequency: g.premiumFrequency || 'Annually',
         paymentTerm: g.paymentTerm || 0, coverage: g.coverage || 0,
         coverageTpd: g.coverageTpd || 0, coverageCiAllStage: g.coverageCiAllStage || 0, coverageCi: g.coverageCi || 0,
-        cashValue: g.cashValue || 0
+        cashValue: g.cashValue || 0, endAge: g.endAge || 0, notes: g.notes || ''
       };
     }
 
+    // Which pasted-table template to read against — the two shapes don't
+    // reliably tell themselves apart automatically (see OCR.
+    // parseSecondaryCoverageText's own comment for why), so the advisor
+    // picks explicitly rather than risk a wrong auto-detection silently
+    // misreading a real policy.
+    var importMode = 'primary';
+
     function runImportParse(text) {
-      pendingImport = OCR.guessMultiple(text).map(function (g) { return toReviewRow(g, ''); });
+      var guesses = importMode === 'secondary' ? OCR.parseSecondaryCoverageText(text) : OCR.guessMultiple(text);
+      if (importMode === 'secondary' && !guesses) {
+        Dom.modalAlert('Couldn’t find a recognizable Secondary Coverage header row in that paste — make sure the yellow header row (Plan Name, Monthly Premium, Annual Premium, Coverage Term, …) is included.');
+        return;
+      }
+      pendingImport = (guesses || []).map(function (g) { return toReviewRow(g, ''); });
       if (!pendingImport.length) pendingImport = [toReviewRow({}, '')];
       draw();
     }
@@ -361,7 +381,19 @@ var ModuleInsurance = (function () {
           Dom.el('div', { style: 'font-weight:700;font-size:13.5px' }, ['Import Policies']),
           Dom.el('div', { class: 'text-tertiary' }, ['Paste text, or paste/drop a screenshot below. You’ll review every row before it’s saved.'])
         ]),
-        Dom.el('div', { class: 'flex gap-2' }, [
+        Dom.el('div', { class: 'flex gap-2 items-center', style: 'flex-wrap:wrap' }, [
+          Dom.el('div', { class: 'field', style: 'margin:0' }, [
+            Dom.el('label', { class: 'field-label' }, ['Table type']),
+            (function () {
+              var sel = Dom.el('select', { onchange: function (e) { importMode = e.target.value; } });
+              [['primary', 'Primary Coverage'], ['secondary', 'Secondary Coverage']].forEach(function (opt) {
+                var o = Dom.el('option', { value: opt[0] }, [opt[1]]);
+                if (opt[0] === importMode) o.setAttribute('selected', 'selected');
+                sel.appendChild(o);
+              });
+              return sel;
+            })()
+          ]),
           Dom.el('button', { class: 'btn btn-secondary btn-sm', onclick: function () { screenshotInput.click(); } }, ['📷 Screenshot']),
           Dom.el('button', { class: 'btn btn-secondary btn-sm', onclick: function () { addPolicyManually(); } }, ['+ Add Manually']),
           Dom.el('button', {
@@ -457,7 +489,7 @@ var ModuleInsurance = (function () {
       var tableWrap = Dom.el('div', { class: 'table-scroll' });
       var table = Dom.el('table', { class: 'data-table' });
       table.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, [
-        '', 'Company', 'Policy Name', 'Policy No.', 'Type', 'Premium', 'Frequency', 'Death Coverage', 'TPD Coverage', 'All-Stage CI', 'Late-Stage CI', 'Cash Value'
+        '', 'Company', 'Policy Name', 'Policy No.', 'Type', 'Premium', 'Frequency', 'Death Coverage', 'TPD Coverage', 'All-Stage CI', 'Late-Stage CI', 'Cash Value', 'End Age', 'Notes'
       ].map(function (h) { return Dom.el('th', {}, [h]); }))]));
       var tbody = Dom.el('tbody');
       pendingImport.forEach(function (row, i) {
@@ -473,7 +505,9 @@ var ModuleInsurance = (function () {
           Dom.el('td', {}, [reviewCell(row, i, 'coverageTpd', true)]),
           Dom.el('td', {}, [reviewCell(row, i, 'coverageCiAllStage', true)]),
           Dom.el('td', {}, [reviewCell(row, i, 'coverageCi', true)]),
-          Dom.el('td', {}, [reviewCell(row, i, 'cashValue', true)])
+          Dom.el('td', {}, [reviewCell(row, i, 'cashValue', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'endAge', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'notes')])
         ]));
       });
       table.appendChild(tbody); tableWrap.appendChild(table); box.appendChild(tableWrap);
@@ -494,8 +528,8 @@ var ModuleInsurance = (function () {
                 // at all kinds of ages and premium terms, so a plausible-
                 // looking default (e.g. 30 / 20yrs) is more likely to go
                 // unnoticed and uncorrected than an obviously-empty field.
-                startAge: 0, endAge: 99, paymentTerm: Calc.num(r.paymentTerm), cashValue: Calc.num(r.cashValue), dividend: 0,
-                screenshot: r.screenshot, ocrReviewed: false
+                startAge: 0, endAge: Calc.num(r.endAge) || 99, paymentTerm: Calc.num(r.paymentTerm), cashValue: Calc.num(r.cashValue), dividend: 0,
+                notes: r.notes || '', screenshot: r.screenshot, ocrReviewed: false
               });
             });
             Store.set('insurance', arr);

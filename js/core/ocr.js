@@ -536,6 +536,148 @@ var OCR = (function () {
     return results2.length ? results2 : null;
   }
 
+  // ---------- Secondary Coverage table (term riders, no cash value) ----------
+  // A structurally different template from the Primary Coverage one above:
+  // extra columns this app has no dedicated field for (Income Protection,
+  // Long Term Care, Accident Death/Medical, Hospital & Surgical limits —
+  // collected into a readable `notes` string instead of silently dropped),
+  // a combined "Total Level Term (Death / TPD)" column instead of separate
+  // Death/TPD columns, a "Coverage Term" column that means "covered until
+  // this age" rather than "pay premiums for this many years", several
+  // policies that can share one row group (riders listed under one "No."),
+  // and — the specific case this was built around — a Premium cell whose
+  // real figure is a government/Medisave-funded amount split across two
+  // visual lines ("CPF-Medisave ($803/Yr)" then "$380.16" directly below
+  // it in the same spreadsheet column), which a plain line-by-line TSV
+  // reader would otherwise treat as two unrelated rows. Per the advisor's
+  // own confirmation: the Medisave-labelled figure and the plain-number
+  // continuation line are both real, and ADD UP to the total premium
+  // (Medisave portion + cash portion) — never guessed, always from that
+  // confirmation.
+  var SECONDARY_COLUMN_ALIASES = [
+    { re: /plan\s*name/i, field: 'policyName' },
+    { re: /monthly\s*premium/i, field: 'premiumMonthly' },
+    { re: /annual\s*premium/i, field: 'premium' },
+    { re: /coverage\s*term/i, field: 'coverageTerm' },
+    { re: /all\s*stage\s*ci/i, field: 'coverageCiAllStage' },
+    { re: /critical\s*illness\s*coverage/i, field: 'coverageCi' },
+    { re: /level\s*term.*(death|tpd)/i, field: 'coverage' },
+    { re: /income\s*protection/i, note: 'Income Protection (Monthly)' },
+    { re: /long\s*term\s*care/i, note: 'Long Term Care (Monthly)' },
+    { re: /accident\s*death/i, note: 'Accident Death Coverage' },
+    { re: /accident\s*medical/i, note: 'Accident Medical Expense' },
+    { re: /h\s*&?\s*s.*surgery|surgery.*room/i, note: 'H&S Surgery/Room & Board Limit' },
+    { re: /h\s*&?\s*s.*annual|annual\s*limit/i, note: 'H&S Annual Limit' }
+  ];
+  function matchSecondaryColumnField(headerText) {
+    for (var i = 0; i < SECONDARY_COLUMN_ALIASES.length; i++) {
+      if (SECONDARY_COLUMN_ALIASES[i].re.test(headerText)) return SECONDARY_COLUMN_ALIASES[i];
+    }
+    return null;
+  }
+
+  // A continuation line (the second half of a visually-wrapped cell, see
+  // above) has, at most, one or two money-shaped cells and nothing that
+  // looks like a plan name or sentence — distinct from a genuine new
+  // policy row (has a plan name, even a short rider one like "rider -
+  // Critical Care Advantage") and from a caption/footnote row (prose text,
+  // no money-shaped cells at all).
+  function looksLikeMoneyContinuation(cells, nameIdx) {
+    var hasName = (cells[nameIdx] || '').trim().length > 0;
+    if (hasName) return false;
+    var nonEmpty = cells.filter(function (c) { return c.trim().length > 0; });
+    if (!nonEmpty.length) return false;
+    return nonEmpty.every(function (c) { return CURRENCY_TOKEN.test(c.trim()); });
+  }
+
+  // Returns an array of policy guesses read against the Secondary Coverage
+  // template specifically (see above) — or null if the text isn't
+  // tab-separated, or no recognizable header row was found (this template
+  // is irregular enough that positional guessing without the header
+  // wasn't attempted). The advisor picks this path explicitly (a Primary/
+  // Secondary toggle in the Import panel), since the two templates can't
+  // be reliably told apart automatically.
+  function parseSecondaryCoverageText(text) {
+    if (!text || text.indexOf('\t') === -1) return null;
+    var rows = parseDelimitedRows(text);
+    if (!rows.length) return null;
+
+    var headerIdx = -1, headerScore = 0, headerCols = null;
+    rows.forEach(function (r, i) {
+      var cols = r.map(function (c) { return matchSecondaryColumnField(c); });
+      var score = cols.filter(Boolean).length;
+      if (score > headerScore) { headerScore = score; headerIdx = i; headerCols = cols; }
+    });
+    if (headerIdx === -1 || headerScore < 3) return null;
+    var nameIdx = headerCols.findIndex(function (c) { return c && c.field === 'policyName'; });
+    if (nameIdx === -1) return null;
+
+    var anchors = []; // each: { cells: {field: text}, notes: [] }
+    rows.slice(headerIdx + 1).forEach(function (r) {
+      if (looksLikeMoneyContinuation(r, nameIdx)) {
+        if (!anchors.length) return;
+        var prevAnchor = anchors[anchors.length - 1];
+        r.forEach(function (c, i) {
+          var col = headerCols[i];
+          if (!col || !col.field || !c.trim()) return;
+          var existing = prevAnchor.cells[col.field];
+          var newNum = numFromCell(c);
+          var existingNum = numFromCell(existing);
+          // The defining case this exists for: a Medisave/CPF-labelled
+          // figure above, a plain dollar figure below, in the same
+          // premium column — advisor-confirmed to ADD UP to the total.
+          if (existing && newNum !== null && existingNum !== null && /medisave|cpf/i.test(existing)) {
+            prevAnchor.notes.push('Includes ' + existingNum + '/yr via Medisave/CPF + ' + newNum + ' cash');
+            prevAnchor.cells[col.field] = String(existingNum + newNum);
+          } else if (!existing) {
+            prevAnchor.cells[col.field] = c.trim();
+          }
+        });
+        return;
+      }
+      var hasName = (r[nameIdx] || '').trim().length > 0;
+      if (!hasName) return; // caption/footnote row — no plan name, not money-only either
+      var cells = {};
+      var notes = [];
+      r.forEach(function (c, i) {
+        var col = headerCols[i];
+        if (!col || !c.trim()) return;
+        if (col.field) cells[col.field] = (cells[col.field] ? cells[col.field] + ' ' : '') + c.trim();
+        else if (col.note) notes.push(col.note + ': ' + c.trim());
+      });
+      // A footnote/caption row (e.g. "Covers for Death, TPD, and Terminal
+      // Illness...", "Riders to Smart Protect (RP)") lands its prose text
+      // in the Plan Name column same as a real row would, but — unlike
+      // every genuine policy/rider row in this template — carries no
+      // premium, coverage, term, or note data at all. That absence is
+      // what distinguishes it, not the wording, so this rule generalizes
+      // beyond this table's own specific footnote phrasing.
+      var hasOtherData = Object.keys(cells).some(function (f) { return f !== 'policyName'; }) || notes.length > 0;
+      if (!hasOtherData) return;
+      anchors.push({ cells: cells, notes: notes });
+    });
+
+    return anchors.map(function (a) {
+      var cells = a.cells;
+      // "Coverage Term" means covered-until-age here, not years of
+      // premium payment — "Till Age 65" -> endAge 65, "Lifetime" -> 99,
+      // only a bare "N years" (rare in this template) reads as a term.
+      var endAge = null;
+      var termText = (cells.coverageTerm || '').trim();
+      var tillAgeMatch = termText.match(/till\s*age\s*(\d+)/i);
+      if (tillAgeMatch) endAge = Number(tillAgeMatch[1]);
+      else if (/lifetime/i.test(termText)) endAge = 99;
+      var policy = cellsToPolicy({
+        policyName: cells.policyName, premium: cells.premium, premiumMonthly: cells.premiumMonthly,
+        paymentTerm: /^(\d+)\s*years?$/i.test(termText) ? termText : '',
+        coverage: cells.coverage, coverageCiAllStage: cells.coverageCiAllStage, coverageCi: cells.coverageCi
+      });
+      if (endAge !== null) policy.endAge = endAge;
+      if (a.notes.length) policy.notes = a.notes.join('; ');
+      return policy;
+    }).filter(function (g) { return g.policyName; });
+  }
+
   // ---------- Explicit fixed-order text (no guessing at all) ----------
   // The most reliable input of all: the advisor types or pastes one value
   // per line, in this exact order, for each policy —
@@ -643,6 +785,7 @@ var OCR = (function () {
     available: available, guessFields: guessFields, guessMultiple: guessMultiple,
     splitIntoPolicyBlocks: splitIntoPolicyBlocks, extractPolicyFromImage: extractPolicyFromImage,
     extractPoliciesFromImage: extractPoliciesFromImage, reconstructTable: reconstructTable,
-    parseSpreadsheetText: parseSpreadsheetText, parseFixedOrderText: parseFixedOrderText
+    parseSpreadsheetText: parseSpreadsheetText, parseFixedOrderText: parseFixedOrderText,
+    parseSecondaryCoverageText: parseSecondaryCoverageText
   };
 })();
