@@ -409,15 +409,27 @@ var ModuleInsurance = (function () {
         style: 'width:100%;resize:vertical;font-family:var(--font-ui);font-size:12.5px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-primary)',
         oninput: function (e) { importRawText = e.target.value; },
         onpaste: function (e) {
+          // Copying a cell range out of Excel/Google Sheets often puts an
+          // image representation of the selection in the clipboard
+          // ALONGSIDE the plain text — if any clipboard item merely being
+          // an image were enough to hijack the paste, pasting that kind of
+          // copy would silently discard the far-more-reliable text and run
+          // OCR on the image instead, with the text box staying empty.
+          // Text always wins when it's present; only fall back to the
+          // image/OCR path when there's genuinely no text to use.
           var items = (e.clipboardData && e.clipboardData.items) || [];
+          var hasText = false;
           for (var i = 0; i < items.length; i++) {
-            if (items[i].type.indexOf('image') === 0) {
+            if (items[i].type === 'text/plain') { hasText = true; break; }
+          }
+          if (hasText) return; // let the default text paste happen; oninput picks it up
+          for (var j = 0; j < items.length; j++) {
+            if (items[j].type.indexOf('image') === 0) {
               e.preventDefault();
-              handleImageFile(items[i].getAsFile());
+              handleImageFile(items[j].getAsFile());
               return;
             }
           }
-          // otherwise let the default text paste happen; oninput picks it up
         },
         ondragover: function (e) { e.preventDefault(); },
         ondrop: function (e) {
