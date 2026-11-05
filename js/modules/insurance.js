@@ -490,7 +490,11 @@ var ModuleInsurance = (function () {
                 type: r.type, premium: Calc.num(r.premium), premiumFrequency: r.premiumFrequency || 'Annually',
                 coverage: Calc.num(r.coverage), coverageTpd: Calc.num(r.coverageTpd),
                 coverageCiAllStage: Calc.num(r.coverageCiAllStage), coverageCi: Calc.num(r.coverageCi),
-                startAge: 30, endAge: 99, paymentTerm: Calc.num(r.paymentTerm) || 20, cashValue: Calc.num(r.cashValue), dividend: 0,
+                // Left blank (0) rather than guessed — real policies start
+                // at all kinds of ages and premium terms, so a plausible-
+                // looking default (e.g. 30 / 20yrs) is more likely to go
+                // unnoticed and uncorrected than an obviously-empty field.
+                startAge: 0, endAge: 99, paymentTerm: Calc.num(r.paymentTerm), cashValue: Calc.num(r.cashValue), dividend: 0,
                 screenshot: r.screenshot, ocrReviewed: false
               });
             });

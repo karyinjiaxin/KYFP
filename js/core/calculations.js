@@ -291,8 +291,12 @@ var Calc = (function () {
     return (totalAnnualPremium(c) / inc) * 100;
   }
   function insuranceCashValueProjected(p, atAge) {
-    // simple compounding of current cash value using dividend rate as growth proxy
-    var years = Math.max(0, num(atAge) - num(p.startAge));
+    // simple compounding of current cash value using dividend rate as growth proxy.
+    // An unset Start Age (0 — e.g. a freshly-imported policy, deliberately
+    // left blank rather than guessed) would otherwise compound from "age
+    // 0", wildly overstating growth — treat it as unknown and project zero
+    // additional years of growth until the advisor fills it in.
+    var years = p.startAge ? Math.max(0, num(atAge) - num(p.startAge)) : 0;
     var rate = num(p.dividend) / 100 || 0.03;
     return num(p.cashValue) * Math.pow(1 + rate, years);
   }
