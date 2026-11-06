@@ -341,7 +341,7 @@ var App = (function () {
     });
     var list = Dom.el('div', { style: 'max-height:360px;overflow-y:auto;text-align:left;margin:4px 0 16px;border:1px solid var(--border);border-radius:8px;padding:4px 12px' });
     checks.forEach(function (item) {
-      list.appendChild(Dom.el('label', { style: 'display:flex;align-items:center;gap:10px;padding:7px 2px;cursor:pointer;font-size:13.5px' }, [item.cb, item.title]));
+      list.appendChild(Dom.el('label', { style: 'display:flex;align-items:center;gap:10px;padding:7px 2px;cursor:pointer;font-size:12px' }, [item.cb, item.title]));
     });
     var box = Dom.el('div', { class: 'modal-box' }, [
       Dom.el('div', { class: 'modal-message' }, ['Choose which tabs to include in the printout:']),
@@ -568,7 +568,7 @@ var App = (function () {
           banner.textContent = '\u2713 New client started \u2014 fill in their details below';
           banner.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;' +
             'background:var(--good,#1C9166);color:#fff;padding:10px 20px;border-radius:10px;font-weight:600;' +
-            'font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,0.2);';
+            'font-size:11.5px;box-shadow:0 4px 16px rgba(0,0,0,0.2);';
           document.body.appendChild(banner);
           setTimeout(function () { banner.remove(); }, 3000);
         } catch (err) {
@@ -625,10 +625,10 @@ function startApp() {
     var box = document.createElement('div');
     box.style.cssText = 'position:fixed;top:70px;left:0;right:0;bottom:0;background:#F8F4F5;z-index:99999;padding:40px;font-family:sans-serif;overflow:auto;';
     box.innerHTML = '<div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #D6484A;border-radius:12px;padding:24px;">' +
-      '<div style="font-weight:700;font-size:18px;margin-bottom:12px;color:#D6484A;">The app failed to start</div>' +
-      '<div style="font-size:14px;margin-bottom:12px;">' + (err && err.message ? err.message : String(err)) + '</div>' +
-      '<div style="font-size:13px;color:#555;line-height:1.6;margin-bottom:16px;">This usually means the files are out of sync \u2014 e.g. an old index.html paired with newer JS files, or vice versa.</div>' +
-      '<div style="font-size:13px;color:#2B0A1C;background:#F8F4F5;border-radius:8px;padding:12px;line-height:1.6;">' +
+      '<div style="font-weight:700;font-size:16px;margin-bottom:12px;color:#D6484A;">The app failed to start</div>' +
+      '<div style="font-size:12.5px;margin-bottom:12px;">' + (err && err.message ? err.message : String(err)) + '</div>' +
+      '<div style="font-size:11.5px;color:#555;line-height:1.6;margin-bottom:16px;">This usually means the files are out of sync \u2014 e.g. an old index.html paired with newer JS files, or vice versa.</div>' +
+      '<div style="font-size:11.5px;color:#2B0A1C;background:#F8F4F5;border-radius:8px;padding:12px;line-height:1.6;">' +
       '<b>Check the build marker at the top-right of the screen, above this box.</b><br>' +
       'If it doesn\u2019t say the build you were just given, this confirms stale files \u2014 not a code issue. Fully delete the old extracted folder (not just overwrite it \u2014 some zip tools skip existing files instead of replacing them), extract the zip fresh into a brand-new empty folder, and open index.html from there in a new browser tab.' +
       '</div></div>';

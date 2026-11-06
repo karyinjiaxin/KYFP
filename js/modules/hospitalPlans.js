@@ -255,7 +255,7 @@ var ModuleHospitalPlans = (function () {
           class: 'btn btn-secondary btn-sm',
           onclick: function () {
             var content = Dom.el('div', { style: 'text-align:left' }, [
-              Dom.el('div', { style: 'font-weight:700;font-size:13px;margin-bottom:8px' }, ['\ud83d\udd17 GreatLink Fund References']),
+              Dom.el('div', { style: 'font-weight:700;font-size:11.5px;margin-bottom:8px' }, ['\ud83d\udd17 GreatLink Fund References']),
               Dom.el('div', { class: 'text-tertiary mb-3' }, [
                 'Fund distribution rates change over time \u2014 verify the current figure via the links below before using it as an assumed Dividend Yield elsewhere in the app, rather than relying on a number that may be stale.'
               ])
@@ -273,7 +273,7 @@ var ModuleHospitalPlans = (function () {
               }
             ].forEach(function (fund) {
               content.appendChild(Dom.el('div', { class: 'mb-2' }, [
-                Dom.el('a', { href: fund.url, target: '_blank', rel: 'noopener', style: 'font-weight:600;font-size:12.5px;color:var(--accent)' }, [fund.name + ' \u2197']),
+                Dom.el('a', { href: fund.url, target: '_blank', rel: 'noopener', style: 'font-weight:600;font-size:11px;color:var(--accent)' }, [fund.name + ' \u2197']),
                 Dom.el('div', { class: 'text-tertiary' }, [fund.note])
               ]));
             });
@@ -403,7 +403,7 @@ var ModuleHospitalPlans = (function () {
         Fields.selectInput(base + 'projectFrom', 'Project Total Premiums From', PROJECT_FROM_OPTIONS)
       ]));
 
-      card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:13px;margin-top:16px;margin-bottom:8px' }, ['Annual Premium Projection']));
+      card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:11.5px;margin-top:16px;margin-bottom:8px' }, ['Annual Premium Projection']));
       var body = Dom.el('div', {});
       body.appendChild(Dom.el('div', { class: 'chart-wrap tall mb-3' }, [Dom.el('canvas', { id: 'hospChart' + idx })]));
       body.appendChild(projectionTable(proj));
@@ -511,7 +511,7 @@ var ModuleHospitalPlans = (function () {
       if (rawProduct === 'GFA') Store.set(base + 'insurerProduct', 'Lump Sum');
 
       var wrap = Dom.el('div', { class: 'card mt-3', style: 'background:var(--bg)' });
-      wrap.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:13.5px;margin-bottom:2px' }, ['Funding: Investment to Offset Cash Premiums']));
+      wrap.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12px;margin-bottom:2px' }, ['Funding: Investment to Offset Cash Premiums']));
       wrap.appendChild(Dom.el('div', { class: 'text-tertiary mb-3' }, ['Fund dividends to service the cash portion of premiums above.']));
 
       wrap.appendChild(Dom.el('div', { class: 'flex gap-2 mb-3' }, [
@@ -568,7 +568,7 @@ var ModuleHospitalPlans = (function () {
         var fundingAnnualPremium = Calc.num(regularAmount);
         var fundingMinPremium = (Calc.GWA4_RATES[fundingChoice] || {}).minAnnualPremium || 0;
         if (fundingAnnualPremium > 0 && fundingAnnualPremium < fundingMinPremium) {
-          wrap.appendChild(Dom.el('div', { class: 'mb-3', style: 'padding:8px 12px;border-radius:8px;background:var(--bad-soft);color:var(--bad);font-size:12px;font-weight:600' }, [
+          wrap.appendChild(Dom.el('div', { class: 'mb-3', style: 'padding:8px 12px;border-radius:8px;background:var(--bad-soft);color:var(--bad);font-size:11px;font-weight:600' }, [
             '\u26a0\ufe0f A ' + fundingChoice + '-year Premium Term requires a minimum annual premium of ' + Dom.fmtMoney(fundingMinPremium) + ' \u2014 this plan isn\u2019t contractually offered below that. Raise the premium or choose a different Premium Term.'
           ]));
         }
@@ -612,7 +612,7 @@ var ModuleHospitalPlans = (function () {
       var premiumYear1 = (proj[0] || { cash: 0 }).cash;
       var deficit = premiumYear1 - year1.dividend;
       wrap.appendChild(Dom.el('div', { class: 'card', style: 'background:' + (deficit > 0 ? 'var(--bad-soft)' : 'var(--good-soft)') + ';padding:12px 16px' }, [
-        Dom.el('div', { style: 'font-size:13px' }, [
+        Dom.el('div', { style: 'font-size:11.5px' }, [
           'Year-1 dividend: ', Dom.el('b', {}, [Dom.fmtMoney(year1.dividend)]), ' vs cash premium: ', Dom.el('b', {}, [Dom.fmtMoney(premiumYear1)]),
           ' \u2014 ', deficit > 0 ? ('Deficit ' + Dom.fmtMoney(deficit)) : ('Surplus ' + Dom.fmtMoney(-deficit))
         ])
@@ -792,8 +792,8 @@ var ModuleHospitalPlans = (function () {
         class: 'card kpi-card',
         style: color ? 'background:' + hexToRgba(color, 0.14) + ';border-color:' + hexToRgba(color, 0.4) + ';border-left:4px solid ' + color : 'background:var(--bg)'
       }, [
-        Dom.el('div', { class: 'kpi-label', style: 'font-size:10.5px' }, [label]),
-        Dom.el('div', { class: 'kpi-value', style: 'font-size:17px' }, [value]),
+        Dom.el('div', { class: 'kpi-label', style: 'font-size:9.5px' }, [label]),
+        Dom.el('div', { class: 'kpi-value', style: 'font-size:15.5px' }, [value]),
         Dom.el('div', { class: 'text-tertiary mt-1' }, [sub])
       ]);
     }

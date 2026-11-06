@@ -123,7 +123,7 @@ var ModuleHousePurchase = (function () {
       var costCard = Dom.el('div', { class: 'card mb-3' });
 
       if (IS_RESALE[type]) {
-        costCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:13px;margin-bottom:8px' }, ['Option & Valuation']));
+        costCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:11.5px;margin-bottom:8px' }, ['Option & Valuation']));
         var row1 = Dom.el('div', { class: 'input-row' }, [
           Fields.moneyInput('housePurchase.optionFee', type === 'HDB_RESALE' ? 'Option Fee (OTP, to seller)' : 'Option Fee (1% deposit, to seller)'),
           Fields.moneyInput('housePurchase.exerciseFee', type === 'HDB_RESALE' ? 'Exercise Fee (to seller)' : 'Exercise Fee (4% balance deposit)')
@@ -140,7 +140,7 @@ var ModuleHousePurchase = (function () {
         ]));
       }
 
-      costCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:13px;margin-bottom:8px' }, ['Stamp Duty']));
+      costCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:11.5px;margin-bottom:8px' }, ['Stamp Duty']));
       costCard.appendChild(Dom.el('div', { class: 'input-row mb-2' }, [
         labeledSelect('housePurchase.buyerProfile', 'Buyer Profile (for ABSD)', BUYER_PROFILES),
         Fields.moneyInput('housePurchase.absdOverride', 'ABSD Override (optional)')
@@ -151,7 +151,7 @@ var ModuleHousePurchase = (function () {
         Dom.el('div', { style: 'font-weight:700' }, [Dom.fmtMoney(s.absd)])
       ]));
 
-      costCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:13px;margin-bottom:8px' }, ['Legal, Agent, Renovation & Furnishing']));
+      costCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:11.5px;margin-bottom:8px' }, ['Legal, Agent, Renovation & Furnishing']));
       costCard.appendChild(Dom.el('div', { class: 'input-row' }, [
         Fields.moneyInput('housePurchase.legalFees', 'Lawyer’s / Conveyancing Fees'),
         Fields.moneyInput('housePurchase.agentFee', 'Agent Fee (if any)'),
@@ -162,7 +162,7 @@ var ModuleHousePurchase = (function () {
       ]));
 
       if (type === 'HDB_RESALE') {
-        costCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:13px;margin:16px 0 8px' }, ['HDB Housing Grants (if eligible)']));
+        costCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:11.5px;margin:16px 0 8px' }, ['HDB Housing Grants (if eligible)']));
         costCard.appendChild(Dom.el('div', { class: 'input-row' }, [
           Fields.moneyInput('housePurchase.grantFamily', 'Family Grant'),
           Fields.moneyInput('housePurchase.grantEhg', 'Enhanced CPF Housing Grant (EHG)')
@@ -190,7 +190,7 @@ var ModuleHousePurchase = (function () {
         'Both loan types are 75% LTV (25% downpayment) since HDB lowered its limit from 80% to 75% on 20 Aug 2024, matching the bank-loan cap. They still differ on cash: HDB Concessionary Loan (rate = CPF OA rate + 0.1%, currently ~2.6%) can have its downpayment paid entirely from CPF OA. Bank Loan requires at least 5% of the price in cash; rate varies by package.'
       ]));
 
-      loanCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:13px;margin-bottom:8px' }, ['Downpayment (' + Dom.fmtMoney(s.downpaymentAmount) + ' total, ' + s.downpaymentPct + '%)']));
+      loanCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:11.5px;margin-bottom:8px' }, ['Downpayment (' + Dom.fmtMoney(s.downpaymentAmount) + ' total, ' + s.downpaymentPct + '%)']));
       loanCard.appendChild(Dom.el('div', { class: 'input-row' }, [
         Fields.numberInput('housePurchase.downpaymentCashPct', 'Cash Portion of Downpayment %', { step: '1', placeholder: s.loanRules.minCashPct })
       ]));
@@ -198,7 +198,7 @@ var ModuleHousePurchase = (function () {
         'Minimum cash required for this loan type: ' + s.loanRules.minCashPct + '% of price (' + Dom.fmtMoney(s.minCashAmount) + '). Currently: ' + Dom.fmtMoney(s.downpaymentCash) + ' cash + ' + Dom.fmtMoney(s.downpaymentCpf) + ' CPF.'
       ]));
 
-      loanCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:13px;margin-bottom:8px' }, ['Monthly Mortgage (' + Dom.fmtMoney(s.monthlyMortgage) + ')']));
+      loanCard.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:11.5px;margin-bottom:8px' }, ['Monthly Mortgage (' + Dom.fmtMoney(s.monthlyMortgage) + ')']));
       loanCard.appendChild(Dom.el('div', { class: 'input-row' }, [
         Fields.moneyInput('housePurchase.monthlyCpfAmount', 'Paid via CPF OA ($/mo)'),
         Dom.el('div', { class: 'field' }, [
@@ -228,11 +228,11 @@ var ModuleHousePurchase = (function () {
       ]));
       eligCard.appendChild(Dom.el('div', { class: 'flex justify-between items-center mt-3', style: 'padding:10px 0;border-top:1px solid var(--border)' }, [
         Dom.el('div', { class: 'text-secondary' }, ['Maximum Loan Amount (at ' + elig.stressRate + '% stress rate, ' + s.tenureYears + ' yrs)']),
-        Dom.el('div', { style: 'font-weight:700;font-size:15px' }, [Dom.fmtMoney(elig.maxLoanAmount)])
+        Dom.el('div', { style: 'font-weight:700;font-size:13.5px' }, [Dom.fmtMoney(elig.maxLoanAmount)])
       ]));
       if (s.price > 0) {
         eligCard.appendChild(Dom.el('div', {
-          class: 'mt-2', style: 'padding:10px 12px;border-radius:8px;font-size:12.5px;font-weight:600;' +
+          class: 'mt-2', style: 'padding:10px 12px;border-radius:8px;font-size:11px;font-weight:600;' +
             (s.loanExceedsEligibility ? 'background:var(--bad-soft);color:var(--bad)' : 'background:var(--good-soft);color:var(--good)')
         }, [
           s.loanExceedsEligibility

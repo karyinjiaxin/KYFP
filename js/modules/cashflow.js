@@ -55,8 +55,8 @@ var ModuleCashflow = (function () {
       incomeCard.appendChild(incomeRow);
       incomeCard.appendChild(Dom.el('div', { class: 'mt-3 pt-3', style: 'border-top:1px solid var(--border)' }, [
         Dom.el('div', { class: 'flex justify-between items-center' }, [
-          Dom.el('div', { style: 'font-weight:700;font-size:13px' }, ['Total Annual Income (excl. Investment Income)']),
-          Dom.el('div', { style: 'font-weight:700;font-size:16px' }, [Dom.fmtMoney(Calc.annualIncomeExclInvestment(c))])
+          Dom.el('div', { style: 'font-weight:700;font-size:11.5px' }, ['Total Annual Income (excl. Investment Income)']),
+          Dom.el('div', { style: 'font-weight:700;font-size:14.5px' }, [Dom.fmtMoney(Calc.annualIncomeExclInvestment(c))])
         ])
       ]));
       incomeCard.appendChild(Dom.el('div', { class: 'text-tertiary mt-2', style: 'line-height:1.5' }, [
@@ -69,7 +69,7 @@ var ModuleCashflow = (function () {
       var lumpSumValue = Calc.num((c.cashflow || {}).lumpSumMonthlyExpenses);
       var lumpSumCard = Dom.el('div', { class: 'card mb-3', style: lumpSumValue > 0 ? 'border-color:var(--accent)' : '' });
       lumpSumCard.appendChild(Dom.el('div', {}, [
-        Dom.el('div', { style: 'font-weight:700;font-size:13px' }, ['No time to break expenses down by category?']),
+        Dom.el('div', { style: 'font-weight:700;font-size:11.5px' }, ['No time to break expenses down by category?']),
         Dom.el('div', { class: 'text-tertiary mt-1' }, [
           'Enter one lump sum instead — it fully overrides the category breakdown below for every calculation that uses Monthly Expenses (Savings Rate, Cashflow Ratio, Retirement Planning, etc). Category-specific views like Spending Breakdown and Bucket Allocation won\u2019t reflect it, since there\u2019s no per-category detail to show. Set it back to S$0 to return to using the categories below.'
         ])
@@ -168,13 +168,13 @@ var ModuleCashflow = (function () {
         Dom.el('div', { class: 'flex items-center gap-3' }, [
           Dom.el('svg', { class: 'chevron' + (isOpen ? ' open' : ''), width: '18', height: '18', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', html: '<path d="M6 9l6 6 6-6"/>' }),
           Dom.el('div', {}, [
-            Dom.el('div', { style: 'font-weight:700;font-size:16px' }, [cat.name || '(untitled category)']),
+            Dom.el('div', { style: 'font-weight:700;font-size:14.5px' }, [cat.name || '(untitled category)']),
             Dom.el('div', { class: 'text-secondary' }, [cat.bucket + ' bucket · ' + ((cat.items || []).length) + ' item' + ((cat.items || []).length === 1 ? '' : 's')])
           ])
         ]),
         Dom.el('div', { class: 'flex items-center gap-3' }, [
           Dom.el('div', { style: 'text-align:right' }, [
-            Dom.el('div', { style: 'font-weight:700;font-size:16px;color:' + color }, [Dom.fmtMoney(monthlyTotal) + ' / mo']),
+            Dom.el('div', { style: 'font-weight:700;font-size:14.5px;color:' + color }, [Dom.fmtMoney(monthlyTotal) + ' / mo']),
             Dom.el('div', { class: 'text-secondary' }, [Dom.fmtMoney(annualTotal) + ' / yr'])
           ]),
           addItemBtn
@@ -227,11 +227,11 @@ var ModuleCashflow = (function () {
         }, [
           Dom.el('div', { class: 'field' }, [
             Dom.el('label', { class: 'field-label' }, ['Item']),
-            Dom.el('div', { style: 'padding:6px 9px;font-size:12.5px;font-weight:600' }, [item.name, ' ', Dom.el('span', { class: 'badge badge-good', style: 'font-size:9.5px;padding:1px 7px;margin-left:4px' }, ['AUTO'])])
+            Dom.el('div', { style: 'padding:6px 9px;font-size:11px;font-weight:600' }, [item.name, ' ', Dom.el('span', { class: 'badge badge-good', style: 'font-size:8.5px;padding:1px 7px;margin-left:4px' }, ['AUTO'])])
           ]),
           Dom.el('div', { class: 'field' }, [
             Dom.el('label', { class: 'field-label' }, ['Cost / mo']),
-            Dom.el('div', { style: 'padding:6px 9px;font-size:12.5px;font-weight:600' }, [Dom.fmtMoney(item.cost)])
+            Dom.el('div', { style: 'padding:6px 9px;font-size:11px;font-weight:600' }, [Dom.fmtMoney(item.cost)])
           ]),
           Dom.el('div', { class: 'field' }, [
             Dom.el('label', { class: 'field-label' }, ['Source']),
@@ -246,11 +246,11 @@ var ModuleCashflow = (function () {
         }, [
           Dom.el('div', { class: 'field' }, [
             Dom.el('label', { class: 'field-label' }, ['Item']),
-            Dom.el('div', { style: 'padding:6px 9px;font-size:12.5px;font-weight:600' }, [item.name, ' ', Dom.el('span', { class: 'badge badge-good', style: 'font-size:9.5px;padding:1px 7px;margin-left:4px' }, ['AUTO'])])
+            Dom.el('div', { style: 'padding:6px 9px;font-size:11px;font-weight:600' }, [item.name, ' ', Dom.el('span', { class: 'badge badge-good', style: 'font-size:8.5px;padding:1px 7px;margin-left:4px' }, ['AUTO'])])
           ]),
           Dom.el('div', { class: 'field' }, [
             Dom.el('label', { class: 'field-label' }, ['Cost / mo']),
-            Dom.el('div', { style: 'padding:6px 9px;font-size:12.5px;font-weight:600' }, [Dom.fmtMoney(item.cost)])
+            Dom.el('div', { style: 'padding:6px 9px;font-size:11px;font-weight:600' }, [Dom.fmtMoney(item.cost)])
           ]),
           Dom.el('div', { class: 'field' }, [
             Dom.el('label', { class: 'field-label' }, ['Source']),
@@ -265,11 +265,11 @@ var ModuleCashflow = (function () {
         }, [
           Dom.el('div', { class: 'field' }, [
             Dom.el('label', { class: 'field-label' }, ['Item']),
-            Dom.el('div', { style: 'padding:6px 9px;font-size:12.5px;font-weight:600' }, [item.name, ' ', Dom.el('span', { class: 'badge badge-good', style: 'font-size:9.5px;padding:1px 7px;margin-left:4px' }, ['AUTO'])])
+            Dom.el('div', { style: 'padding:6px 9px;font-size:11px;font-weight:600' }, [item.name, ' ', Dom.el('span', { class: 'badge badge-good', style: 'font-size:8.5px;padding:1px 7px;margin-left:4px' }, ['AUTO'])])
           ]),
           Dom.el('div', { class: 'field' }, [
             Dom.el('label', { class: 'field-label' }, ['Cost / mo']),
-            Dom.el('div', { style: 'padding:6px 9px;font-size:12.5px;font-weight:600' }, [Dom.fmtMoney(item.cost)])
+            Dom.el('div', { style: 'padding:6px 9px;font-size:11px;font-weight:600' }, [Dom.fmtMoney(item.cost)])
           ]),
           Dom.el('div', { class: 'field' }, [
             Dom.el('label', { class: 'field-label' }, ['Source']),
@@ -286,7 +286,7 @@ var ModuleCashflow = (function () {
         Fields.selectInput(base + 'frequency', 'Frequency', FREQUENCIES)
       ]);
       row.appendChild(Dom.el('button', {
-        class: 'btn btn-ghost btn-sm', style: 'font-size:11.5px;padding:5px 9px', onclick: function (e) {
+        class: 'btn btn-ghost btn-sm', style: 'font-size:10.5px;padding:5px 9px', onclick: function (e) {
           e.stopPropagation();
           var arr = Store.get('cashflowCategories');
           arr[catIdx].items.splice(itemIdx, 1);

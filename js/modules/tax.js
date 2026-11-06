@@ -51,7 +51,7 @@ var ModuleTax = (function () {
 
       reliefCard.appendChild(Dom.el('div', { class: 'flex justify-between items-center', style: 'padding:10px 0;border-bottom:1px solid var(--border)' }, [
         Dom.el('div', {}, [
-          Dom.el('div', { style: 'font-weight:600;font-size:13.5px' }, ['Qualifying Child Relief (QCR)']),
+          Dom.el('div', { style: 'font-weight:600;font-size:12px' }, ['Qualifying Child Relief (QCR)']),
           Dom.el('div', { class: 'text-tertiary', style: 'margin-top:2px' }, ['S$4,000 per child \u2014 auto-counted from ' + (c.dependants || []).filter(function (d) { return (d.relation || '').toLowerCase() === 'child'; }).length + ' child dependant(s) on Client Profile.'])
         ]),
         Dom.el('div', { class: 'badge badge-good' }, [Dom.fmtMoney(qcr)])
@@ -70,7 +70,7 @@ var ModuleTax = (function () {
       reliefCard.appendChild(reliefField('tax.reliefs.others', 'Other Reliefs',
         'Anything not covered above (e.g. NSman Relief, Course Fees Relief, Life Insurance Relief) \u2014 enter the total here.'));      reliefCard.appendChild(Dom.el('div', { class: 'mt-3', style: 'padding-top:10px;border-top:1px solid var(--border-strong)' }, [
         Dom.el('div', { class: 'flex justify-between items-center' }, [
-          Dom.el('div', { style: 'font-weight:700;font-size:13.5px' }, ['Total Reliefs (before cap)']),
+          Dom.el('div', { style: 'font-weight:700;font-size:12px' }, ['Total Reliefs (before cap)']),
           Dom.el('div', { style: 'font-weight:700' }, [Dom.fmtMoney(reliefsInfo.uncapped)])
         ]),
         reliefsInfo.wasCapped ? Dom.el('div', { class: 'text-secondary mt-2' }, [

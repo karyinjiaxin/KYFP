@@ -24,7 +24,7 @@ var ModuleCouple = (function () {
 
       if (!partnerEntry) {
         container.appendChild(Dom.el('div', { class: 'card empty-state' }, [
-          Dom.el('div', { style: 'font-size:15px;font-weight:700;margin-bottom:8px' }, ['No partner linked yet']),
+          Dom.el('div', { style: 'font-size:13.5px;font-weight:700;margin-bottom:8px' }, ['No partner linked yet']),
           Dom.el('div', { class: 'text-secondary', style: 'margin-bottom:16px' }, [
             'Combined household planning needs two linked clients. Go to Client Profile to add this client\u2019s partner \u2014 each stays a fully separate, independently-saved client (loadable on its own if you meet them separately later); this page just adds both together for when you\u2019re meeting them as a couple.'
           ]),
@@ -40,7 +40,7 @@ var ModuleCouple = (function () {
       container.appendChild(Dom.el('div', { class: 'card mb-3', style: 'background:var(--accent-soft)' }, [
         Dom.el('div', { class: 'flex justify-between items-center' }, [
           Dom.el('div', {}, [
-            Dom.el('div', { style: 'font-weight:700;font-size:14px' }, ['\ud83d\udc65 ' + currentName + ' + ' + partnerName]),
+            Dom.el('div', { style: 'font-weight:700;font-size:12.5px' }, ['\ud83d\udc65 ' + currentName + ' + ' + partnerName]),
             Dom.el('div', { class: 'text-secondary mt-1' }, [
               'Read-only combined view \u2014 nothing here is editable or saved. ' + partnerName + '\u2019s figures reflect their last-saved snapshot (' + new Date(partnerEntry.savedAt).toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' }) + '); save ' + currentName + ' regularly too, so both sides of this combined view stay current.'
             ])

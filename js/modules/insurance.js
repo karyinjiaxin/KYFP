@@ -53,15 +53,15 @@ var ModuleInsurance = (function () {
 
       container.appendChild(Dom.el('div', { class: 'section-title' }, ['🔎 Need Analysis']));
       var needCard = Dom.el('div', { class: 'card' }, [
-        Dom.el('div', { style: 'font-weight:700;font-size:13.5px;margin-bottom:2px' }, ['Death & Total Permanent Disability (TPD)']),
+        Dom.el('div', { style: 'font-weight:700;font-size:12px;margin-bottom:2px' }, ['Death & Total Permanent Disability (TPD)']),
         row('Recommended Coverage (9x annual income + liabilities)', Dom.fmtMoney(Calc.recommendedDeathTpdCoverage(c))),
         row('Current Death Coverage Held', Dom.fmtMoney(Calc.deathTpdCoverageHeld(c))),
         row('Death/TPD Gap', Dom.fmtMoney(Calc.deathTpdGap(c))),
-        Dom.el('div', { style: 'font-weight:700;font-size:13.5px;margin:16px 0 2px' }, ['Critical Illness (CI)']),
+        Dom.el('div', { style: 'font-weight:700;font-size:12px;margin:16px 0 2px' }, ['Critical Illness (CI)']),
         row('Recommended Coverage (4x annual income)', Dom.fmtMoney(Calc.recommendedCICoverage(c))),
         row('Current CI + ECI Coverage Held', Dom.fmtMoney(Calc.ciCoverageHeld(c))),
         row('CI Gap', Dom.fmtMoney(Calc.ciGap(c))),
-        Dom.el('div', { style: 'font-weight:700;font-size:13.5px;margin:16px 0 2px' }, ['Total Sum Assured']),
+        Dom.el('div', { style: 'font-weight:700;font-size:12px;margin:16px 0 2px' }, ['Total Sum Assured']),
         row('All Policies (Death + TPD + All-Stage CI + Late-Stage CI + other types)', Dom.fmtMoney(Calc.totalSumAssured(c))),
         Dom.el('div', { class: 'text-tertiary mt-3', style: 'line-height:1.5' }, [
           'Benchmarks: Life Insurance Association of Singapore 2022 Protection Gap Study (~9x annual income for Death/TPD, ~4x for Critical Illness), as adopted into the MAS/MoneySense Basic Financial Planning Guide (Oct 2023). General rules of thumb, not personalised advice — actual needs vary by dependants, debts and lifestyle. Total Sum Assured above is a literal sum of every coverage figure (the policy’s total face value, as insurers report it) — the Death/TPD and CI Gap figures above correctly use whichever of Death/TPD is higher per policy instead, since TPD is usually an acceleration of the same Death benefit rather than an additional payout.'
@@ -76,7 +76,7 @@ var ModuleInsurance = (function () {
       typeGrid.appendChild(coverageTypePie('Income Protection', Calc.incomeProtectionHeld(c), Calc.recommendedIncomeProtection(c), 'incomeProtectionChart', '/mo'));
       typeGrid.appendChild(coverageTypePie('Long Term Care', Calc.longTermCareHeld(c), Calc.recommendedLongTermCare(c), 'longTermCareChart', '/mo'));
       container.appendChild(typeGrid);
-      container.appendChild(Dom.el('div', { class: 'card mb-3', style: 'font-size:11.5px;line-height:1.6' }, [
+      container.appendChild(Dom.el('div', { class: 'card mb-3', style: 'font-size:10.5px;line-height:1.6' }, [
         Dom.el('div', { style: 'font-weight:700;margin-bottom:4px' }, ['Benchmark sources']),
         Dom.el('div', {}, ['Death/TPD (~9x annual income + liabilities) and Critical Illness (~4x annual income): Life Insurance Association of Singapore 2022 Protection Gap Study, adopted into the MAS/MoneySense Basic Financial Planning Guide. ',
           Dom.el('a', { href: 'https://www.lia.org.sg', target: '_blank', rel: 'noopener' }, ['lia.org.sg'])
@@ -100,11 +100,11 @@ var ModuleInsurance = (function () {
       var pct = recommended > 0 ? Math.min(999, (existing / recommended) * 100) : 100;
       return Dom.el('div', { class: 'card' }, [
         Dom.el('div', { class: 'flex justify-between items-center mb-2' }, [
-          Dom.el('div', { style: 'font-weight:700;font-size:13px' }, [label]),
+          Dom.el('div', { style: 'font-weight:700;font-size:11.5px' }, [label]),
           Dom.el('div', { class: 'badge ' + (pct >= 100 ? 'badge-good' : pct >= 50 ? 'badge-warn' : 'badge-bad') }, [pct.toFixed(0) + '%'])
         ]),
         Dom.el('div', { class: 'chart-wrap', style: 'height:160px' }, [Dom.el('canvas', { id: canvasId })]),
-        Dom.el('div', { class: 'flex justify-between mt-2', style: 'font-size:11.5px' }, [
+        Dom.el('div', { class: 'flex justify-between mt-2', style: 'font-size:10.5px' }, [
           Dom.el('div', { class: 'text-secondary' }, ['Existing: ' + Dom.fmtMoney(existing) + (unitSuffix || '')]),
           Dom.el('div', { class: 'text-secondary' }, ['Rec.: ' + Dom.fmtMoney(recommended) + (unitSuffix || '')])
         ])
@@ -128,7 +128,7 @@ var ModuleInsurance = (function () {
     function row(label, value) {
       return Dom.el('div', { class: 'flex justify-between items-center', style: 'padding:8px 0;border-bottom:1px solid var(--border)' }, [
         Dom.el('div', { class: 'text-secondary' }, [label]),
-        Dom.el('div', { style: 'font-weight:700;font-size:14px' }, [value])
+        Dom.el('div', { style: 'font-weight:700;font-size:12.5px' }, [value])
       ]);
     }
 
@@ -146,7 +146,7 @@ var ModuleInsurance = (function () {
 
       if (p.ocrReviewed === false) {
         card.appendChild(Dom.el('div', {
-          class: 'mb-2', style: 'padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;background:var(--warn-soft);color:var(--warn);display:flex;justify-content:space-between;align-items:center;gap:8px'
+          class: 'mb-2', style: 'padding:8px 12px;border-radius:8px;font-size:11px;font-weight:600;background:var(--warn-soft);color:var(--warn);display:flex;justify-content:space-between;align-items:center;gap:8px'
         }, [
           Dom.el('div', {}, ['⚠ Auto-filled by OCR from the attached screenshot — verify every field below, especially Policy No. and coverage amounts, before relying on this.']),
           Dom.el('button', { class: 'btn btn-ghost btn-sm', style: 'flex:none', onclick: function () { Store.set(base + 'ocrReviewed', true); } }, ['✓ Reviewed'])
@@ -416,7 +416,7 @@ var ModuleInsurance = (function () {
       var wrap = Dom.el('div', { class: 'card mb-3', style: 'border:2px dashed var(--border-strong);background:var(--accent-soft)' });
       wrap.appendChild(Dom.el('div', { class: 'flex justify-between items-center mb-2', style: 'flex-wrap:wrap;gap:8px' }, [
         Dom.el('div', {}, [
-          Dom.el('div', { style: 'font-weight:700;font-size:13.5px' }, ['Import Policies']),
+          Dom.el('div', { style: 'font-weight:700;font-size:12px' }, ['Import Policies']),
           Dom.el('div', { class: 'text-tertiary' }, ['Paste text, or paste/drop a screenshot below. You’ll review every row before it’s saved.'])
         ]),
         Dom.el('div', { class: 'flex gap-2 items-center', style: 'flex-wrap:wrap' }, [
@@ -476,7 +476,7 @@ var ModuleInsurance = (function () {
 
       var textarea = Dom.el('textarea', {
         rows: 4, placeholder: 'Paste a policy summary here (text copied from a spreadsheet/PDF works best) — or paste (Ctrl/⌘+V) or drop a screenshot right here.\n\nMost reliable: type one value per line in order (see tip below), blank line between policies.',
-        style: 'width:100%;resize:vertical;font-family:var(--font-ui);font-size:12.5px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-primary)',
+        style: 'width:100%;resize:vertical;font-family:var(--font-ui);font-size:11px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-primary)',
         oninput: function (e) { importRawText = e.target.value; },
         onpaste: function (e) {
           // Copying a cell range out of Excel/Google Sheets often puts an
@@ -510,7 +510,7 @@ var ModuleInsurance = (function () {
       });
       textarea.value = importRawText;
       wrap.appendChild(textarea);
-      wrap.appendChild(Dom.el('div', { class: 'text-tertiary mt-1', style: 'font-size:11.5px' }, [
+      wrap.appendChild(Dom.el('div', { class: 'text-tertiary mt-1', style: 'font-size:10.5px' }, [
         'Tip — most reliable input: one value per line, in this exact order, blank line between policies — ' +
         'Insurer, Policy Name, Policy No., Premium, Frequency (Monthly/Annually), Premium Term, Death Coverage, TPD Coverage, ' +
         'All-Stage CI, Late-Stage CI, and optionally Projected Coverage @65 and Projected Surr Value @65. Type 0 for any ' +

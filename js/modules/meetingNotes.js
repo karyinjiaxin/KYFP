@@ -30,10 +30,10 @@ var ModuleMeetingNotes = (function () {
       (c.meetingNotes || []).forEach(function (n, idx) {
         container.appendChild(Dom.el('div', { class: 'note-item' }, [
           Dom.el('div', { class: 'flex justify-between items-center' }, [
-            Dom.el('div', {}, [Dom.el('div', { style: 'font-weight:700;font-size:14px' }, [n.title]), Dom.el('div', { class: 'note-date' }, [n.date])]),
+            Dom.el('div', {}, [Dom.el('div', { style: 'font-weight:700;font-size:12.5px' }, [n.title]), Dom.el('div', { class: 'note-date' }, [n.date])]),
             Dom.el('button', { class: 'btn btn-ghost btn-sm', onclick: function () { var arr = Store.get('meetingNotes'); arr.splice(idx, 1); Store.set('meetingNotes', arr); } }, ['Delete'])
           ]),
-          Dom.el('div', { style: 'font-size:13.5px;margin-top:6px' }, [n.text])
+          Dom.el('div', { style: 'font-size:12px;margin-top:6px' }, [n.text])
         ]));
       });
       if (!(c.meetingNotes || []).length) container.appendChild(Dom.el('div', { class: 'empty-state' }, ['No meeting notes yet.']));

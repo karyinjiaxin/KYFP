@@ -49,8 +49,8 @@ var Router = (function () {
         box.className = 'card';
         box.style.cssText = 'border-color:var(--bad);background:var(--bad-soft);margin:20px';
         box.innerHTML = '<div style="font-weight:700;margin-bottom:8px">This page hit an error and couldn\u2019t load</div>' +
-          '<div style="font-size:13px;margin-bottom:8px">' + (err && err.message ? err.message : String(err)) + '</div>' +
-          '<div style="font-size:12px;opacity:0.8">This usually means a required file is missing or out of date — try re-uploading the full set of files.</div>';
+          '<div style="font-size:11.5px;margin-bottom:8px">' + (err && err.message ? err.message : String(err)) + '</div>' +
+          '<div style="font-size:11px;opacity:0.8">This usually means a required file is missing or out of date — try re-uploading the full set of files.</div>';
         container.appendChild(box);
         console.error('Router: module "' + key + '" failed to render:', err);
       }

@@ -248,8 +248,8 @@ var ModuleCpf = (function () {
     // awkwardly.
     function row(label, value) {
       return Dom.el('div', { style: 'padding:8px 0;border-bottom:1px solid var(--border)' }, [
-        Dom.el('div', { class: 'text-secondary', style: 'font-size:12px' }, [label]),
-        Dom.el('div', { style: 'font-weight:700;font-size:14px;margin-top:2px' }, [value])
+        Dom.el('div', { class: 'text-secondary', style: 'font-size:11px' }, [label]),
+        Dom.el('div', { style: 'font-weight:700;font-size:12.5px;margin-top:2px' }, [value])
       ]);
     }
     function kpiMini(label, value, caption, accent) {

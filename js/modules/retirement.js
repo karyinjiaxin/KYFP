@@ -40,7 +40,7 @@ var ModuleRetirement = (function () {
         row1 = Dom.el('div', { class: 'input-row compact-row narrow-row' }, [
           Dom.el('div', { class: 'field' }, [
             Dom.el('label', { class: 'field-label' }, ['Current Age']),
-            Dom.el('div', { style: 'padding:9px 12px;border-radius:10px;background:var(--accent-soft);font-size:14px;font-weight:600' }, [String(currentAgeComputed) + ' (from Client Profile)'])
+            Dom.el('div', { style: 'padding:9px 12px;border-radius:10px;background:var(--accent-soft);font-size:12.5px;font-weight:600' }, [String(currentAgeComputed) + ' (from Client Profile)'])
           ]),
           Fields.numberInput('retirement.retirementAge', 'Retirement Age'),
           Fields.numberInput('retirement.lifeExpectancy', 'Life Expectancy')
@@ -59,7 +59,7 @@ var ModuleRetirement = (function () {
       var row2b = Dom.el('div', { class: 'input-row compact-row narrow-row mt-2' }, [
         Dom.el('div', { class: 'field' }, [
           Dom.el('label', { class: 'field-label' }, ['Projected Desired Monthly Income (Future Dollar)']),
-          Dom.el('div', { style: 'padding:9px 12px;border-radius:10px;background:var(--accent-soft);font-size:14px;font-weight:600' }, [Dom.fmtMoney(Calc.projectedDesiredMonthlyIncome(c))])
+          Dom.el('div', { style: 'padding:9px 12px;border-radius:10px;background:var(--accent-soft);font-size:12.5px;font-weight:600' }, [Dom.fmtMoney(Calc.projectedDesiredMonthlyIncome(c))])
         ]),
         Fields.moneyInput('retirement.cpfLifePayout', 'CPF LIFE Payout (monthly, future dollars, reference only)')
       ]);
@@ -149,7 +149,7 @@ var ModuleRetirement = (function () {
       var extraMonthly = Calc.additionalMonthlyForGap(rp.retirementGap, gapReturnPct, gapYears);
       container.appendChild(Dom.el('div', { class: 'card mb-3', style: 'background:' + (rp.retirementGap > 0 ? 'var(--bad-soft)' : 'var(--good-soft)') }, [
         Dom.el('div', { class: 'card-title' }, ['Where You\u2019re Headed vs Where You Want to Be']),
-        Dom.el('div', { style: 'font-size:13.5px;line-height:1.7' }, [
+        Dom.el('div', { style: 'font-size:12px;line-height:1.7' }, [
           rp.retirementGap > 0
             ? Dom.el('span', {}, [
                 'At the current savings rate, this client is tracking toward ', Dom.el('b', {}, [Dom.fmtMoney(rp.projectedAssets)]),
@@ -203,9 +203,9 @@ var ModuleRetirement = (function () {
           var borderColor = m.pct >= 100 ? 'var(--good)' : m.pct >= 50 ? 'var(--warn)' : 'var(--brass-500)';
           milestoneRow.appendChild(Dom.el('div', { class: 'card', style: 'text-align:center;padding:14px 10px;border-top:3px solid ' + borderColor }, [
             Dom.el('div', { class: 'text-tertiary', style: 'font-weight:700;text-transform:uppercase' }, [m.isToday ? 'Today (age ' + Math.round(m.age) + ')' : m.isRetirement ? '\ud83c\udfc6 Retirement (age ' + Math.round(m.age) + ')' : 'Age ' + displayAge]),
-            Dom.el('div', { style: 'font-family:var(--font-serif);font-size:20px;font-weight:800;margin:6px 0;color:' + borderColor }, [Math.round(m.pct) + '%']),
-            Dom.el('div', { style: 'font-size:12.5px;font-weight:600;margin-bottom:4px' }, [Dom.fmtMoney(m.value)]),
-            Dom.el('div', { class: 'badge ' + badgeClass, style: 'font-size:9.5px' }, [m.label])
+            Dom.el('div', { style: 'font-family:var(--font-serif);font-size:18px;font-weight:800;margin:6px 0;color:' + borderColor }, [Math.round(m.pct) + '%']),
+            Dom.el('div', { style: 'font-size:11px;font-weight:600;margin-bottom:4px' }, [Dom.fmtMoney(m.value)]),
+            Dom.el('div', { class: 'badge ' + badgeClass, style: 'font-size:8.5px' }, [m.label])
           ]));
         });
         container.appendChild(Dom.el('div', { class: 'mb-3' }, [milestoneRow]));
@@ -228,7 +228,7 @@ var ModuleRetirement = (function () {
         ]),
         Dom.el('div', { class: 'mt-3' }, [
           Dom.el('div', { class: 'flex justify-between items-center mb-2' }, [
-            Dom.el('div', { style: 'font-weight:700;font-size:13px' }, ['\ud83d\udcca Retirement Funded (snapshot TODAY)']),
+            Dom.el('div', { style: 'font-weight:700;font-size:11.5px' }, ['\ud83d\udcca Retirement Funded (snapshot TODAY)']),
             Dom.el('div', { class: 'badge ' + (split.fundedPct >= 100 ? 'badge-good' : split.fundedPct >= 50 ? 'badge-warn' : 'badge-bad') }, [Dom.fmtPct(split.fundedPct)])
           ]),
           Dom.el('div', { class: 'progress-track' }, [Dom.el('div', { class: 'progress-fill', style: 'width:' + Dom.clamp(split.fundedPct, 0, 100) + '%' })])
@@ -271,7 +271,7 @@ var ModuleRetirement = (function () {
     function row(label, value) {
       return Dom.el('div', { class: 'flex justify-between items-center', style: 'padding:7px 0;border-bottom:1px solid var(--border)' }, [
         Dom.el('div', { class: 'text-secondary' }, [label]),
-        Dom.el('div', { style: 'font-weight:700;font-size:13.5px' }, [value])
+        Dom.el('div', { style: 'font-weight:700;font-size:12px' }, [value])
       ]);
     }
     draw();

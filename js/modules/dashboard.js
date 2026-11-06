@@ -18,8 +18,8 @@ var ModuleDashboard = (function () {
 
   function goalChip(label, value, accent) {
     return Dom.el('div', { class: 'card', style: 'padding:14px 16px;' + (accent ? 'border-color:' + accent + '55' : '') }, [
-      Dom.el('div', { class: 'kpi-label', style: 'font-size:11px' }, [label]),
-      Dom.el('div', { style: 'font-family:var(--font-serif);font-size:19px;font-weight:700;margin-top:2px' }, [value])
+      Dom.el('div', { class: 'kpi-label', style: 'font-size:10px' }, [label]),
+      Dom.el('div', { style: 'font-family:var(--font-serif);font-size:17px;font-weight:700;margin-top:2px' }, [value])
     ]);
   }
 
@@ -82,7 +82,7 @@ var ModuleDashboard = (function () {
         aiPanel.appendChild(Dom.el('div', { class: 'ai-rec' }, [
           Dom.el('div', { class: 'ai-dot ' + r.severity }),
           Dom.el('div', {}, [
-            Dom.el('div', { style: 'font-weight:700;font-size:13.5px' }, [r.title]),
+            Dom.el('div', { style: 'font-weight:700;font-size:12px' }, [r.title]),
             Dom.el('div', { class: 'text-secondary', style: 'margin-top:2px' }, [r.detail])
           ])
         ]));

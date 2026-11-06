@@ -211,14 +211,14 @@ var ModuleRoadmap = (function () {
                   }
                 }),
                 Dom.el('div', { style: 'flex:1;min-width:0' }, [
-                  Dom.el('span', { style: 'font-weight:600;font-size:12px' }, [item.name]),
-                  Dom.el('span', { class: 'text-tertiary', style: 'font-size:10.5px' }, [' \u2014 ' + item.categoryName + ' \u00b7 ' + Dom.fmtMoney(item.monthlyAmount) + '/mo'])
+                  Dom.el('span', { style: 'font-weight:600;font-size:11px' }, [item.name]),
+                  Dom.el('span', { class: 'text-tertiary', style: 'font-size:9.5px' }, [' \u2014 ' + item.categoryName + ' \u00b7 ' + Dom.fmtMoney(item.monthlyAmount) + '/mo'])
                 ])
               ])
             ]);
             if (isChecked) {
               checkboxRow.appendChild(Dom.el('div', { style: 'display:flex;align-items:center;gap:6px;margin:2px 0 2px 24px' }, [
-                Dom.el('span', { class: 'text-tertiary', style: 'font-size:10.5px' }, ['Stops at age']),
+                Dom.el('span', { class: 'text-tertiary', style: 'font-size:9.5px' }, ['Stops at age']),
                 Dom.el('div', { style: 'width:70px' }, [Fields.numberInput('roadmap.expenseStops.' + stopIdx + '.endAge', '')])
               ]));
             }
@@ -305,12 +305,12 @@ var ModuleRoadmap = (function () {
           if (showHospitalCol) {
             cells.push(Dom.el('td', { style: r.hospitalPremiumCash > 0 || r.hospitalPremiumMedisave > 0 ? 'color:var(--burgundy)' : '' }, [
               showHospitalCash ? (r.hospitalPremiumCash > 0 ? '\u2212' + Dom.fmtMoney(r.hospitalPremiumCash) : '\u2014') : null,
-              (showHospitalMedisave && r.hospitalPremiumMedisave > 0) ? Dom.el('div', { class: 'text-tertiary', style: 'font-size:10.5px' }, [Dom.fmtMoney(r.hospitalPremiumMedisave) + ' from MediSave']) : null
+              (showHospitalMedisave && r.hospitalPremiumMedisave > 0) ? Dom.el('div', { class: 'text-tertiary', style: 'font-size:9.5px' }, [Dom.fmtMoney(r.hospitalPremiumMedisave) + ' from MediSave']) : null
             ].filter(function (x) { return x !== null; })));
           }
           cells.push(Dom.el('td', { style: 'color:var(--burgundy)' }, [
             '\u2212' + Dom.fmtMoney(r.expensesDeducted),
-            r.stoppedExpenses.length ? Dom.el('div', { style: 'font-size:10.5px;color:var(--good);font-weight:700' }, ['\u2713 ' + r.stoppedExpenses.map(function (es) { return es.name; }).join(', ') + ' stopped']) : null
+            r.stoppedExpenses.length ? Dom.el('div', { style: 'font-size:9.5px;color:var(--good);font-weight:700' }, ['\u2713 ' + r.stoppedExpenses.map(function (es) { return es.name; }).join(', ') + ' stopped']) : null
           ].filter(Boolean)));
           cells.push(Dom.el('td', { style: eventColor }, [eventLabel]));
           tbody.appendChild(Dom.el('tr', { style: isTransitionYear ? 'background:var(--accent-soft)' : '' }, cells));

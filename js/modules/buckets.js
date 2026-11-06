@@ -46,7 +46,7 @@ var ModuleBuckets = (function () {
       container.appendChild(Dom.el('div', { class: 'card mb-3', style: 'text-align:center;padding:28px 20px' }, [
         iconCircle('🚰', 'var(--accent-soft)', 56),
         Dom.el('div', { class: 'kpi-label mt-2' }, ['Monthly Income']),
-        Dom.el('div', { class: 'kpi-value', style: 'font-size:32px' }, [Dom.fmtMoney(bt.income)]),
+        Dom.el('div', { class: 'kpi-value', style: 'font-size:29px' }, [Dom.fmtMoney(bt.income)]),
         Dom.el('div', { class: 'text-tertiary mt-2' }, ['flows into 3 buckets every month ↓'])
       ]));
 
@@ -90,10 +90,10 @@ var ModuleBuckets = (function () {
       var currentGoal = Calc.num((c.budgetGoals || {}).netWorthGoal);
       var goalMatchesRP = Math.abs(currentGoal - currentRP) < 1;
       goalsCard.appendChild(Dom.el('div', { class: 'mt-3 pt-3 flex justify-between items-center', style: 'border-top:1px solid var(--border)' }, [
-        Dom.el('div', { style: 'font-size:12px' }, [
+        Dom.el('div', { style: 'font-size:11px' }, [
           Dom.el('span', { class: 'text-secondary' }, ['Retirement Planning\u2019s Required Portfolio: ']),
           Dom.el('b', {}, [Dom.fmtMoney(currentRP)]),
-          goalMatchesRP ? Dom.el('span', { class: 'badge badge-good', style: 'margin-left:8px;font-size:10px' }, ['Matches']) : null
+          goalMatchesRP ? Dom.el('span', { class: 'badge badge-good', style: 'margin-left:8px;font-size:9px' }, ['Matches']) : null
         ]),
         goalMatchesRP ? null : Dom.el('button', {
           class: 'btn btn-secondary btn-sm', onclick: function () { Store.set('budgetGoals.netWorthGoal', Math.round(currentRP)); }
@@ -174,15 +174,15 @@ var ModuleBuckets = (function () {
     function bucketCard(title, total, items, color, softBg) {
       var card = Dom.el('div', { class: 'card' });
       card.appendChild(iconCircle('🪣', softBg, 96));
-      card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:14px;margin:14px 0 2px;text-align:center' }, [title]));
-      card.appendChild(Dom.el('div', { style: 'font-family:var(--font-serif);font-size:22px;font-weight:700;color:' + color + ';margin-bottom:12px;text-align:center' }, [Dom.fmtMoney(total)]));
+      card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12.5px;margin:14px 0 2px;text-align:center' }, [title]));
+      card.appendChild(Dom.el('div', { style: 'font-family:var(--font-serif);font-size:20px;font-weight:700;color:' + color + ';margin-bottom:12px;text-align:center' }, [Dom.fmtMoney(total)]));
       var list = Dom.el('div');
       var nonZero = items.filter(function (x) { return x.value > 0; });
       if (nonZero.length === 0) {
         list.appendChild(Dom.el('div', { class: 'text-tertiary' }, ['No categories in this bucket yet.']));
       } else {
         nonZero.forEach(function (item) {
-          list.appendChild(Dom.el('div', { class: 'flex justify-between', style: 'padding:5px 0;border-bottom:1px solid var(--border);font-size:13px' }, [
+          list.appendChild(Dom.el('div', { class: 'flex justify-between', style: 'padding:5px 0;border-bottom:1px solid var(--border);font-size:11.5px' }, [
             Dom.el('div', { class: 'text-secondary' }, [item.label]),
             Dom.el('div', { style: 'font-weight:600' }, [Dom.fmtMoney(item.value)])
           ]));
@@ -195,11 +195,11 @@ var ModuleBuckets = (function () {
     function goalProgressCard(label, current, goal, pct) {
       return Dom.el('div', { class: 'card' }, [
         Dom.el('div', { class: 'flex justify-between items-center mb-3' }, [
-          Dom.el('div', { style: 'font-weight:700;font-size:14px' }, [label]),
+          Dom.el('div', { style: 'font-weight:700;font-size:12.5px' }, [label]),
           Dom.el('div', { class: 'badge ' + (pct >= 100 ? 'badge-good' : pct >= 50 ? 'badge-warn' : 'badge-bad') }, [Dom.fmtPct(pct)])
         ]),
         Dom.el('div', { class: 'progress-track mb-2' }, [Dom.el('div', { class: 'progress-fill', style: 'width:' + Dom.clamp(pct, 0, 100) + '%' })]),
-        Dom.el('div', { class: 'flex justify-between', style: 'font-size:12.5px' }, [
+        Dom.el('div', { class: 'flex justify-between', style: 'font-size:11px' }, [
           Dom.el('div', { class: 'text-secondary' }, ['Current: ' + Dom.fmtMoney(current)]),
           Dom.el('div', { class: 'text-secondary' }, ['Goal: ' + Dom.fmtMoney(goal)])
         ])
@@ -210,7 +210,7 @@ var ModuleBuckets = (function () {
       var achieved = goalPct > 0 ? Dom.clamp((actualPct / goalPct) * 100, 0, 999) : 100;
       return Dom.el('div', { class: 'card' }, [
         Dom.el('div', { class: 'flex justify-between items-center mb-3' }, [
-          Dom.el('div', { style: 'font-weight:700;font-size:14px' }, ['Savings Rate: Goal vs Actual']),
+          Dom.el('div', { style: 'font-weight:700;font-size:12.5px' }, ['Savings Rate: Goal vs Actual']),
           Dom.el('div', { class: 'badge ' + (actualPct >= goalPct ? 'badge-good' : actualPct >= goalPct * 0.6 ? 'badge-warn' : 'badge-bad') }, [Dom.fmtPct(actualPct)])
         ]),
         Dom.el('div', { class: 'chart-wrap', style: 'height:140px' }, [Dom.el('canvas', { id: 'savingsRateChart' })])

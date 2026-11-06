@@ -42,9 +42,9 @@ var Auth = (function () {
       var sb = getClient();
       var submitting = false;
 
-      var emailInput = Dom.el('input', { type: 'email', autocomplete: 'email', placeholder: 'you@advisory.com', style: 'width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);color:var(--text-primary);font-size:12.5px;' });
-      var passInput = Dom.el('input', { type: 'password', autocomplete: 'current-password', placeholder: '••••••••', style: 'width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);color:var(--text-primary);font-size:12.5px;' });
-      var errorMsg = Dom.el('p', { style: 'color:var(--bad);font-size:11.5px;margin-top:8px;display:none' }, ['']);
+      var emailInput = Dom.el('input', { type: 'email', autocomplete: 'email', placeholder: 'you@advisory.com', style: 'width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);color:var(--text-primary);font-size:11px;' });
+      var passInput = Dom.el('input', { type: 'password', autocomplete: 'current-password', placeholder: '••••••••', style: 'width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);color:var(--text-primary);font-size:11px;' });
+      var errorMsg = Dom.el('p', { style: 'color:var(--bad);font-size:10.5px;margin-top:8px;display:none' }, ['']);
 
       function submit() {
         if (submitting) return;
@@ -67,8 +67,8 @@ var Auth = (function () {
 
       var card = Dom.el('div', { style: 'width:100%;max-width:360px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-md);padding:28px;' }, [
         Dom.el('div', { style: 'display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:22px' }, [
-          Dom.el('div', { style: 'width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--brass-300),var(--brass-500));display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--ink-950);font-size:16px;margin-bottom:10px' }, ['W']),
-          Dom.el('div', { style: 'font-size:14px;font-weight:700' }, ['Wealth Advisory']),
+          Dom.el('div', { style: 'width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--brass-300),var(--brass-500));display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--ink-950);font-size:14.5px;margin-bottom:10px' }, ['W']),
+          Dom.el('div', { style: 'font-size:12.5px;font-weight:700' }, ['Wealth Advisory']),
           Dom.el('div', { class: 'text-tertiary', style: 'margin-top:4px' }, ['Sign in to your wealth console'])
         ]),
         Dom.el('div', { class: 'field' }, [Dom.el('label', { class: 'field-label' }, ['Email']), emailInput]),

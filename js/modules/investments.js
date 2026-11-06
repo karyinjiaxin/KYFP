@@ -43,7 +43,7 @@ var ModuleInvestments = (function () {
       var card = Dom.el('div', { class: 'card mb-3 compact-fields' });
       card.appendChild(Dom.el('div', { class: 'policy-head' }, [
         Dom.el('div', {}, [
-          Dom.el('div', { style: 'font-size:13px;font-weight:700' }, [plan.name]),
+          Dom.el('div', { style: 'font-size:11.5px;font-weight:700' }, [plan.name]),
           Dom.el('div', { class: 'text-tertiary' }, [plan.assetType || 'Unit Trust'])
         ]),
         Dom.el('button', { class: 'btn btn-ghost btn-sm', onclick: function () { var arr = Store.get('investments'); arr.splice(idx, 1); Store.set('investments', arr); } }, ['Remove'])
@@ -90,7 +90,7 @@ var ModuleInvestments = (function () {
         '"Current Investment Value" is optional, for a plan that\u2019s already been running: enter today\u2019s real account value and the age it was observed, and the projection is grounded to that actual figure at that age instead of trusting a recomputation from scratch since Start Age.'
       ]));
 
-      card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:13.5px;margin-top:16px;margin-bottom:8px' }, ['Annual Projection Table']));
+      card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12px;margin-top:16px;margin-bottom:8px' }, ['Annual Projection Table']));
       card.appendChild(projectionTable(plan, currentAge));
 
       return card;

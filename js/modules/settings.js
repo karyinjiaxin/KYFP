@@ -74,7 +74,7 @@ var ModuleSettings = (function () {
           var savedDate = new Date(entry.savedAt).toLocaleString('en-SG', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
           clientsCard.appendChild(Dom.el('div', { class: 'flex justify-between items-center', style: 'padding:10px 0;border-bottom:1px solid var(--border)' }, [
             Dom.el('div', {}, [
-              Dom.el('div', { style: 'font-weight:700;font-size:13.5px' }, [entry.label]),
+              Dom.el('div', { style: 'font-weight:700;font-size:12px' }, [entry.label]),
               Dom.el('div', { class: 'text-tertiary' }, ['Saved ' + savedDate])
             ]),
             Dom.el('div', { class: 'flex gap-2' }, [

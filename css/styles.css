@@ -96,16 +96,16 @@ button { font-family: inherit; cursor: pointer; }
   width: 34px; height: 34px; border-radius: 9px; flex: none;
   background: linear-gradient(135deg, var(--brass-300), var(--brass-500));
   display: flex; align-items: center; justify-content: center; font-family: var(--font-serif);
-  font-weight: 700; color: var(--ink-950); font-size: 15px;
+  font-weight: 700; color: var(--ink-950); font-size: 13.5px;
 }
-.sidebar-brand .word { font-family: var(--font-serif); font-size: 14.5px; letter-spacing: 0.01em; color: #F2EFE6; white-space: nowrap; overflow: hidden; }
+.sidebar-brand .word { font-family: var(--font-serif); font-size: 13px; letter-spacing: 0.01em; color: #F2EFE6; white-space: nowrap; overflow: hidden; }
 .sidebar.collapsed .word, .sidebar.collapsed .section-label { display: none; }
 
 .sidebar-section { margin-bottom: 4px; }
-.section-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: #7FA39D; padding: 14px 12px 6px; font-weight: 600; }
+.section-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.08em; color: #7FA39D; padding: 14px 12px 6px; font-weight: 600; }
 .nav-item {
   display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 10px;
-  color: #C9DEDA; font-size: 12px; font-weight: 500; margin-bottom: 2px; white-space: nowrap;
+  color: #C9DEDA; font-size: 11px; font-weight: 500; margin-bottom: 2px; white-space: nowrap;
   transition: background 0.15s ease, color 0.15s ease; position: relative;
 }
 .nav-item .ic { width: 18px; height: 18px; flex: none; opacity: 0.85; }
@@ -117,7 +117,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 .sidebar-toggle {
   margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-  color: #D98CAA; font-size: 13px; border-radius: 10px; background: transparent; border: none;
+  color: #D98CAA; font-size: 11.5px; border-radius: 10px; background: transparent; border: none;
 }
 .sidebar-toggle:hover { background: rgba(255,255,255,0.06); color: #fff; }
 
@@ -129,7 +129,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 .topbar .client-chip { display: flex; align-items: center; gap: 10px; }
 .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--accent-soft); color: var(--accent);
-  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12.5px; }
 .topbar-actions { display: flex; align-items: center; gap: 10px; }
 .icon-btn {
   width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-elevated);
@@ -141,8 +141,8 @@ button { font-family: inherit; cursor: pointer; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: translateY(0);} }
 
 .page-header { margin-bottom: 22px; }
-.page-header h1 { font-size: 21px; letter-spacing: -0.005em; }
-.page-header .sub { color: var(--text-secondary); font-size: 12.5px; margin-top: 4px; }
+.page-header h1 { font-size: 19px; letter-spacing: -0.005em; }
+.page-header .sub { color: var(--text-secondary); font-size: 11px; margin-top: 4px; }
 
 /* ---------- Cards / grid ---------- */
 .card {
@@ -156,9 +156,9 @@ button { font-family: inherit; cursor: pointer; }
 .grid-3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 
 .kpi-card { display: flex; flex-direction: column; gap: 5px; border-left: 3px solid transparent; padding: 13px 14px; }
-.kpi-card .kpi-label { font-size: 10px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
-.kpi-card .kpi-value { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; font-family: var(--font-serif); white-space: nowrap; }
-.kpi-card .kpi-delta { font-size: 10.5px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.kpi-card .kpi-label { font-size: 9px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+.kpi-card .kpi-value { font-size: 14.5px; font-weight: 700; letter-spacing: -0.02em; font-family: var(--font-serif); white-space: nowrap; }
+.kpi-card .kpi-delta { font-size: 9.5px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
 .kpi-delta.up { color: var(--good); } .kpi-delta.down { color: var(--bad); } .kpi-delta.flat { color: var(--text-tertiary); }
 
 /* ---------- Accent system ----------
@@ -203,31 +203,31 @@ button { font-family: inherit; cursor: pointer; }
 .nav-item.active .nav-icon-cyan,
 .nav-item.active .nav-icon-burgundy { color: var(--brass-400); }
 
-.section-title { font-size: 12px; font-weight: 700; margin: 28px 0 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); font-family: var(--font-ui); }
+.section-title { font-size: 11px; font-weight: 700; margin: 28px 0 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); font-family: var(--font-ui); }
 .section-title:first-child { margin-top: 0; }
 /* Standardized "card title" — the header line at the top of a card, one
    level below .section-title (e.g. "How Required Portfolio Is
    Calculated", "Monthly Contribution", "Account Balances"). Previously
    scattered as inline styles ranging inconsistently from 13px to 16px
    across different modules; this makes it one consistent size/weight. */
-.card-title { font-size: 13px; font-weight: 700; margin: 0 0 8px; }
+.card-title { font-size: 11.5px; font-weight: 700; margin: 0 0 8px; }
 .card-title:first-child { margin-top: 0; }
 
 /* ---------- Forms ---------- */
-label.field-label { display: block; font-size: 10.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.03em; }
+label.field-label { display: block; font-size: 9.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.03em; }
 .field { margin-bottom: 14px; }
 input[type=text], input[type=number], input[type=date], input[type=email], input[type=tel], select, textarea {
   width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border-strong);
-  background: var(--bg); color: var(--text-primary); font-size: 12.5px; font-family: inherit;
+  background: var(--bg); color: var(--text-primary); font-size: 11px; font-family: inherit;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .input-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
 .input-prefix { position: relative; }
-.input-prefix span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); font-size: 12px; font-weight: 600; }
+.input-prefix span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); font-size: 11px; font-weight: 600; }
 .input-prefix input { padding-left: 32px; }
 
-.btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 10px; font-size: 12.5px; font-weight: 600; border: 1px solid transparent; transition: all 0.15s ease; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 10px; font-size: 11px; font-weight: 600; border: 1px solid transparent; transition: all 0.15s ease; }
 .btn-primary { background: var(--ink-900); color: #fff; }
 [data-theme="dark"] .btn-primary { background: var(--brass-400); color: var(--ink-950); }
 .btn-primary:hover { opacity: 0.9; box-shadow: var(--shadow-sm); }
@@ -235,17 +235,17 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
 .btn-ghost { background: transparent; color: var(--text-secondary); }
 .btn-ghost:hover { color: var(--bad); }
-.btn-sm { padding: 6px 11px; font-size: 12.5px; }
+.btn-sm { padding: 6px 11px; font-size: 11px; }
 
 /* ---------- Tables ---------- */
-table.data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
 /* Tighter variant for wide tables with many columns (e.g. Hospital Plan
    Premiums' 9-column projection), so more fits comfortably without the
    page feeling oversized. */
-table.data-table.compact-table { font-size: 12px; }
-table.data-table.compact-table th { font-size: 10.5px; padding: 6px 8px; }
+table.data-table.compact-table { font-size: 11px; }
+table.data-table.compact-table th { font-size: 9.5px; padding: 6px 8px; }
 table.data-table.compact-table td { padding: 6px 8px; }
-.data-table th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-tertiary); padding: 8px 10px; border-bottom: 1px solid var(--border-strong); font-weight: 700; }
+.data-table th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-tertiary); padding: 8px 10px; border-bottom: 1px solid var(--border-strong); font-weight: 700; }
 .data-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text-primary); }
 .data-table tbody tr { transition: background 0.15s ease; }
 .data-table tbody tr:hover { background: var(--accent-soft); }
@@ -255,7 +255,7 @@ table.data-table.compact-table td { padding: 6px 8px; }
 /* ---------- Progress / gauges ---------- */
 .progress-track { height: 8px; border-radius: 6px; background: var(--border); overflow: hidden; }
 .progress-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--brass-300), var(--brass-500)); transition: width 0.4s ease; }
-.badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em; }
+.badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.02em; }
 .badge-good { background: var(--good-soft); color: var(--good); }
 .badge-warn { background: var(--warn-soft); color: var(--warn); }
 .badge-bad { background: var(--bad-soft); color: var(--bad); }
@@ -263,11 +263,11 @@ table.data-table.compact-table td { padding: 6px 8px; }
 /* ---------- Policy / plan cards ---------- */
 .policy-card { border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-elevated); padding: 18px; box-shadow: var(--shadow-sm); }
 .policy-card .policy-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-.policy-card .policy-title { font-size: 14px; font-weight: 700; }
-.policy-card .policy-sub { font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; }
+.policy-card .policy-title { font-size: 12.5px; font-weight: 700; }
+.policy-card .policy-sub { font-size: 10.5px; color: var(--text-secondary); margin-top: 2px; }
 .mini-stat { display: flex; flex-direction: column; gap: 2px; }
-.mini-stat .l { font-size: 10px; text-transform: uppercase; color: var(--text-tertiary); font-weight: 600; letter-spacing: 0.03em; }
-.mini-stat .v { font-size: 13.5px; font-weight: 700; }
+.mini-stat .l { font-size: 9px; text-transform: uppercase; color: var(--text-tertiary); font-weight: 600; letter-spacing: 0.03em; }
+.mini-stat .v { font-size: 12px; font-weight: 700; }
 
 .collapsible-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
 .chevron { transition: transform 0.2s ease; }
@@ -284,7 +284,7 @@ table.data-table.compact-table td { padding: 6px 8px; }
 
 /* Notes / lists */
 .note-item { padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-elevated); margin-bottom: 10px; }
-.note-item .note-date { font-size: 11.5px; color: var(--text-tertiary); font-weight: 600; margin-bottom: 4px; }
+.note-item .note-date { font-size: 10.5px; color: var(--text-tertiary); font-weight: 600; margin-bottom: 4px; }
 
 /* Chart container */
 .chart-wrap { position: relative; height: 240px; }
@@ -293,7 +293,7 @@ table.data-table.compact-table td { padding: 6px 8px; }
 /* Compact field variant — used for dense repeating rows (Cashflow items)
    so category headers can stand out as the primary visual anchor instead
    of every row competing at the same size. */
-.compact-row label.field-label { font-size: 9.5px; margin-bottom: 3px; }
+.compact-row label.field-label { font-size: 8.5px; margin-bottom: 3px; }
 /* Investment Planning specifically wants tighter typography (plan name,
    insurer product, etc.) beyond the shared compact-row sizing used
    elsewhere (Cashflow, Retirement, Roadmap), so this is scoped to its
@@ -302,15 +302,15 @@ table.data-table.compact-table td { padding: 6px 8px; }
    density (Investment Planning, Hospital Plan Premiums) — smaller than
    compact-row alone gives, since that only shrinks labels, not the
    actual input/select value text which is what reads as "big". */
-.compact-fields input[type=text], .compact-fields input[type=number], .compact-fields select { font-size: 11.5px; padding: 6px 9px; }
-.compact-fields label.field-label { font-size: 9px; margin-bottom: 3px; }
-.compact-fields .policy-title { font-size: 13px; }
-.compact-fields .policy-sub { font-size: 11px; }
+.compact-fields input[type=text], .compact-fields input[type=number], .compact-fields select { font-size: 10.5px; padding: 6px 9px; }
+.compact-fields label.field-label { font-size: 8px; margin-bottom: 3px; }
+.compact-fields .policy-title { font-size: 11.5px; }
+.compact-fields .policy-sub { font-size: 10px; }
 /* Same bug as .compact-row above: the shorthand padding resets
    padding-left to 9px on every input, overriding .input-prefix's
    padding-left:32px and making the "S$" prefix overlap the number. */
 .compact-fields .input-prefix input { padding-left: 32px; }
-.compact-row input, .compact-row select { padding: 6px 9px; font-size: 12.5px; }
+.compact-row input, .compact-row select { padding: 6px 9px; font-size: 11px; }
 .compact-row .field { margin-bottom: 0; }
 /* .compact-row's shorthand padding above resets padding-left to 9px on
    every input, silently overriding .input-prefix's padding-left:32px
@@ -334,8 +334,8 @@ table.data-table.compact-table td { padding: 6px 8px; }
 .narrow-row { grid-template-columns: repeat(auto-fit, minmax(180px, 340px)) !important; }
 .flex { display: flex; } .items-center { align-items: center; } .justify-between { justify-content: space-between; }
 .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; }
-.text-secondary { color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
-.text-tertiary { color: var(--text-tertiary); font-size: 11px; line-height: 1.5; }
+.text-secondary { color: var(--text-secondary); font-size: 11px; line-height: 1.5; }
+.text-tertiary { color: var(--text-tertiary); font-size: 10px; line-height: 1.5; }
 .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; } .mb-3 { margin-bottom: 12px; }
 .w-full { width: 100%; }
 .empty-state { text-align: center; padding: 48px 20px; color: var(--text-tertiary); }
@@ -349,15 +349,15 @@ table.data-table.compact-table td { padding: 6px 8px; }
   background: var(--bg-elevated); border-radius: 14px; padding: 22px 24px; max-width: 420px; width: 100%;
   box-shadow: 0 12px 40px rgba(0,0,0,0.25);
 }
-.modal-message { font-size: 14px; line-height: 1.5; color: var(--text-primary); margin-bottom: 16px; white-space: pre-line; }
+.modal-message { font-size: 12.5px; line-height: 1.5; color: var(--text-primary); margin-bottom: 16px; white-space: pre-line; }
 .modal-input {
   width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-strong);
-  background: var(--bg); color: var(--text-primary); font-size: 14px; font-family: inherit; margin-bottom: 16px;
+  background: var(--bg); color: var(--text-primary); font-size: 12.5px; font-family: inherit; margin-bottom: 16px;
 }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
 .btn-danger { background: var(--bad); color: #fff; }
 .btn-danger:hover { opacity: 0.9; }
-.empty-state .big-ic { font-size: 34px; margin-bottom: 10px; }
+.empty-state .big-ic { font-size: 30.5px; margin-bottom: 10px; }
 
 /* Scrollbars */
 ::-webkit-scrollbar { width: 9px; height: 9px; }
@@ -388,7 +388,7 @@ table.data-table.compact-table td { padding: 6px 8px; }
   body.printing-multi .print-multi-root { display: block !important; }
   .print-multi-root .print-page { page-break-after: always; }
   .print-multi-root .print-page:last-child { page-break-after: auto; }
-  .print-multi-root .print-page-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+  .print-multi-root .print-page-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
 }
 
 /* CPF page: Account Balances vs Monthly Contribution — the contribution

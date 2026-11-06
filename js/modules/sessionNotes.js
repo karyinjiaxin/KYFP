@@ -31,7 +31,7 @@ var ModuleSessionNotes = (function () {
             Dom.el('div', { class: 'note-date' }, [n.date]),
             Dom.el('button', { class: 'btn btn-ghost btn-sm', onclick: function () { var arr = Store.get('sessionNotes'); arr.splice(idx, 1); Store.set('sessionNotes', arr); } }, ['Delete'])
           ]),
-          Dom.el('div', { style: 'font-size:13.5px;margin-top:4px' }, [n.text])
+          Dom.el('div', { style: 'font-size:12px;margin-top:4px' }, [n.text])
         ]));
       });
       if (!(c.sessionNotes || []).length) container.appendChild(Dom.el('div', { class: 'empty-state' }, ['No session notes yet.']));

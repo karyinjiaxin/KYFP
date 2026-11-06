@@ -37,7 +37,7 @@ var ModuleRatios = (function () {
         var color = pct >= 70 ? 'var(--good)' : (pct >= 40 ? 'var(--warn)' : 'var(--bad)');
         var gaugeWrap = Dom.el('div', { class: 'card', style: 'display:flex;flex-direction:column;align-items:center;gap:10px' });
         gaugeWrap.appendChild(Dom.el('div', { html: gaugeSvg(pct, color) }));
-        gaugeWrap.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:13.5px' }, [LABELS[key]]));
+        gaugeWrap.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12px' }, [LABELS[key]]));
         grid.appendChild(gaugeWrap);
       });
       container.appendChild(grid);

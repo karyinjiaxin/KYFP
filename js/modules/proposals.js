@@ -23,7 +23,7 @@ var ModuleProposals = (function () {
       var doc = Dom.el('div', { class: 'card', id: 'proposalDoc' });
 
       doc.appendChild(Dom.el('div', { style: 'text-align:center;margin-bottom:24px' }, [
-        Dom.el('div', { style: 'font-family:var(--font-serif);font-size:22px;font-weight:700' }, ['Financial Advisory Proposal']),
+        Dom.el('div', { style: 'font-family:var(--font-serif);font-size:20px;font-weight:700' }, ['Financial Advisory Proposal']),
         Dom.el('div', { class: 'text-secondary', style: 'margin-top:4px' }, ['Prepared for ' + ((c.personal || {}).name || 'Client') + ' · ' + new Date().toLocaleDateString('en-SG', { year: 'numeric', month: 'long', day: 'numeric' })])
       ]));
 
@@ -41,7 +41,7 @@ var ModuleProposals = (function () {
       var problems = recs.filter(function (r) { return r.severity !== 'good'; });
       section(doc, 'Problems Identified', problems.length ? problems.map(function (r) {
         return Dom.el('div', { style: 'margin-bottom:8px' }, [
-          Dom.el('div', { style: 'font-weight:700;font-size:13.5px' }, ['• ' + r.title]),
+          Dom.el('div', { style: 'font-weight:700;font-size:12px' }, ['• ' + r.title]),
           Dom.el('div', { class: 'text-secondary', style: 'margin-left:14px' }, [r.detail])
         ]);
       }) : [Dom.el('div', { class: 'text-secondary' }, ['No material issues identified in the current review.'])]);
@@ -74,7 +74,7 @@ var ModuleProposals = (function () {
 
       var priorities = buildPriorities(c, rp);
       section(doc, 'Priority Actions', priorities.map(function (p, i) {
-        return Dom.el('div', { style: 'margin-bottom:6px;font-size:13.5px' }, [(i + 1) + '. ' + p]);
+        return Dom.el('div', { style: 'margin-bottom:6px;font-size:12px' }, [(i + 1) + '. ' + p]);
       }));
 
       container.appendChild(doc);
@@ -93,7 +93,7 @@ var ModuleProposals = (function () {
         Fields.textInput('proposalNotes', 'Notes to Client (appears in the printed proposal, below the title)', { multiline: true, rows: 4, placeholder: 'e.g. a personal greeting, context from your meeting, or anything else you’d like to say directly to the client…' })
       ]));
       if (notes.trim()) {
-        wrap.appendChild(Dom.el('div', { class: 'print-only', style: 'font-size:13.5px;line-height:1.6;white-space:pre-line;margin-bottom:8px' }, [notes]));
+        wrap.appendChild(Dom.el('div', { class: 'print-only', style: 'font-size:12px;line-height:1.6;white-space:pre-line;margin-bottom:8px' }, [notes]));
       }
       return wrap;
     }
@@ -116,7 +116,7 @@ var ModuleProposals = (function () {
     function propRow(label, value) {
       return Dom.el('div', { class: 'flex justify-between items-center', style: 'padding:6px 0;border-bottom:1px solid var(--border)' }, [
         Dom.el('div', { class: 'text-secondary' }, [label]),
-        Dom.el('div', { style: 'font-weight:700;font-size:13.5px' }, [value])
+        Dom.el('div', { style: 'font-weight:700;font-size:12px' }, [value])
       ]);
     }
 

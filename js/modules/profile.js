@@ -69,7 +69,7 @@ var ModuleProfile = (function () {
             partnerAlreadyHas
               ? Dom.el('span', { class: 'text-tertiary' }, ['✓ Already listed for ' + linkedPartnerName + ' too'])
               : Dom.el('a', {
-                  href: '#', style: 'color:var(--accent);cursor:pointer;font-size:11.5px',
+                  href: '#', style: 'color:var(--accent);cursor:pointer;font-size:10.5px',
                   onclick: function (e) {
                     e.preventDefault();
                     var partnerData = JSON.parse(JSON.stringify(linkedPartnerEntry.data));
@@ -99,7 +99,7 @@ var ModuleProfile = (function () {
       if (partnerEntry) {
         partnerCard.appendChild(Dom.el('div', { class: 'flex justify-between items-center' }, [
           Dom.el('div', {}, [
-            Dom.el('div', { style: 'font-weight:700;font-size:14px' }, [partnerEntry.label || (c.personal || {}).partnerName || 'Partner']),
+            Dom.el('div', { style: 'font-weight:700;font-size:12.5px' }, [partnerEntry.label || (c.personal || {}).partnerName || 'Partner']),
             Dom.el('div', { class: 'text-tertiary mt-1' }, ['Linked partner \u2014 saved separately, switch anytime'])
           ]),
           Dom.el('div', { class: 'flex gap-2' }, [

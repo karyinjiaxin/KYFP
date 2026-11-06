@@ -84,7 +84,7 @@ var ModuleNetWorth = (function () {
       var assetsRow = Dom.el('div', { class: 'input-row' }, [
         Dom.el('div', { class: 'field' }, [
           Dom.el('label', { class: 'field-label' }, ['CPF (from CPF tab)']),
-          Dom.el('div', { style: 'padding:9px 12px;border-radius:10px;background:var(--accent-soft);font-size:14px;font-weight:600' }, [Dom.fmtMoney(Calc.totalCpfBalance(c))])
+          Dom.el('div', { style: 'padding:9px 12px;border-radius:10px;background:var(--accent-soft);font-size:12.5px;font-weight:600' }, [Dom.fmtMoney(Calc.totalCpfBalance(c))])
         ])
       ]);
       ASSET_FIELDS.forEach(function (f) {
