@@ -196,6 +196,25 @@ var Calc = (function () {
     return sum(c.insurance, function (p) { return p.type === 'Life' ? lifePolicyDeathTpd(p) + lifePolicyCi(p) : num(p.coverage); });
   }
 
+  // Total Sum Assured — a literal sum of every Death/TPD/CI figure across
+  // every policy, deliberately different from totalCoverage() above (which
+  // takes whichever of Death/TPD is higher, since TPD is usually an
+  // acceleration of the same Death benefit rather than a separate payout —
+  // correct for needs analysis, but understates a policy's actual total
+  // face value as insurers themselves report it). This is that face-value
+  // figure: Death + TPD + All-Stage CI + Late-Stage CI added together for
+  // every Life policy, plus the generic Coverage amount for every other
+  // type (CI/ECI/PA/Disability/Hospital), plus the Quick Coverage entries.
+  function policyTotalSumAssured(p) {
+    if (p.type !== 'Life') return num(p.coverage);
+    return num(p.coverage) + num(p.coverageTpd) + num(p.coverageCiAllStage) + num(p.coverageCi);
+  }
+  function totalSumAssured(c) {
+    var q = c.insuranceQuickCoverage || {};
+    return sum(c.insurance, policyTotalSumAssured)
+      + num(q.deathTpd) + num(q.terminalIllness) + num(q.earlyStageCI) + num(q.lateStageCI);
+  }
+
   // ---------- QUICK-INPUT COVERAGE (aggregate amounts entered directly,
   // for a fast estimate without keying every individual policy) ----------
   var QUICK_COVERAGE_FIELDS = [
@@ -2037,6 +2056,7 @@ var Calc = (function () {
     propertyValueTotal: propertyValueTotal, propertyLoanTotal: propertyLoanTotal,
     policyAnnualPremium: policyAnnualPremium, totalAnnualPremium: totalAnnualPremium, totalMonthlyPremium: totalMonthlyPremium,
     totalCoverageByType: totalCoverageByType, totalCoverage: totalCoverage, recommendedLifeCoverage: recommendedLifeCoverage,
+    totalSumAssured: totalSumAssured, policyTotalSumAssured: policyTotalSumAssured,
     recommendedDeathTpdCoverage: recommendedDeathTpdCoverage, recommendedCICoverage: recommendedCICoverage,
     deathTpdCoverageHeld: deathTpdCoverageHeld, ciCoverageHeld: ciCoverageHeld, deathTpdGap: deathTpdGap, ciGap: ciGap,
     coverageGap: coverageGap, protectionRatio: protectionRatio, insuranceCashValueProjected: insuranceCashValueProjected,

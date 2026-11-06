@@ -61,8 +61,10 @@ var ModuleInsurance = (function () {
         row('Recommended Coverage (4x annual income)', Dom.fmtMoney(Calc.recommendedCICoverage(c))),
         row('Current CI + ECI Coverage Held', Dom.fmtMoney(Calc.ciCoverageHeld(c))),
         row('CI Gap', Dom.fmtMoney(Calc.ciGap(c))),
+        Dom.el('div', { style: 'font-weight:700;font-size:13.5px;margin:16px 0 2px' }, ['Total Sum Assured']),
+        row('All Policies (Death + TPD + All-Stage CI + Late-Stage CI + other types)', Dom.fmtMoney(Calc.totalSumAssured(c))),
         Dom.el('div', { class: 'text-tertiary mt-3', style: 'line-height:1.5' }, [
-          'Benchmarks: Life Insurance Association of Singapore 2022 Protection Gap Study (~9x annual income for Death/TPD, ~4x for Critical Illness), as adopted into the MAS/MoneySense Basic Financial Planning Guide (Oct 2023). General rules of thumb, not personalised advice — actual needs vary by dependants, debts and lifestyle.'
+          'Benchmarks: Life Insurance Association of Singapore 2022 Protection Gap Study (~9x annual income for Death/TPD, ~4x for Critical Illness), as adopted into the MAS/MoneySense Basic Financial Planning Guide (Oct 2023). General rules of thumb, not personalised advice — actual needs vary by dependants, debts and lifestyle. Total Sum Assured above is a literal sum of every coverage figure (the policy’s total face value, as insurers report it) — the Death/TPD and CI Gap figures above correctly use whichever of Death/TPD is higher per policy instead, since TPD is usually an acceleration of the same Death benefit rather than an additional payout.'
         ])
       ]);
       container.appendChild(needCard);
@@ -153,10 +155,10 @@ var ModuleInsurance = (function () {
 
       var isLife = p.type === 'Life';
       var statsRow = isLife
-        ? Dom.el('div', { class: 'grid grid-3', style: 'margin-bottom:14px' }, [
+        ? Dom.el('div', { class: 'grid grid-3', style: 'margin-bottom:4px' }, [
             miniStat('Annual Premium', Dom.fmtMoney(annualPremium)),
-            miniStat('Death / TPD', Dom.fmtMoney(Math.max(Calc.num(p.coverage), Calc.num(p.coverageTpd)))),
-            miniStat('CI Rider', Dom.fmtMoney(p.coverageCi))
+            miniStat('Death Coverage', Dom.fmtMoney(p.coverage)),
+            miniStat('Total Sum Assured', Dom.fmtMoney(Calc.policyTotalSumAssured(p)))
           ])
         : Dom.el('div', { class: 'grid grid-3', style: 'margin-bottom:14px' }, [
             miniStat('Annual Premium', Dom.fmtMoney(annualPremium)),
@@ -164,6 +166,17 @@ var ModuleInsurance = (function () {
             miniStat('Cash Value', Dom.fmtMoney(p.cashValue))
           ]);
       card.appendChild(statsRow);
+      // TPD/CI shown as a breakdown directly under Death Coverage, not as
+      // separate stat boxes of their own — Total Sum Assured above is
+      // their literal sum (+ Death); the Need Analysis section's Death/TPD
+      // Gap still correctly takes whichever of Death/TPD is higher, since
+      // TPD is usually an acceleration of the same Death benefit, not an
+      // additional payout on top of it.
+      if (isLife) {
+        card.appendChild(Dom.el('div', { class: 'text-tertiary', style: 'margin-bottom:14px' }, [
+          'TPD: ' + Dom.fmtMoney(p.coverageTpd) + ' · All-Stage CI: ' + Dom.fmtMoney(p.coverageCiAllStage) + ' · Late-Stage CI: ' + Dom.fmtMoney(p.coverageCi)
+        ]));
+      }
 
       var formRow1 = Dom.el('div', { class: 'input-row' }, [
         Fields.textInput(base + 'company', 'Company'),
