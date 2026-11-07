@@ -228,7 +228,6 @@ var ModuleInsurance = (function () {
         Fields.textInput(base + 'projectedCoverageNote', 'Projected Coverage @65 (note)'),
         Fields.textInput(base + 'remarks', 'Remarks')
       ]));
-      card.appendChild(screenshotAttachment(base, p));
       if (isLife) {
         card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
           Fields.moneyInput(base + 'coverageTpd', 'TPD Coverage'),
@@ -324,43 +323,6 @@ var ModuleInsurance = (function () {
         img.src = reader.result;
       };
       reader.readAsDataURL(file);
-    }
-
-    function openImageLightbox(dataUrl) {
-      var overlay = Dom.el('div', { class: 'modal-overlay', onclick: function (e) { if (e.target === overlay) overlay.remove(); } });
-      overlay.appendChild(Dom.el('img', { src: dataUrl, style: 'max-width:92vw;max-height:92vh;border-radius:8px;box-shadow:var(--shadow-lg);display:block;margin:auto' }));
-      document.body.appendChild(overlay);
-    }
-
-    // Just a reference image kept alongside an existing policy card (e.g.
-    // a screenshot of the insurer's policy summary) so the advisor can
-    // glance at the source while keying fields in by hand — no OCR runs
-    // here. Reading a screenshot to auto-fill a NEW policy is a separate
-    // entry point: see ocrAddButton() below.
-    function screenshotAttachment(base, p) {
-      var wrap = Dom.el('div', { class: 'mt-2' });
-      if (p.screenshot) {
-        var row = Dom.el('div', { class: 'flex items-center gap-2' }, [
-          Dom.el('img', {
-            src: p.screenshot, style: 'width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer',
-            onclick: function () { openImageLightbox(p.screenshot); }
-          }),
-          Dom.el('button', { class: 'btn btn-ghost btn-sm', onclick: function () { Store.set(base + 'screenshot', ''); } }, ['Remove'])
-        ]);
-        wrap.appendChild(row);
-      } else {
-        var fileInput = Dom.el('input', {
-          type: 'file', accept: 'image/*', style: 'display:none',
-          onchange: function (e) {
-            var file = e.target.files[0];
-            if (!file) return;
-            resizeImageFile(file, 1000, 0.75, function (dataUrl) { Store.set(base + 'screenshot', dataUrl); });
-          }
-        });
-        wrap.appendChild(fileInput);
-        wrap.appendChild(Dom.el('button', { class: 'btn btn-secondary btn-sm', onclick: function () { fileInput.click(); } }, ['📷 Attach Screenshot']));
-      }
-      return wrap;
     }
 
     function addPolicyManually() {
