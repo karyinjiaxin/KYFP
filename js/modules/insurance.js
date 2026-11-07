@@ -154,6 +154,12 @@ var ModuleInsurance = (function () {
       }
 
       var isLife = p.type === 'Life';
+      // TPD/All-Stage CI/Late-Stage CI aren't Life-only — the Secondary
+      // Coverage table can produce a CI- or ECI-type policy (no Death
+      // figure at all, e.g. a standalone CI rider) that still genuinely
+      // has All-Stage/Late-Stage CI values needing to be shown/editable,
+      // not just Life policies bundling a CI rider alongside Death cover.
+      var showCiFields = p.type === 'Life' || p.type === 'CI' || p.type === 'ECI';
       var statsRow = isLife
         ? Dom.el('div', { class: 'grid grid-3', style: 'margin-bottom:4px' }, [
             miniStat('Annual Premium', Dom.fmtMoney(annualPremium)),
@@ -172,7 +178,7 @@ var ModuleInsurance = (function () {
       // Gap still correctly takes whichever of Death/TPD is higher, since
       // TPD is usually an acceleration of the same Death benefit, not an
       // additional payout on top of it.
-      if (isLife) {
+      if (showCiFields) {
         card.appendChild(Dom.el('div', { class: 'text-tertiary', style: 'margin-bottom:14px' }, [
           'TPD: ' + Dom.fmtMoney(p.coverageTpd) + ' · All-Stage CI: ' + Dom.fmtMoney(p.coverageCiAllStage) + ' · Late-Stage CI: ' + Dom.fmtMoney(p.coverageCi)
         ]));
@@ -228,14 +234,14 @@ var ModuleInsurance = (function () {
         Fields.textInput(base + 'projectedCoverageNote', 'Projected Coverage @65 (note)'),
         Fields.textInput(base + 'remarks', 'Remarks')
       ]));
-      if (isLife) {
+      if (showCiFields) {
         card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
           Fields.moneyInput(base + 'coverageTpd', 'TPD Coverage'),
           Fields.moneyInput(base + 'coverageCiAllStage', 'All-Stage CI Coverage'),
           Fields.moneyInput(base + 'coverageCi', 'Late-Stage CI Coverage (rider)')
         ]));
         card.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, [
-          'One Life plan can bundle Death, TPD and a CI rider under a single premium — leave TPD blank/0 if it simply matches Death Coverage. Death and TPD count toward the Death/TPD need as whichever is higher (not added together); Late-Stage CI Coverage counts toward the Critical Illness need. All-Stage CI is tracked for reference but not yet counted in the needs calculation.'
+          'One plan can bundle Death, TPD and a CI rider under a single premium — leave TPD blank/0 if it simply matches Death Coverage (or if this is a standalone CI/ECI policy with no Death cover at all). Death and TPD count toward the Death/TPD need as whichever is higher (not added together); Late-Stage CI Coverage counts toward the Critical Illness need. All-Stage CI is tracked for reference but not yet counted in the needs calculation.'
         ]));
       }
       if (p.type === 'Hospital') {
