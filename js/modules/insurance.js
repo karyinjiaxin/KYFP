@@ -241,7 +241,7 @@ var ModuleInsurance = (function () {
           Fields.moneyInput(base + 'coverageCi', 'Late-Stage CI Coverage (rider)')
         ]));
         card.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, [
-          'One plan can bundle Death, TPD and a CI rider under a single premium — leave TPD blank/0 if it simply matches Death Coverage (or if this is a standalone CI/ECI policy with no Death cover at all). Death and TPD count toward the Death/TPD need as whichever is higher (not added together); Late-Stage CI Coverage counts toward the Critical Illness need. All-Stage CI is tracked for reference but not yet counted in the needs calculation.'
+          'One plan can bundle Death, TPD and a CI rider under a single premium — leave TPD blank/0 if it simply matches Death Coverage (or if this is a standalone CI/ECI policy with no Death cover at all). Death and TPD count toward the Death/TPD need as whichever is higher (not added together); All-Stage CI and Late-Stage CI Coverage are both added together toward the Critical Illness need.'
         ]));
       }
       if (p.type === 'Hospital') {

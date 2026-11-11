@@ -185,16 +185,20 @@ var Calc = (function () {
   // The CI rider is a genuinely separate benefit, so it's tracked and
   // totalled on its own.
   function lifePolicyDeathTpd(p) { return Math.max(num(p.coverage), num(p.coverageTpd)); }
-  function lifePolicyCi(p) { return num(p.coverageCi); }
+  // Both All-Stage and Late-Stage CI count toward the CI need — an
+  // All-Stage CI rider (e.g. "rider - Critical Care Advantage") is a real,
+  // separate benefit the client is paying for same as a Late-Stage one,
+  // so excluding it from "coverage held" would understate how much CI
+  // protection they actually have.
+  function lifePolicyCi(p) { return num(p.coverageCi) + num(p.coverageCiAllStage); }
   function lifePoliciesCiTotal(c) { return sum((c.insurance || []).filter(function (p) { return p.type === 'Life'; }), lifePolicyCi); }
   // A standalone CI/ECI policy (no Death cover at all — e.g. a Secondary
   // Coverage "rider - Critical Care Advantage" row) still stores its real
-  // figure in coverageCi (Late-Stage) same as a Life policy's CI rider
-  // does, not in the generic coverage field — so that needs to be added
-  // here too, or a CI/ECI policy's actual coverage silently reads as 0.
-  // All-Stage CI (coverageCiAllStage) stays excluded, consistent with
-  // Life policies: tracked for reference, not yet counted in needs calc.
-  function ciEciPolicyCoverage(p) { return num(p.coverage) + num(p.coverageCi); }
+  // figure in coverageCi/coverageCiAllStage same as a Life policy's CI
+  // rider does, not in the generic coverage field — so that needs to be
+  // added here too, or a CI/ECI policy's actual coverage silently reads
+  // as 0.
+  function ciEciPolicyCoverage(p) { return num(p.coverage) + num(p.coverageCi) + num(p.coverageCiAllStage); }
   function totalCoverageByType(c, type) {
     var policies = (c.insurance || []).filter(function (p) { return p.type === type; });
     if (type === 'Life') return sum(policies, lifePolicyDeathTpd);
