@@ -642,8 +642,11 @@ var OCR = (function () {
           // The defining case this exists for: a Medisave/CPF-labelled
           // figure above, a plain dollar figure below, in the same
           // premium column — advisor-confirmed to ADD UP to the total.
+          // Recorded as real premiumMedisave/premiumCash fields, not just
+          // a text note, so the split actually shows up as data.
           if (existing && newNum !== null && existingNum !== null && /medisave|cpf/i.test(existing)) {
-            prevAnchor.notes.push('Includes ' + existingNum + '/yr via Medisave/CPF + ' + newNum + ' cash');
+            prevAnchor.premiumMedisave = existingNum;
+            prevAnchor.premiumCash = newNum;
             prevAnchor.cells[col.field] = String(existingNum + newNum);
           } else if (!existing) {
             prevAnchor.cells[col.field] = c.trim();
@@ -668,7 +671,18 @@ var OCR = (function () {
       // beyond this table's own specific footnote phrasing.
       var hasOtherData = Object.keys(cells).some(function (f) { return f !== 'policyName'; });
       if (!hasOtherData) return;
-      anchors.push({ cells: cells, notes: [] });
+      var anchor = { cells: cells, notes: [] };
+      // The simple case of a CPF/Medisave-funded premium: the whole
+      // premium cell is just "CPF OA $30" or similar, no separate cash
+      // continuation line below it (unlike the "CPF-Medisave ($803/Yr)" +
+      // "$380.16" split handled in the continuation-merge branch above) —
+      // the entire figure is CPF/Medisave-funded, no cash portion at all.
+      ['premium', 'premiumMonthly'].forEach(function (f) {
+        var text = cells[f];
+        var m = numFromCell(text);
+        if (text && m !== null && /medisave|cpf/i.test(text)) anchor.premiumMedisave = m;
+      });
+      anchors.push(anchor);
     });
 
     return anchors.map(function (a) {
@@ -695,6 +709,8 @@ var OCR = (function () {
       if (policy.incomeProtectionMonthly !== null) {
         a.notes.push('Income Protection is a MONTHLY benefit, not an annual/lump sum figure');
       }
+      if (a.premiumMedisave !== undefined) policy.premiumMedisave = a.premiumMedisave;
+      if (a.premiumCash !== undefined) policy.premiumCash = a.premiumCash;
       if (a.notes.length) policy.notes = a.notes.join('; ');
       return policy;
     }).filter(function (g) { return g.policyName; });

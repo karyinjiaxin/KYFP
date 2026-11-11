@@ -196,6 +196,13 @@ var ModuleInsurance = (function () {
         Fields.selectInput(base + 'premiumFrequency', 'Frequency', ['Monthly', 'Annually']),
         isLife ? Fields.moneyInput(base + 'coverage', 'Death Coverage') : Fields.moneyInput(base + 'coverage', 'Coverage')
       ]);
+      // How much of Premium is paid in cash vs. deducted from CPF/MediSave
+      // (common for Integrated Shield Plan and CPF-funded riders) — both
+      // left at 0 means the whole Premium above is assumed cash.
+      var formRow2b = Dom.el('div', { class: 'input-row mt-2' }, [
+        Fields.moneyInput(base + 'premiumCash', 'Premium — Cash Portion'),
+        Fields.moneyInput(base + 'premiumMedisave', 'Premium — MediSave/CPF Portion')
+      ]);
       var formRow3 = Dom.el('div', { class: 'input-row mt-2' }, [
         Fields.numberInput(base + 'startAge', 'Start Age'),
         Fields.numberInput(base + 'endAge', 'End Age'),
@@ -211,7 +218,7 @@ var ModuleInsurance = (function () {
       var formRow5 = Dom.el('div', { class: 'input-row mt-2' }, [
         Fields.textInput(base + 'notes', 'Notes')
       ]);
-      card.appendChild(formRow1); card.appendChild(formRow1b); card.appendChild(formRow2); card.appendChild(formRow3); card.appendChild(formRow4); card.appendChild(formRow5);
+      card.appendChild(formRow1); card.appendChild(formRow1b); card.appendChild(formRow2); card.appendChild(formRow2b); card.appendChild(formRow3); card.appendChild(formRow4); card.appendChild(formRow5);
       // Secondary Coverage template fields — stored on every policy, not
       // just ones imported from that table, since an existing Life policy
       // can genuinely carry an Accident Death rider or Hospital & Surgical
@@ -334,7 +341,8 @@ var ModuleInsurance = (function () {
       var arr = Store.get('insurance') || [];
       arr.push({
         id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', policyNo: '', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCiAllStage: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0, notes: '', screenshot: '',
-        incomeProtectionMonthly: 0, longTermCareMonthly: 0, accidentDeathCoverage: 0, accidentMedicalExpense: 0, hsSurgeryRoomBoardLimit: '', hsAnnualLimit: 0, projectedCoverageNote: '', remarks: ''
+        incomeProtectionMonthly: 0, longTermCareMonthly: 0, accidentDeathCoverage: 0, accidentMedicalExpense: 0, hsSurgeryRoomBoardLimit: '', hsAnnualLimit: 0, projectedCoverageNote: '', remarks: '',
+        premiumCash: 0, premiumMedisave: 0
       });
       Store.set('insurance', arr);
     }
@@ -352,7 +360,8 @@ var ModuleInsurance = (function () {
         dividend: g.dividend || 0, projectedCoverageNote: g.projectedCoverageNote || '', remarks: g.remarks || '',
         incomeProtectionMonthly: g.incomeProtectionMonthly || 0, longTermCareMonthly: g.longTermCareMonthly || 0,
         accidentDeathCoverage: g.accidentDeathCoverage || 0, accidentMedicalExpense: g.accidentMedicalExpense || 0,
-        hsSurgeryRoomBoardLimit: g.hsSurgeryRoomBoardLimit || '', hsAnnualLimit: g.hsAnnualLimit || 0
+        hsSurgeryRoomBoardLimit: g.hsSurgeryRoomBoardLimit || '', hsAnnualLimit: g.hsAnnualLimit || 0,
+        premiumCash: g.premiumCash || 0, premiumMedisave: g.premiumMedisave || 0
       };
     }
 
@@ -499,7 +508,7 @@ var ModuleInsurance = (function () {
         // the single coverage amount for CI/ECI/PA/Disability/Hospital).
         // TPD/All-Stage/Late-Stage CI stay Life-specific supplementary
         // fields, same as on the policy card.
-        '', 'Company', 'Policy Name', 'Policy No.', 'Type', 'Premium', 'Frequency', 'Coverage', 'TPD Coverage', 'All-Stage CI', 'Late-Stage CI', 'Cash Value', 'Yield %', 'End Age',
+        '', 'Company', 'Policy Name', 'Policy No.', 'Type', 'Premium', 'Cash Portion', 'MediSave/CPF Portion', 'Frequency', 'Coverage', 'TPD Coverage', 'All-Stage CI', 'Late-Stage CI', 'Cash Value', 'Yield %', 'End Age',
         'Income Protection (Monthly)', 'Long Term Care (Monthly)', 'Accident Death', 'Accident Medical', 'H&S Surgery/Room & Board', 'H&S Annual Limit', 'Projected Coverage @65', 'Remarks', 'Notes'
       ].map(function (h) { return Dom.el('th', {}, [h]); }))]));
       var tbody = Dom.el('tbody');
@@ -511,6 +520,8 @@ var ModuleInsurance = (function () {
           Dom.el('td', {}, [reviewCell(row, i, 'policyNo')]),
           Dom.el('td', {}, [reviewTypeCell(row, i)]),
           Dom.el('td', {}, [reviewCell(row, i, 'premium', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'premiumCash', true)]),
+          Dom.el('td', {}, [reviewCell(row, i, 'premiumMedisave', true)]),
           Dom.el('td', {}, [reviewFrequencyCell(row, i)]),
           Dom.el('td', {}, [reviewCell(row, i, 'coverage', true)]),
           Dom.el('td', {}, [reviewCell(row, i, 'coverageTpd', true)]),
@@ -553,7 +564,8 @@ var ModuleInsurance = (function () {
                 incomeProtectionMonthly: Calc.num(r.incomeProtectionMonthly), longTermCareMonthly: Calc.num(r.longTermCareMonthly),
                 accidentDeathCoverage: Calc.num(r.accidentDeathCoverage), accidentMedicalExpense: Calc.num(r.accidentMedicalExpense),
                 hsSurgeryRoomBoardLimit: r.hsSurgeryRoomBoardLimit || '', hsAnnualLimit: Calc.num(r.hsAnnualLimit),
-                projectedCoverageNote: r.projectedCoverageNote || '', remarks: r.remarks || ''
+                projectedCoverageNote: r.projectedCoverageNote || '', remarks: r.remarks || '',
+                premiumCash: Calc.num(r.premiumCash), premiumMedisave: Calc.num(r.premiumMedisave)
               });
             });
             Store.set('insurance', arr);
