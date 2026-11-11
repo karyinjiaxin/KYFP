@@ -194,7 +194,7 @@ var ModuleInsurance = (function () {
       var formRow2 = Dom.el('div', { class: 'input-row mt-2' }, [
         Fields.moneyInput(base + 'premium', 'Premium'),
         Fields.selectInput(base + 'premiumFrequency', 'Frequency', ['Monthly', 'Annually']),
-        isLife ? Fields.moneyInput(base + 'coverage', 'Death Coverage') : Fields.moneyInput(base + 'coverage', 'Coverage')
+        isLife ? hideableField(p, base, 'coverage', 'Death Coverage', true) : Fields.moneyInput(base + 'coverage', 'Coverage')
       ]);
       // How much of Premium is paid in cash vs. deducted from CPF/MediSave
       // (common for Integrated Shield Plan and CPF-funded riders) — both
@@ -203,6 +203,19 @@ var ModuleInsurance = (function () {
         Fields.moneyInput(base + 'premiumCash', 'Premium — Cash Portion'),
         Fields.moneyInput(base + 'premiumMedisave', 'Premium — MediSave/CPF Portion')
       ]);
+      // TPD/All-Stage/Late-Stage CI sit directly under Death Coverage's own
+      // row, not down with the rest of the form, since they're the parts
+      // of the same Death/CI benefit this policy bundles together.
+      var formRow2c = showCiFields ? Dom.el('div', {}, [
+        Dom.el('div', { class: 'input-row mt-2' }, [
+          hideableField(p, base, 'coverageTpd', 'TPD Coverage', true),
+          hideableField(p, base, 'coverageCiAllStage', 'All-Stage CI Coverage', true),
+          hideableField(p, base, 'coverageCi', 'Late-Stage CI Coverage (rider)', true)
+        ]),
+        Dom.el('div', { class: 'text-tertiary mt-1' }, [
+          'One plan can bundle Death, TPD and a CI rider under a single premium — leave TPD blank/0 if it simply matches Death Coverage (or if this is a standalone CI/ECI policy with no Death cover at all). Death and TPD count toward the Death/TPD need as whichever is higher (not added together); All-Stage CI and Late-Stage CI Coverage are both added together toward the Critical Illness need.'
+        ])
+      ]) : null;
       var formRow3 = Dom.el('div', { class: 'input-row mt-2' }, [
         Fields.numberInput(base + 'startAge', 'Start Age'),
         Fields.numberInput(base + 'endAge', 'End Age'),
@@ -218,38 +231,30 @@ var ModuleInsurance = (function () {
       var formRow5 = Dom.el('div', { class: 'input-row mt-2' }, [
         Fields.textInput(base + 'notes', 'Notes')
       ]);
-      card.appendChild(formRow1); card.appendChild(formRow1b); card.appendChild(formRow2); card.appendChild(formRow2b); card.appendChild(formRow3); card.appendChild(formRow4); card.appendChild(formRow5);
+      card.appendChild(formRow1); card.appendChild(formRow1b); card.appendChild(formRow2); card.appendChild(formRow2b);
+      if (formRow2c) card.appendChild(formRow2c);
+      card.appendChild(formRow3); card.appendChild(formRow4); card.appendChild(formRow5);
       // Secondary Coverage template fields — stored on every policy, not
       // just ones imported from that table, since an existing Life policy
       // can genuinely carry an Accident Death rider or Hospital & Surgical
       // limit too. Not yet counted in the Dashboard's coverage-gap/needs
       // calculation — purely stored and displayed for now.
       card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
-        Fields.moneyInput(base + 'accidentDeathCoverage', 'Accident Death Coverage'),
-        Fields.moneyInput(base + 'accidentMedicalExpense', 'Accident Medical Expense')
+        hideableField(p, base, 'accidentDeathCoverage', 'Accident Death Coverage', true),
+        hideableField(p, base, 'accidentMedicalExpense', 'Accident Medical Expense', true)
       ]));
       card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
-        Fields.moneyInput(base + 'incomeProtectionMonthly', 'Income Protection (Monthly)'),
-        Fields.moneyInput(base + 'longTermCareMonthly', 'Long Term Care (Monthly)')
+        hideableField(p, base, 'incomeProtectionMonthly', 'Income Protection (Monthly)', true),
+        hideableField(p, base, 'longTermCareMonthly', 'Long Term Care (Monthly)', true)
       ]));
       card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
-        Fields.textInput(base + 'hsSurgeryRoomBoardLimit', 'H&S Surgery/Room & Board Limit'),
-        Fields.moneyInput(base + 'hsAnnualLimit', 'H&S Annual Limit')
+        hideableField(p, base, 'hsSurgeryRoomBoardLimit', 'H&S Surgery/Room & Board Limit', false),
+        hideableField(p, base, 'hsAnnualLimit', 'H&S Annual Limit', true)
       ]));
       card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
         Fields.textInput(base + 'projectedCoverageNote', 'Projected Coverage @65 (note)'),
         Fields.textInput(base + 'remarks', 'Remarks')
       ]));
-      if (showCiFields) {
-        card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
-          Fields.moneyInput(base + 'coverageTpd', 'TPD Coverage'),
-          Fields.moneyInput(base + 'coverageCiAllStage', 'All-Stage CI Coverage'),
-          Fields.moneyInput(base + 'coverageCi', 'Late-Stage CI Coverage (rider)')
-        ]));
-        card.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, [
-          'One plan can bundle Death, TPD and a CI rider under a single premium — leave TPD blank/0 if it simply matches Death Coverage (or if this is a standalone CI/ECI policy with no Death cover at all). Death and TPD count toward the Death/TPD need as whichever is higher (not added together); All-Stage CI and Late-Stage CI Coverage are both added together toward the Critical Illness need.'
-        ]));
-      }
       if (p.type === 'Hospital') {
         card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
           Fields.selectInput(base + 'wardClass', 'Ward Class', ['Private Hospital', 'Govt A Ward', 'Govt B Ward'])
@@ -342,7 +347,7 @@ var ModuleInsurance = (function () {
       arr.push({
         id: Dom.uid('pol'), company: 'New Insurer', policyName: 'New Policy', policyNo: '', type: 'Life', premium: 0, premiumFrequency: 'Monthly', coverage: 0, coverageTpd: 0, coverageCiAllStage: 0, coverageCi: 0, startAge: 30, endAge: 99, paymentTerm: 20, cashValue: 0, dividend: 0, notes: '', screenshot: '',
         incomeProtectionMonthly: 0, longTermCareMonthly: 0, accidentDeathCoverage: 0, accidentMedicalExpense: 0, hsSurgeryRoomBoardLimit: '', hsAnnualLimit: 0, projectedCoverageNote: '', remarks: '',
-        premiumCash: 0, premiumMedisave: 0
+        premiumCash: 0, premiumMedisave: 0, hiddenFields: []
       });
       Store.set('insurance', arr);
     }
@@ -605,6 +610,34 @@ var ModuleInsurance = (function () {
 
     function miniStat(label, value) {
       return Dom.el('div', { class: 'mini-stat' }, [Dom.el('div', { class: 'l' }, [label]), Dom.el('div', { class: 'v' }, [value])]);
+    }
+
+    // Per-policy, per-field show/hide — not every policy carries every one
+    // of these coverage types (e.g. a pure Death/TPD plan has no Accident
+    // or Income Protection figure at all), so each field can be hidden
+    // individually to declutter a card without losing whatever value is
+    // already stored underneath (hides the input, doesn't clear it).
+    function toggleHiddenField(base, p, field) {
+      var arr = (p.hiddenFields || []).slice();
+      var idx = arr.indexOf(field);
+      if (idx === -1) arr.push(field); else arr.splice(idx, 1);
+      Store.set(base + 'hiddenFields', arr);
+    }
+    function hideableField(p, base, field, label, isMoney) {
+      var hidden = (p.hiddenFields || []).indexOf(field) !== -1;
+      if (hidden) {
+        return Dom.el('div', { class: 'field' }, [
+          Dom.el('label', { class: 'field-label' }, [' ']),
+          Dom.el('button', { class: 'btn btn-ghost btn-sm', onclick: function () { toggleHiddenField(base, p, field); } }, ['+ Show ' + label])
+        ]);
+      }
+      var input = isMoney ? Fields.moneyInput(base + field, label) : Fields.textInput(base + field, label);
+      input.style.position = 'relative';
+      input.appendChild(Dom.el('button', {
+        class: 'btn btn-ghost btn-sm', style: 'position:absolute;top:0;right:0;font-size:9px;padding:2px 6px;line-height:1;z-index:1',
+        title: 'Hide this field', onclick: function () { toggleHiddenField(base, p, field); }
+      }, ['✕']));
+      return input;
     }
     function kpiMini(label, value) {
       return Dom.el('div', { class: 'card kpi-card' }, [Dom.el('div', { class: 'kpi-label' }, [label]), Dom.el('div', { class: 'kpi-value' }, [value])]);
