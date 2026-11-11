@@ -163,8 +163,7 @@ var ModuleInsurance = (function () {
       var statsRow = isLife
         ? Dom.el('div', { class: 'grid grid-3', style: 'margin-bottom:4px' }, [
             miniStat('Annual Premium', Dom.fmtMoney(annualPremium)),
-            miniStat('Death Coverage', Dom.fmtMoney(p.coverage)),
-            miniStat('Total Sum Assured', Dom.fmtMoney(Calc.policyTotalSumAssured(p)))
+            miniStat('Death Coverage', Dom.fmtMoney(p.coverage))
           ])
         : Dom.el('div', { class: 'grid grid-3', style: 'margin-bottom:14px' }, [
             miniStat('Annual Premium', Dom.fmtMoney(annualPremium)),
@@ -173,11 +172,11 @@ var ModuleInsurance = (function () {
           ]);
       card.appendChild(statsRow);
       // TPD/CI shown as a breakdown directly under Death Coverage, not as
-      // separate stat boxes of their own — Total Sum Assured above is
-      // their literal sum (+ Death); the Need Analysis section's Death/TPD
-      // Gap still correctly takes whichever of Death/TPD is higher, since
-      // TPD is usually an acceleration of the same Death benefit, not an
-      // additional payout on top of it.
+      // separate stat boxes of their own (the page-level Total Sum
+      // Assured in Need Analysis is their literal sum across every
+      // policy); the Death/TPD Gap there still correctly takes whichever
+      // of Death/TPD is higher, since TPD is usually an acceleration of
+      // the same Death benefit, not an additional payout on top of it.
       if (showCiFields) {
         card.appendChild(Dom.el('div', { class: 'text-tertiary', style: 'margin-bottom:14px' }, [
           'TPD: ' + Dom.fmtMoney(p.coverageTpd) + ' · All-Stage CI: ' + Dom.fmtMoney(p.coverageCiAllStage) + ' · Late-Stage CI: ' + Dom.fmtMoney(p.coverageCi)
