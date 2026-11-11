@@ -16,6 +16,44 @@ var ModuleCashflow = (function () {
   var FREQUENCIES = ['Monthly', 'Quarterly', 'Annually', 'Weekly'];
   var BUCKETS = ['Bills', 'Savings', 'Fun'];
   var openCats = {}; // category id -> expanded bool, persists across re-renders
+  var loadInsuranceStatus = null; // transient message shown after "Load from Insurance" click
+
+  // One-off import, not a continuous sync like autoCpf/autoIncomeTax: an
+  // advisor can click it any time (e.g. after adding a new policy) and it
+  // only ADDS an item for a policy that doesn't already have one here —
+  // tracked by insurancePolicyId, not by name, so renaming either side
+  // doesn't cause a duplicate. It never touches an item that already
+  // exists for a policy, so any manual edit the advisor made is safe, and
+  // it never overwrites anything else already filled in for the client.
+  function loadFromInsurance() {
+    var c = Store.getAll();
+    var policies = c.insurance || [];
+    var cats = Store.get('cashflowCategories') || [];
+    var next = JSON.parse(JSON.stringify(cats));
+    var existingIds = {};
+    next.forEach(function (cat) {
+      (cat.items || []).forEach(function (item) { if (item.insurancePolicyId) existingIds[item.insurancePolicyId] = true; });
+    });
+    var added = 0, skipped = 0;
+    var targetCat = next.filter(function (cat) { return cat.id === 'insurancePremiums'; })[0];
+    policies.forEach(function (p) {
+      if (existingIds[p.id]) { skipped++; return; }
+      var cost = Math.round(Calc.policyMonthlyCashPremium(p) * 100) / 100;
+      if (!cost) return;
+      if (!targetCat) {
+        targetCat = { id: 'insurancePremiums', name: 'Insurance Premiums', bucket: 'Bills', items: [] };
+        next.push(targetCat);
+      }
+      var name = [p.company, p.policyName].filter(Boolean).join(' — ') || 'Insurance Policy';
+      targetCat.items.push({ id: Dom.uid('item'), name: name, cost: cost, frequency: 'Monthly', insurancePolicyId: p.id });
+      added++;
+    });
+    if (targetCat && targetCat.items.length === 0) next.splice(next.indexOf(targetCat), 1);
+    Store.set('cashflowCategories', next);
+    loadInsuranceStatus = added
+      ? 'Loaded ' + added + ' polic' + (added === 1 ? 'y' : 'ies') + (skipped ? ' (' + skipped + ' already loaded, left untouched)' : '') + '.'
+      : (skipped ? 'All ' + skipped + ' polic' + (skipped === 1 ? 'y' : 'ies') + ' already loaded — nothing to add.' : 'No policies with a premium found on the Insurance Coverage page.');
+  }
 
   function hexToRgba(hex, alpha) {
     hex = String(hex).replace('#', '');
@@ -64,7 +102,15 @@ var ModuleCashflow = (function () {
       ]));
       container.appendChild(incomeCard);
 
-      container.appendChild(Dom.el('div', { class: 'section-title' }, ['💸 Outflow']));
+      container.appendChild(Dom.el('div', { class: 'flex items-center justify-between', style: 'margin-top:24px;margin-bottom:10px' }, [
+        Dom.el('div', { class: 'section-title', style: 'margin:0' }, ['💸 Outflow']),
+        Dom.el('button', {
+          class: 'btn btn-secondary btn-sm', onclick: function () { loadFromInsurance(); draw(); }
+        }, ['↓ Load Premiums from Insurance'])
+      ]));
+      if (loadInsuranceStatus) {
+        container.appendChild(Dom.el('div', { class: 'text-secondary mb-2' }, [loadInsuranceStatus]));
+      }
 
       var lumpSumValue = Calc.num((c.cashflow || {}).lumpSumMonthlyExpenses);
       var lumpSumCard = Dom.el('div', { class: 'card mb-3', style: lumpSumValue > 0 ? 'border-color:var(--accent)' : '' });
