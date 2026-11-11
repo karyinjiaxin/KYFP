@@ -187,13 +187,26 @@ var Calc = (function () {
   function lifePolicyDeathTpd(p) { return Math.max(num(p.coverage), num(p.coverageTpd)); }
   function lifePolicyCi(p) { return num(p.coverageCi); }
   function lifePoliciesCiTotal(c) { return sum((c.insurance || []).filter(function (p) { return p.type === 'Life'; }), lifePolicyCi); }
+  // A standalone CI/ECI policy (no Death cover at all — e.g. a Secondary
+  // Coverage "rider - Critical Care Advantage" row) still stores its real
+  // figure in coverageCi (Late-Stage) same as a Life policy's CI rider
+  // does, not in the generic coverage field — so that needs to be added
+  // here too, or a CI/ECI policy's actual coverage silently reads as 0.
+  // All-Stage CI (coverageCiAllStage) stays excluded, consistent with
+  // Life policies: tracked for reference, not yet counted in needs calc.
+  function ciEciPolicyCoverage(p) { return num(p.coverage) + num(p.coverageCi); }
   function totalCoverageByType(c, type) {
     var policies = (c.insurance || []).filter(function (p) { return p.type === type; });
     if (type === 'Life') return sum(policies, lifePolicyDeathTpd);
+    if (type === 'CI' || type === 'ECI') return sum(policies, ciEciPolicyCoverage);
     return sum(policies, function (p) { return p.coverage; });
   }
   function totalCoverage(c) {
-    return sum(c.insurance, function (p) { return p.type === 'Life' ? lifePolicyDeathTpd(p) + lifePolicyCi(p) : num(p.coverage); });
+    return sum(c.insurance, function (p) {
+      if (p.type === 'Life') return lifePolicyDeathTpd(p) + lifePolicyCi(p);
+      if (p.type === 'CI' || p.type === 'ECI') return ciEciPolicyCoverage(p);
+      return num(p.coverage);
+    });
   }
 
   // Total Sum Assured — a literal sum of every Death/TPD/CI figure across
@@ -203,10 +216,11 @@ var Calc = (function () {
   // correct for needs analysis, but understates a policy's actual total
   // face value as insurers themselves report it). This is that face-value
   // figure: Death + TPD + All-Stage CI + Late-Stage CI added together for
-  // every Life policy, plus the generic Coverage amount for every other
-  // type (CI/ECI/PA/Disability/Hospital), plus the Quick Coverage entries.
+  // every Life, CI or ECI policy, plus the generic Coverage amount for
+  // every other type (PA/Disability/Hospital), plus the Quick Coverage
+  // entries.
   function policyTotalSumAssured(p) {
-    if (p.type !== 'Life') return num(p.coverage);
+    if (p.type !== 'Life' && p.type !== 'CI' && p.type !== 'ECI') return num(p.coverage);
     return num(p.coverage) + num(p.coverageTpd) + num(p.coverageCiAllStage) + num(p.coverageCi);
   }
   function totalSumAssured(c) {
