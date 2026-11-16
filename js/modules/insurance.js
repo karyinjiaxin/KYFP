@@ -61,10 +61,8 @@ var ModuleInsurance = (function () {
         row('Recommended Coverage (4x annual income)', Dom.fmtMoney(Calc.recommendedCICoverage(c))),
         row('Current CI + ECI Coverage Held', Dom.fmtMoney(Calc.ciCoverageHeld(c))),
         row('CI Gap', Dom.fmtMoney(Calc.ciGap(c))),
-        Dom.el('div', { style: 'font-weight:700;font-size:12px;margin:16px 0 2px' }, ['Total Sum Assured']),
-        row('All Policies (Death + TPD + All-Stage CI + Late-Stage CI + other types)', Dom.fmtMoney(Calc.totalSumAssured(c))),
         Dom.el('div', { class: 'text-tertiary mt-3', style: 'line-height:1.5' }, [
-          'Benchmarks: Life Insurance Association of Singapore 2022 Protection Gap Study (~9x annual income for Death/TPD, ~4x for Critical Illness), as adopted into the MAS/MoneySense Basic Financial Planning Guide (Oct 2023). General rules of thumb, not personalised advice — actual needs vary by dependants, debts and lifestyle. Total Sum Assured above is a literal sum of every coverage figure (the policy’s total face value, as insurers report it) — the Death/TPD and CI Gap figures above correctly use whichever of Death/TPD is higher per policy instead, since TPD is usually an acceleration of the same Death benefit rather than an additional payout.'
+          'Benchmarks: Life Insurance Association of Singapore 2022 Protection Gap Study (~9x annual income for Death/TPD, ~4x for Critical Illness), as adopted into the MAS/MoneySense Basic Financial Planning Guide (Oct 2023). General rules of thumb, not personalised advice — actual needs vary by dependants, debts and lifestyle. Death/TPD and CI Gap each use whichever of Death/TPD is higher per policy instead of adding them, since TPD is usually an acceleration of the same Death benefit rather than an additional payout.'
         ])
       ]);
       container.appendChild(needCard);
