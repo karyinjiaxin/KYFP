@@ -35,13 +35,17 @@ var ModuleCashflow = (function () {
       (cat.items || []).forEach(function (item) { if (item.insurancePolicyId) existingIds[item.insurancePolicyId] = true; });
     });
     var added = 0, skipped = 0;
-    var targetCat = next.filter(function (cat) { return cat.id === 'insurancePremiums'; })[0];
+    // Reuse whatever category already has "insurance" in its name (however
+    // the advisor named or capitalized it) instead of always creating a
+    // second one — only falls back to making a brand-new "Insurance"
+    // category when there's genuinely no existing one to add into.
+    var targetCat = next.filter(function (cat) { return /insurance/i.test(cat.name || ''); })[0];
     policies.forEach(function (p) {
       if (existingIds[p.id]) { skipped++; return; }
       var cost = Math.round(Calc.policyMonthlyCashPremium(p) * 100) / 100;
       if (!cost) return;
       if (!targetCat) {
-        targetCat = { id: 'insurancePremiums', name: 'Insurance Premiums', bucket: 'Bills', items: [] };
+        targetCat = { id: Dom.uid('cat'), name: 'Insurance', bucket: 'Bills', items: [] };
         next.push(targetCat);
       }
       var name = [p.company, p.policyName].filter(Boolean).join(' — ') || 'Insurance Policy';
