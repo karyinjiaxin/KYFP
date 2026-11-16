@@ -175,16 +175,18 @@ var Calc = (function () {
     return p.premiumFrequency === 'Annually' ? monthly : monthly * 12;
   }
   function totalAnnualPremium(c) { return sum(c.insurance, policyAnnualPremium); }
-  // The cash-outflow portion of a policy's premium, in monthly terms —
-  // used to seed Cashflow's "Load from Insurance" import. Mirrors the
-  // Insurance Coverage page's own rule: Premium — Cash Portion and
-  // Premium — MediSave/CPF Portion both left at 0 means the whole
-  // Premium field is assumed cash; otherwise only the Cash Portion
-  // actually leaves the client's cash flow.
-  function policyMonthlyCashPremium(p) {
+  // The cash-outflow portion of a policy's premium — used to seed
+  // Cashflow's "Load from Insurance" import. Mirrors the Insurance
+  // Coverage page's own rule: Premium — Cash Portion and Premium —
+  // MediSave/CPF Portion both left at 0 means the whole Premium field is
+  // assumed cash; otherwise only the Cash Portion actually leaves the
+  // client's cash flow. Kept in its own billing frequency (Monthly or
+  // Annually) rather than converted to a monthly figure, since Cashflow
+  // items carry their own Frequency field — converting here would make an
+  // annual premium look like a monthly one once it lands on that page.
+  function policyCashPremium(p) {
     var cash = num(p.premiumCash), medisave = num(p.premiumMedisave);
-    var amount = (cash || medisave) ? cash : num(p.premium);
-    return p.premiumFrequency === 'Annually' ? amount / 12 : amount;
+    return (cash || medisave) ? cash : num(p.premium);
   }
   function totalMonthlyPremium(c) { return totalAnnualPremium(c) / 12; }
   // A Life policy can bundle Death, TPD and a CI rider under one plan
@@ -2084,7 +2086,7 @@ var Calc = (function () {
     liquidAssets: liquidAssets, investmentAssetsTotal: investmentAssetsTotal, debtRatio: debtRatio,
     propertyValueTotal: propertyValueTotal, propertyLoanTotal: propertyLoanTotal,
     policyAnnualPremium: policyAnnualPremium, totalAnnualPremium: totalAnnualPremium, totalMonthlyPremium: totalMonthlyPremium,
-    policyMonthlyCashPremium: policyMonthlyCashPremium,
+    policyCashPremium: policyCashPremium,
     totalCoverageByType: totalCoverageByType, totalCoverage: totalCoverage, recommendedLifeCoverage: recommendedLifeCoverage,
     totalSumAssured: totalSumAssured, policyTotalSumAssured: policyTotalSumAssured,
     recommendedDeathTpdCoverage: recommendedDeathTpdCoverage, recommendedCICoverage: recommendedCICoverage,

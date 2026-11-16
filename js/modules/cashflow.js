@@ -42,14 +42,15 @@ var ModuleCashflow = (function () {
     var targetCat = next.filter(function (cat) { return /insurance/i.test(cat.name || ''); })[0];
     policies.forEach(function (p) {
       if (existingIds[p.id]) { skipped++; return; }
-      var cost = Math.round(Calc.policyMonthlyCashPremium(p) * 100) / 100;
+      var cost = Math.round(Calc.policyCashPremium(p) * 100) / 100;
       if (!cost) return;
       if (!targetCat) {
         targetCat = { id: Dom.uid('cat'), name: 'Insurance', bucket: 'Bills', items: [] };
         next.push(targetCat);
       }
       var name = [p.company, p.policyName].filter(Boolean).join(' — ') || 'Insurance Policy';
-      targetCat.items.push({ id: Dom.uid('item'), name: name, cost: cost, frequency: 'Monthly', insurancePolicyId: p.id });
+      var frequency = p.premiumFrequency === 'Annually' ? 'Annually' : 'Monthly';
+      targetCat.items.push({ id: Dom.uid('item'), name: name, cost: cost, frequency: frequency, insurancePolicyId: p.id });
       added++;
     });
     if (targetCat && targetCat.items.length === 0) next.splice(next.indexOf(targetCat), 1);
