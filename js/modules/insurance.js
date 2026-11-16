@@ -375,6 +375,14 @@ var ModuleInsurance = (function () {
     // misreading a real policy.
     var importMode = 'primary';
 
+    // Fields a real row should have at least one non-zero/non-blank value
+    // in — if every one of these comes out empty across every row, the
+    // parse almost certainly didn't recognize the table at all (most often
+    // because only the data row was copied, without its header row above
+    // it) rather than the policy genuinely having zero of everything.
+    var NUMERIC_CHECK_FIELDS = ['premium', 'coverage', 'coverageTpd', 'coverageCiAllStage', 'coverageCi', 'cashValue',
+      'incomeProtectionMonthly', 'longTermCareMonthly', 'accidentDeathCoverage', 'accidentMedicalExpense', 'hsAnnualLimit'];
+
     function runImportParse(text) {
       var guesses = importMode === 'secondary' ? OCR.parseSecondaryCoverageText(text) : OCR.guessMultiple(text);
       if (importMode === 'secondary' && !guesses) {
@@ -383,6 +391,12 @@ var ModuleInsurance = (function () {
       }
       pendingImport = (guesses || []).map(function (g) { return toReviewRow(g, ''); });
       if (!pendingImport.length) pendingImport = [toReviewRow({}, '')];
+      var nothingRecognized = pendingImport.every(function (row) {
+        return NUMERIC_CHECK_FIELDS.every(function (f) { return !row[f]; });
+      });
+      if (nothingRecognized) {
+        Dom.modalAlert('None of the premium/coverage figures were recognized — only the Company/Policy Name came through. This almost always means the header row (Plan Name, Premium, Coverage, …) wasn’t included in what was pasted, or copying only a single data row without it. Paste the full table including its header row, and double-check the Primary/Secondary Table Type matches. The row below has been added to the review table anyway so you can fill it in by hand if needed.');
+      }
       draw();
     }
 
