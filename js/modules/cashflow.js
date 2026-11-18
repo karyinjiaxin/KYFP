@@ -95,7 +95,8 @@ var ModuleCashflow = (function () {
       var incomeCard = Dom.el('div', { class: 'card mb-3' });
       var incomeRow = Dom.el('div', { class: 'input-row' });
       incomeRow.appendChild(Fields.moneyInput('income.salary', 'Salary (monthly)'));
-      incomeRow.appendChild(bonusField(c));
+      incomeRow.appendChild(bonusMonthsField(c));
+      incomeRow.appendChild(bonusLumpSumField(c));
       INCOME_FIELDS.slice(1).forEach(function (f) { incomeRow.appendChild(Fields.moneyInput('income.' + f[0], f[1])); });
       incomeCard.appendChild(incomeRow);
       incomeCard.appendChild(Dom.el('div', { class: 'mt-3 pt-3', style: 'border-top:1px solid var(--border)' }, [
@@ -190,41 +191,34 @@ var ModuleCashflow = (function () {
       });
     }
 
-    // Bonus can be keyed either as a direct annual Lump Sum, or as a
-    // Number of Months (common in Singapore — "2 months AWS + 1 month
-    // performance bonus" etc.), auto-multiplied against Salary so the
-    // advisor doesn't have to do that math by hand. Either way, the
-    // actual figure every other calculation reads (income.bonus) stays
-    // the single source of truth — kept in sync from Months mode by
-    // app.js's syncBonusFromMonths, same auto-sync pattern as CPF/Income
-    // Tax, and left directly editable in Lump Sum mode.
-    function bonusField(c) {
+    // Bonus is keyed as two separate fields side by side: No. of Months
+    // (common in Singapore — "2 months AWS") and a direct annual Lump
+    // Sum. Whichever has a value drives income.bonus, the one figure
+    // every other calculation actually reads (kept in sync from Months
+    // by app.js's syncBonusFromMonths, same auto-sync pattern as CPF/
+    // Income Tax); a non-zero Months value takes priority, since typing
+    // a months figure after a lump sum is already set is a deliberate
+    // switch to the auto-computed approach. The Lump Sum field becomes
+    // read-only in that case, since editing it would have no effect —
+    // the sync would just overwrite it back on the next tick.
+    function bonusMonthsField(c) {
       var income = c.income || {};
-      var mode = income.bonusInputMode === 'months' ? 'months' : 'lumpsum';
-      var wrap = Dom.el('div', { class: 'field' });
-      wrap.appendChild(Dom.el('label', { class: 'field-label' }, ['Bonus (annual)']));
-      var toggle = Dom.el('div', { class: 'flex gap-1 mb-1' }, [
-        Dom.el('button', {
-          type: 'button', class: 'btn btn-ghost btn-sm' + (mode === 'lumpsum' ? ' btn-primary' : ''), style: 'font-size:9px;padding:2px 6px',
-          onclick: function () { Store.set('income.bonusInputMode', 'lumpsum'); }
-        }, ['Lump Sum']),
-        Dom.el('button', {
-          type: 'button', class: 'btn btn-ghost btn-sm' + (mode === 'months' ? ' btn-primary' : ''), style: 'font-size:9px;padding:2px 6px',
-          onclick: function () { Store.set('income.bonusInputMode', 'months'); }
-        }, ['No. of Months'])
-      ]);
-      wrap.appendChild(toggle);
-      if (mode === 'months') {
-        var monthsField = Fields.numberInput('income.bonusMonths', '', { step: '0.1', placeholder: 'e.g. 2' });
-        wrap.appendChild(monthsField);
-        wrap.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, [
-          '= ' + Dom.fmtMoney(Calc.num(income.bonusMonths) * Calc.num(income.salary)) + '/year (months × Salary)'
-        ]));
-      } else {
-        var lumpField = Fields.moneyInput('income.bonus', '');
-        wrap.appendChild(lumpField);
+      var field = Fields.numberInput('income.bonusMonths', 'Bonus (No. of Months)', { step: '0.1', placeholder: 'e.g. 2' });
+      field.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, [
+        Calc.num(income.bonusMonths) ? ('= ' + Dom.fmtMoney(Calc.num(income.bonusMonths) * Calc.num(income.salary)) + '/year') : '× Salary, if set'
+      ]));
+      return field;
+    }
+    function bonusLumpSumField(c) {
+      var income = c.income || {};
+      var drivenByMonths = !!Calc.num(income.bonusMonths);
+      var field = Fields.moneyInput('income.bonus', 'Bonus (Lump Sum, annual)');
+      if (drivenByMonths) {
+        var input = field.querySelector('input');
+        if (input) input.setAttribute('disabled', 'disabled');
+        field.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, ['Driven by No. of Months — clear that to type a lump sum directly']));
       }
-      return wrap;
+      return field;
     }
 
     function categoryCard(cat, catIdx, color) {
