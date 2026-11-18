@@ -204,6 +204,74 @@ var App = (function () {
     }
   }
 
+  // Links CPF's voluntary top-ups and Tax Planning's SRS Contribution
+  // Relief to both Cashflow and each other, instead of three independently
+  // typed numbers that can silently drift apart:
+  //  1) CPF's "Voluntary Contribution to SA" is the real-world way an
+  //     RSTU cash top-up is entered — that's specifically what earns CPF
+  //     Cash Top-up Relief (the general Voluntary Contribution Scheme —
+  //     "to All Accounts" / "to MA" — doesn't), so it auto-populates Tax
+  //     Planning's CPF Cash Top-up Relief, capped at S$8,000 (the self
+  //     cap; this app doesn't separately track a family top-up, so the
+  //     further S$8,000 family cap isn't modelled here).
+  //  2) The full CPF top-up (All Accounts + SA + MA combined — real cash
+  //     leaving the client either way, relief-eligible or not) and the
+  //     SRS contribution (Tax Planning's own relief field, which IS the
+  //     contribution amount) each get their own auto-managed Cashflow
+  //     line item in the "Investment" category, same create-when-active/
+  //     remove-when-zero pattern as House Purchase's mortgage item below.
+  var syncingCpfTopUpLinks = false;
+  function syncCpfTopUpLinks() {
+    if (syncingCpfTopUpLinks) return;
+    syncingCpfTopUpLinks = true;
+    try { syncCpfTopUpLinksImpl(); } finally { syncingCpfTopUpLinks = false; }
+  }
+  function syncCpfTopUpLinksImpl() {
+    var c = Store.getAll();
+    var cpfData = c.cpf || {};
+
+    // 1) CPF "to SA" -> Tax Planning's CPF Cash Top-up Relief
+    var reliefTarget = Math.round(Math.min(Calc.num(cpfData.voluntarySA), 8000) * 100) / 100;
+    if (Calc.num((c.tax || {}).reliefs && c.tax.reliefs.cpfCashTopUp) !== reliefTarget) {
+      Store.set('tax.reliefs.cpfCashTopUp', reliefTarget);
+    }
+
+    // 2) Cashflow auto items, in the "investment" category
+    var cats = Store.get('cashflowCategories');
+    if (!Array.isArray(cats)) return;
+    var nextCats = JSON.parse(JSON.stringify(cats));
+    var investCat = nextCats.filter(function (cat) { return cat.id === 'investment'; })[0];
+    var catsChanged = false;
+
+    function syncAutoItem(tag, label, targetMonthly) {
+      var existingItem = null;
+      nextCats.forEach(function (cat) { (cat.items || []).forEach(function (item) { if (item[tag]) existingItem = item; }); });
+      if (targetMonthly > 0) {
+        var rounded = Math.round(targetMonthly * 100) / 100;
+        if (existingItem) {
+          if (existingItem.cost !== rounded || existingItem.frequency !== 'Monthly') {
+            existingItem.cost = rounded; existingItem.frequency = 'Monthly'; catsChanged = true;
+          }
+        } else {
+          if (!investCat) { investCat = { id: 'investment', name: 'Investment', bucket: 'Savings', items: [] }; nextCats.push(investCat); }
+          var newItem = { id: Dom.uid('item'), name: label, cost: rounded, frequency: 'Monthly' };
+          newItem[tag] = true;
+          investCat.items.push(newItem);
+          catsChanged = true;
+        }
+      } else if (existingItem) {
+        nextCats.forEach(function (cat) { cat.items = (cat.items || []).filter(function (item) { return !item[tag]; }); });
+        catsChanged = true;
+      }
+    }
+
+    var cpfTopUpAnnual = Calc.num(cpfData.voluntaryAllAccounts) + Calc.num(cpfData.voluntarySA) + Calc.num(cpfData.voluntaryMA);
+    syncAutoItem('autoCpfTopUp', 'CPF Top-up', cpfTopUpAnnual / 12);
+    syncAutoItem('autoSrsContribution', 'SRS Contribution', Calc.num(((c.tax || {}).reliefs || {}).srs) / 12);
+
+    if (catsChanged) Store.set('cashflowCategories', nextCats);
+  }
+
   // Keeps the CPF page's "Monthly OA Deduction for Mortgage" in sync with
   // Net Worth's Mortgage Details, so it's one source of truth rather than
   // two numbers that can silently disagree.
@@ -520,6 +588,7 @@ var App = (function () {
     syncAutoExpenseStops();
     syncBonusFromMonths();
     syncAutoReliefs();
+    syncCpfTopUpLinks();
     syncMortgageCpfDeduction();
     syncInvestmentAssets();
     syncRetirementSumGrowthDefault();
@@ -541,6 +610,7 @@ var App = (function () {
       syncAutoExpenseStops();
       syncBonusFromMonths();
       syncAutoReliefs();
+      syncCpfTopUpLinks();
       syncMortgageCpfDeduction();
       syncInvestmentAssets();
       syncRetirementSumGrowthDefault();

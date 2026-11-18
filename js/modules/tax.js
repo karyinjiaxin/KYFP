@@ -63,10 +63,10 @@ var ModuleTax = (function () {
         'Per dependant: S$9,000 if living with you, S$5,500 if not (S$14,000 / S$10,000 if the dependant is handicapped).'));
       reliefCard.appendChild(reliefField('tax.reliefs.grandparentCaregiver', 'Grandparent Caregiver Relief',
         'S$3,000 if a grandparent (incl. in-law) cared for your child and you are a working mother.'));
-      reliefCard.appendChild(reliefField('tax.reliefs.cpfCashTopUp', 'CPF Cash Top-up Relief',
-        'Up to S$8,000 for cash top-ups to your own CPF account, plus up to S$8,000 for top-ups to eligible family members\u2019 accounts (S$16,000 max combined).'));
+      reliefCard.appendChild(autoReliefField('CPF Cash Top-up Relief', Calc.num(((c.tax || {}).reliefs || {}).cpfCashTopUp),
+        'Auto-computed from CPF \u2192 Voluntary Contribution to SA (the real-world way an RSTU cash top-up is entered), capped at S$8,000 \u2014 the general Voluntary Contribution Scheme (to All Accounts / to MA) isn\u2019t relief-eligible, so those aren\u2019t counted. This app doesn\u2019t separately track a family-member top-up, so the further S$8,000 family cap isn\u2019t modelled.'));
       reliefCard.appendChild(reliefField('tax.reliefs.srs', 'SRS Contribution Relief',
-        'Your Supplementary Retirement Scheme contributions for the year, relieved in the following YA.', true));
+        'Your Supplementary Retirement Scheme contributions for the year, relieved in the following YA. Auto-populates an "SRS Contribution" item in Cashflow → Investment, so the real cash outflow shows up there too.', true));
       reliefCard.appendChild(reliefField('tax.reliefs.others', 'Other Reliefs',
         'Anything not covered above (e.g. NSman Relief, Course Fees Relief, Life Insurance Relief) \u2014 enter the total here.'));      reliefCard.appendChild(Dom.el('div', { class: 'mt-3', style: 'padding-top:10px;border-top:1px solid var(--border-strong)' }, [
         Dom.el('div', { class: 'flex justify-between items-center' }, [
