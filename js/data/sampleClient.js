@@ -217,18 +217,18 @@ var SampleClient = {
       id: 'inv_1', name: 'Manulife Income Accumulator', assetType: 'Investment Policy (ILP)', monthlyPremium: 1000,
       startAge: 38, stopAge: 58, dividendYield: 4.5,
       welcomeBonus: 2000, loyaltyBonus: 5000, fees: 1.2, feesEndAge: 58, expectedReturn: 6.5,
-      inflation: 2.5, projectionAge: 65, dividendSwitchAge: 58, postSwitchDividendYield: 5.5
+      inflation: 2, projectionAge: 65, dividendSwitchAge: 58, postSwitchDividendYield: 5.5
     },
     {
       id: 'inv_2', name: 'Endowus Core Equity Portfolio', assetType: 'ETF', monthlyPremium: 1500,
       startAge: 38, stopAge: 65, dividendYield: 2.2,
       welcomeBonus: 0, loyaltyBonus: 0, fees: 0.4, feesEndAge: 65, expectedReturn: 6,
-      inflation: 2.5, projectionAge: 65
+      inflation: 2, projectionAge: 65
     }
   ],
   retirement: {
     currentAge: 38, retirementAge: 65, lifeExpectancy: 90,
-    desiredMonthlyIncome: 8000, inflation: 2.5, cpfLifePayout: 1900,
+    desiredMonthlyIncome: 8000, inflation: 2, cpfLifePayout: 1900,
     expectedReturn: 5, monthlyInvestmentOverride: 0
   },
   budgetGoals: {

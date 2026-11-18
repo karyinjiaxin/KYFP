@@ -30,7 +30,7 @@ var ModuleInvestments = (function () {
           arr.push({
             id: Dom.uid('inv'), name: 'New Investment Plan', assetType: 'Unit Trust', monthlyPremium: 500, startAge: 35, stopAge: 60,
             dividendYield: 3, welcomeBonus: 0, loyaltyBonus: 0, fees: 1, feesEndAge: 60, expectedReturn: 5,
-            inflation: 2.5, projectionAge: 65
+            inflation: 2, projectionAge: 65
           });
           Store.set('investments', arr);
         }

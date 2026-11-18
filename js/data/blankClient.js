@@ -83,7 +83,7 @@ var BlankClient = {
   investments: [],
   retirement: {
     currentAge: 0, retirementAge: 65, lifeExpectancy: 90,
-    desiredMonthlyIncome: 0, inflation: 2.5, cpfLifePayout: 0,
+    desiredMonthlyIncome: 0, inflation: 2, cpfLifePayout: 0,
     expectedReturn: 5, monthlyInvestmentOverride: 0
   },
   budgetGoals: { netWorthGoal: 0, savingsRateGoal: 30 },
