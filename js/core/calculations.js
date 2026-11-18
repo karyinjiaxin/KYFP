@@ -1305,16 +1305,25 @@ var Calc = (function () {
   function bucketTotals(c) {
     var cats = c.cashflowCategories || [];
     var groups = { Bills: [], Savings: [], Fun: [] };
+    var cpfTotal = 0;
     cats.forEach(function (cat) {
       var bucket = groups[cat.bucket] ? cat.bucket : 'Bills';
-      groups[bucket].push({ key: cat.id, label: cat.name, value: categoryMonthlyTotal(cat) });
+      // The auto-synced CPF Contribution item is money that never reaches
+      // any of the client's 3 cash buckets at all (CPF deducts it at
+      // source, straight from salary) — so it's pulled out of whichever
+      // category it lives in before that category's total is shown here,
+      // rather than inflating the Savings bucket with money that was
+      // never actually banked into a savings account.
+      var cpfInCat = sum((cat.items || []).filter(function (i) { return i.autoCpf; }), itemMonthly);
+      cpfTotal += cpfInCat;
+      groups[bucket].push({ key: cat.id, label: cat.name, value: categoryMonthlyTotal(cat) - cpfInCat });
     });
     var billsTotal = sum(groups.Bills, function (x) { return x.value; });
     var savingsTotal = sum(groups.Savings, function (x) { return x.value; });
     var funTotal = sum(groups.Fun, function (x) { return x.value; });
     var income = monthlyIncome(c);
-    var leftover = income - billsTotal - savingsTotal - funTotal;
-    return { income: income, bills: billsTotal, savings: savingsTotal, fun: funTotal, leftover: leftover, groups: groups };
+    var leftover = income - billsTotal - savingsTotal - funTotal - cpfTotal;
+    return { income: income, bills: billsTotal, savings: savingsTotal, fun: funTotal, cpf: cpfTotal, leftover: leftover, groups: groups };
   }
 
   // ---------- NET WORTH GOAL ----------

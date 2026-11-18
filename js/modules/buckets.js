@@ -50,12 +50,19 @@ var ModuleBuckets = (function () {
         Dom.el('div', { class: 'text-tertiary mt-2' }, ['flows into 3 buckets every month ↓'])
       ]));
 
-      container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
+      var kpiTiles = [
         kpiMini('Bucket 1 — Bills', Dom.fmtMoney(bt.bills), 'blue'),
         kpiMini('Bucket 2 — Savings', Dom.fmtMoney(bt.savings), 'green'),
-        kpiMini('Bucket 3 — Fun', Dom.fmtMoney(bt.fun), 'pink'),
-        kpiMini('Leftover', Dom.fmtMoney(bt.leftover), 'yellow')
-      ]));
+        kpiMini('Bucket 3 — Fun', Dom.fmtMoney(bt.fun), 'pink')
+      ];
+      // Shown only when there's an auto-synced CPF Contribution to
+      // account for — it's deducted before Leftover rather than credited
+      // to the Savings bucket (CPF never reaches an actual bank account),
+      // so without this tile Leftover would look smaller than Income
+      // minus the 3 buckets above with no explanation why.
+      if (bt.cpf > 0) kpiTiles.push(kpiMini('CPF Contribution (auto)', Dom.fmtMoney(bt.cpf), 'violet'));
+      kpiTiles.push(kpiMini('Leftover', Dom.fmtMoney(bt.leftover), 'yellow'));
+      container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, kpiTiles));
 
       // Three bucket cards side by side, mirroring the classic bank-bucket spreadsheet layout
       var bucketGrid = Dom.el('div', { class: 'grid mb-3', style: 'grid-template-columns:repeat(3,1fr)' });
