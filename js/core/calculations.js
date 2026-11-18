@@ -208,10 +208,17 @@ var Calc = (function () {
   // A standalone CI/ECI policy (no Death cover at all — e.g. a Secondary
   // Coverage "rider - Critical Care Advantage" row) still stores its real
   // figure in coverageCi/coverageCiAllStage same as a Life policy's CI
-  // rider does, not in the generic coverage field — so that needs to be
-  // added here too, or a CI/ECI policy's actual coverage silently reads
-  // as 0.
-  function ciEciPolicyCoverage(p) { return num(p.coverage) + num(p.coverageCi) + num(p.coverageCiAllStage); }
+  // rider does, not in the generic coverage field — so that's read as a
+  // fallback when neither CI-specific field is filled in, or a CI/ECI
+  // policy's actual coverage would silently read as 0. Once either
+  // CI-specific field IS filled in, the generic coverage field is ignored
+  // rather than added on top of it — on a real policy (PinkLife) it held
+  // a separate, non-CI figure (duplicating Accident Death Coverage) that
+  // double-counted into the CI total alongside the real coverageCi value.
+  function ciEciPolicyCoverage(p) {
+    var ci = num(p.coverageCi) + num(p.coverageCiAllStage);
+    return ci || num(p.coverage);
+  }
   function totalCoverageByType(c, type) {
     var policies = (c.insurance || []).filter(function (p) { return p.type === type; });
     if (type === 'Life') return sum(policies, lifePolicyDeathTpd);
