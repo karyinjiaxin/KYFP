@@ -13,6 +13,7 @@ var ModuleInsurance = (function () {
     // away and back, same as any other in-progress, unsaved form.
     var importRawText = '';
     var pendingImport = null; // null = no review table shown yet; [] = parsed but nothing matched
+    var expandedPremiumSplit = {}; // policy id -> bool, persists across re-renders
 
     function draw() {
       var c = Store.getAll();
@@ -196,10 +197,21 @@ var ModuleInsurance = (function () {
       ]);
       // How much of Premium is paid in cash vs. deducted from CPF/MediSave
       // (common for Integrated Shield Plan and CPF-funded riders) — both
-      // left at 0 means the whole Premium above is assumed cash.
-      var formRow2b = Dom.el('div', { class: 'input-row mt-2' }, [
+      // left at 0 means the whole Premium above is assumed cash. Collapsed
+      // behind a single toggle by default (most policies don't need the
+      // split), so it doesn't read as a second, repeated Premium row right
+      // under the first one — but stays expanded on its own once a value
+      // is actually stored here, so existing data is never hidden.
+      var splitHasValue = Calc.num(p.premiumCash) || Calc.num(p.premiumMedisave);
+      var splitExpanded = expandedPremiumSplit[p.id] || splitHasValue;
+      var formRow2b = splitExpanded ? Dom.el('div', { class: 'input-row mt-2' }, [
         Fields.moneyInput(base + 'premiumCash', 'Premium — Cash Portion'),
         Fields.moneyInput(base + 'premiumMedisave', 'Premium — MediSave/CPF Portion')
+      ]) : Dom.el('div', { class: 'mt-2' }, [
+        Dom.el('button', {
+          class: 'btn btn-ghost btn-sm',
+          onclick: function () { expandedPremiumSplit[p.id] = true; Dom.withFocusPreserved(container, draw); }
+        }, ['+ Split Premium into Cash / MediSave Portions'])
       ]);
       // TPD/All-Stage/Late-Stage CI sit directly under Death Coverage's own
       // row, not down with the rest of the form, since they're the parts
