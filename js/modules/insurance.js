@@ -24,6 +24,41 @@ var ModuleInsurance = (function () {
         Dom.el('div', { class: 'sub' }, ['Policy-level detail feeds the coverage gap, protection ratio, and Proposal automatically.'])
       ]));
 
+      container.appendChild(Dom.el('div', { class: 'section-title', style: 'margin-top:0' }, ['🔎 Need Analysis']));
+      var needCard = Dom.el('div', { class: 'card' }, [
+        Dom.el('div', { style: 'font-weight:700;font-size:12px;margin-bottom:2px' }, ['Death & Total Permanent Disability (TPD)']),
+        row('Recommended Coverage (9x annual income + liabilities)', Dom.fmtMoney(Calc.recommendedDeathTpdCoverage(c))),
+        row('Current Death Coverage Held', Dom.fmtMoney(Calc.deathTpdCoverageHeld(c))),
+        row('Death/TPD Gap', Dom.fmtMoney(Calc.deathTpdGap(c))),
+        Dom.el('div', { style: 'font-weight:700;font-size:12px;margin:16px 0 2px' }, ['Critical Illness (CI)']),
+        row('Recommended Coverage (4x annual income)', Dom.fmtMoney(Calc.recommendedCICoverage(c))),
+        row('Current CI + ECI Coverage Held', Dom.fmtMoney(Calc.ciCoverageHeld(c))),
+        row('CI Gap', Dom.fmtMoney(Calc.ciGap(c))),
+        Dom.el('div', { class: 'text-tertiary mt-3', style: 'line-height:1.5' }, [
+          'Benchmarks: Life Insurance Association of Singapore 2022 Protection Gap Study (~9x annual income for Death/TPD, ~4x for Critical Illness), as adopted into the MAS/MoneySense Basic Financial Planning Guide (Oct 2023). General rules of thumb, not personalised advice — actual needs vary by dependants, debts and lifestyle. Death/TPD and CI Gap each use whichever of Death/TPD is higher per policy instead of adding them, since TPD is usually an acceleration of the same Death benefit rather than an additional payout.'
+        ])
+      ]);
+      container.appendChild(needCard);
+
+      container.appendChild(Dom.el('div', { class: 'section-title' }, ['🛡️ Coverage by Type: Existing vs Recommended']));
+      var typeGrid = Dom.el('div', { class: 'grid grid-3 mb-3' });
+      typeGrid.appendChild(coverageTypePie('Death / TPD', Calc.deathTpdCoverageHeld(c), Calc.recommendedDeathTpdCoverage(c), 'deathTpdChart'));
+      typeGrid.appendChild(coverageTypePie('Critical Illness (Early + Late)', Calc.ciCoverageHeld(c), Calc.recommendedCICoverage(c), 'ciChart'));
+      typeGrid.appendChild(coverageTypePie('Income Protection', Calc.incomeProtectionHeld(c), Calc.recommendedIncomeProtection(c), 'incomeProtectionChart', '/mo'));
+      typeGrid.appendChild(coverageTypePie('Long Term Care', Calc.longTermCareHeld(c), Calc.recommendedLongTermCare(c), 'longTermCareChart', '/mo'));
+      container.appendChild(typeGrid);
+      container.appendChild(Dom.el('div', { class: 'card mb-3', style: 'font-size:10.5px;line-height:1.6' }, [
+        Dom.el('div', { style: 'font-weight:700;margin-bottom:4px' }, ['Benchmark sources']),
+        Dom.el('div', {}, ['Death/TPD (~9x annual income + liabilities) and Critical Illness (~4x annual income): Life Insurance Association of Singapore 2022 Protection Gap Study, adopted into the MAS/MoneySense Basic Financial Planning Guide. ',
+          Dom.el('a', { href: 'https://www.lia.org.sg', target: '_blank', rel: 'noopener' }, ['lia.org.sg'])
+        ]),
+        Dom.el('div', { class: 'mt-1' }, ['Income Protection (up to 75% of gross monthly income): common Singapore insurer underwriting cap for Disability Income / Income Protection products — varies by insurer, confirm the specific product’s limit.']),
+        Dom.el('div', { class: 'mt-1' }, ['Long Term Care (S$6,000/month): rounded up from private nursing home costs, which run roughly S$5,500/month on average (private facilities can range S$2,000–S$5,500+; home care / live-in helper roughly S$800–S$1,200/month) — a cost-based reference, not an income multiple, since care costs don’t scale with income the way Death/TPD or CI do. Source: Agency for Integrated Care (AIC) guidelines and industry cost surveys, 2025–2026. ',
+          Dom.el('a', { href: 'https://www.aic.sg', target: '_blank', rel: 'noopener' }, ['aic.sg'])
+        ]),
+        Dom.el('div', { class: 'mt-1' }, ['CI and ECI are combined against one benchmark since LIA doesn’t publish a separate figure for early-stage cover.'])
+      ]));
+
       // ---- Quick-input coverage: faster than keying full policies ----
       // Collapsed by default — most advisors key full policies below, so
       // this stays out of the way until explicitly opened; the "N filled"
@@ -37,7 +72,7 @@ var ModuleInsurance = (function () {
       ];
       var quickFilledCount = quickFieldRows.filter(function (f) { return Calc.num((c.insuranceQuickCoverage || {})[f[0]]); }).length;
       container.appendChild(Dom.el('div', {
-        class: 'collapsible-header section-title', style: 'margin-top:0',
+        class: 'collapsible-header section-title',
         onclick: function () { quickCoverageOpen = !quickCoverageOpen; Dom.withFocusPreserved(container, draw); }
       }, [
         Dom.el('div', { class: 'flex items-center gap-2' }, [
@@ -67,41 +102,6 @@ var ModuleInsurance = (function () {
       var policyGrid = Dom.el('div', { class: 'grid grid-2' });
       (c.insurance || []).forEach(function (p, idx) { policyGrid.appendChild(policyCard(p, idx)); });
       container.appendChild(policyGrid);
-
-      container.appendChild(Dom.el('div', { class: 'section-title' }, ['🔎 Need Analysis']));
-      var needCard = Dom.el('div', { class: 'card' }, [
-        Dom.el('div', { style: 'font-weight:700;font-size:12px;margin-bottom:2px' }, ['Death & Total Permanent Disability (TPD)']),
-        row('Recommended Coverage (9x annual income + liabilities)', Dom.fmtMoney(Calc.recommendedDeathTpdCoverage(c))),
-        row('Current Death Coverage Held', Dom.fmtMoney(Calc.deathTpdCoverageHeld(c))),
-        row('Death/TPD Gap', Dom.fmtMoney(Calc.deathTpdGap(c))),
-        Dom.el('div', { style: 'font-weight:700;font-size:12px;margin:16px 0 2px' }, ['Critical Illness (CI)']),
-        row('Recommended Coverage (4x annual income)', Dom.fmtMoney(Calc.recommendedCICoverage(c))),
-        row('Current CI + ECI Coverage Held', Dom.fmtMoney(Calc.ciCoverageHeld(c))),
-        row('CI Gap', Dom.fmtMoney(Calc.ciGap(c))),
-        Dom.el('div', { class: 'text-tertiary mt-3', style: 'line-height:1.5' }, [
-          'Benchmarks: Life Insurance Association of Singapore 2022 Protection Gap Study (~9x annual income for Death/TPD, ~4x for Critical Illness), as adopted into the MAS/MoneySense Basic Financial Planning Guide (Oct 2023). General rules of thumb, not personalised advice — actual needs vary by dependants, debts and lifestyle. Death/TPD and CI Gap each use whichever of Death/TPD is higher per policy instead of adding them, since TPD is usually an acceleration of the same Death benefit rather than an additional payout.'
-        ])
-      ]);
-      container.appendChild(needCard);
-
-      container.appendChild(Dom.el('div', { class: 'section-title' }, ['🛡️ Coverage by Type: Existing vs Recommended']));
-      var typeGrid = Dom.el('div', { class: 'grid grid-3 mb-3' });
-      typeGrid.appendChild(coverageTypePie('Death / TPD', Calc.deathTpdCoverageHeld(c), Calc.recommendedDeathTpdCoverage(c), 'deathTpdChart'));
-      typeGrid.appendChild(coverageTypePie('Critical Illness (Early + Late)', Calc.ciCoverageHeld(c), Calc.recommendedCICoverage(c), 'ciChart'));
-      typeGrid.appendChild(coverageTypePie('Income Protection', Calc.incomeProtectionHeld(c), Calc.recommendedIncomeProtection(c), 'incomeProtectionChart', '/mo'));
-      typeGrid.appendChild(coverageTypePie('Long Term Care', Calc.longTermCareHeld(c), Calc.recommendedLongTermCare(c), 'longTermCareChart', '/mo'));
-      container.appendChild(typeGrid);
-      container.appendChild(Dom.el('div', { class: 'card mb-3', style: 'font-size:10.5px;line-height:1.6' }, [
-        Dom.el('div', { style: 'font-weight:700;margin-bottom:4px' }, ['Benchmark sources']),
-        Dom.el('div', {}, ['Death/TPD (~9x annual income + liabilities) and Critical Illness (~4x annual income): Life Insurance Association of Singapore 2022 Protection Gap Study, adopted into the MAS/MoneySense Basic Financial Planning Guide. ',
-          Dom.el('a', { href: 'https://www.lia.org.sg', target: '_blank', rel: 'noopener' }, ['lia.org.sg'])
-        ]),
-        Dom.el('div', { class: 'mt-1' }, ['Income Protection (up to 75% of gross monthly income): common Singapore insurer underwriting cap for Disability Income / Income Protection products \u2014 varies by insurer, confirm the specific product\u2019s limit.']),
-        Dom.el('div', { class: 'mt-1' }, ['Long Term Care (S$6,000/month): rounded up from private nursing home costs, which run roughly S$5,500/month on average (private facilities can range S$2,000\u2013S$5,500+; home care / live-in helper roughly S$800\u2013S$1,200/month) \u2014 a cost-based reference, not an income multiple, since care costs don\u2019t scale with income the way Death/TPD or CI do. Source: Agency for Integrated Care (AIC) guidelines and industry cost surveys, 2025\u20132026. ',
-          Dom.el('a', { href: 'https://www.aic.sg', target: '_blank', rel: 'noopener' }, ['aic.sg'])
-        ]),
-        Dom.el('div', { class: 'mt-1' }, ['CI and ECI are combined against one benchmark since LIA doesn\u2019t publish a separate figure for early-stage cover.'])
-      ]));
 
       requestAnimationFrame(function () {
         drawCoverageTypePie(c, 'deathTpdChart', Calc.deathTpdCoverageHeld(c), Calc.recommendedDeathTpdCoverage(c));
