@@ -92,6 +92,80 @@ var App = (function () {
     if (changed) Store.set('cashflowCategories', next);
   }
 
+  // Keeps Cash Flow Roadmap's "Expenses That Stop" automatically populated
+  // for two cases an advisor shouldn't have to notice and configure by
+  // hand: the auto-synced Income Tax item (which no longer applies once
+  // the client stops earning employment income) stops at Retirement Age;
+  // and any Cashflow item loaded from Insurance Coverage via "Load
+  // Premiums from Insurance" (tracked by insurancePolicyId) stops once
+  // its policy's own Start Age + Premium Term is reached — a Limited
+  // Premium policy really does stop billing then, a Whole-of-Life one
+  // (Payment Term left at 0, or Start Age unset) never auto-stops since
+  // there's no real end to derive. Entries are tagged `auto` and always
+  // kept in sync, same as autoCpf/autoIncomeTax items themselves — not
+  // meant to be hand-edited, since the real stop age lives on the source
+  // (Retirement Age or the policy's own Premium Term), not here.
+  function syncAutoExpenseStops() {
+    var c = Store.getAll();
+    var cats = c.cashflowCategories;
+    if (!Array.isArray(cats)) return;
+    var insurance = c.insurance || [];
+    var retirementAge = Calc.num((c.retirement || {}).retirementAge) || 65;
+    var stops = Store.get('roadmap.expenseStops') || [];
+    var next = stops.map(function (es) { return Object.assign({}, es); });
+    var changed = false;
+    var validSourceIds = { incomeTax: {}, insurancePremium: {} };
+
+    cats.forEach(function (cat) {
+      (cat.items || []).forEach(function (item) {
+        var sourceId = cat.id + '.' + item.id;
+        var monthlyAmount = Math.round(Calc.itemMonthly(item) * 100) / 100;
+
+        if (item.autoIncomeTax) {
+          validSourceIds.incomeTax[sourceId] = true;
+          var existingTax = next.filter(function (es) { return es.sourceId === sourceId && es.auto === 'incomeTax'; })[0];
+          if (!existingTax) {
+            next.push({ sourceId: sourceId, name: item.name, monthlyAmount: monthlyAmount, endAge: retirementAge, auto: 'incomeTax' });
+            changed = true;
+          } else if (existingTax.endAge !== retirementAge || existingTax.monthlyAmount !== monthlyAmount) {
+            existingTax.endAge = retirementAge; existingTax.monthlyAmount = monthlyAmount;
+            changed = true;
+          }
+        }
+
+        if (item.insurancePolicyId) {
+          var policy = insurance.filter(function (p) { return p.id === item.insurancePolicyId; })[0];
+          var startAge = policy ? Calc.num(policy.startAge) : 0;
+          var term = policy ? Calc.num(policy.paymentTerm) : 0;
+          if (policy && startAge && term) {
+            validSourceIds.insurancePremium[sourceId] = true;
+            var endAge = startAge + term;
+            var existingPrem = next.filter(function (es) { return es.sourceId === sourceId && es.auto === 'insurancePremium'; })[0];
+            if (!existingPrem) {
+              next.push({ sourceId: sourceId, name: item.name, monthlyAmount: monthlyAmount, endAge: endAge, auto: 'insurancePremium' });
+              changed = true;
+            } else if (existingPrem.endAge !== endAge || existingPrem.monthlyAmount !== monthlyAmount) {
+              existingPrem.endAge = endAge; existingPrem.monthlyAmount = monthlyAmount;
+              changed = true;
+            }
+          }
+        }
+      });
+    });
+
+    // Drop an auto entry whose source no longer qualifies — the item was
+    // deleted, un-tagged, unlinked from its policy, or the policy became
+    // Whole-of-Life (Payment Term cleared back to 0).
+    var filtered = next.filter(function (es) {
+      if (es.auto === 'incomeTax') return !!validSourceIds.incomeTax[es.sourceId];
+      if (es.auto === 'insurancePremium') return !!validSourceIds.insurancePremium[es.sourceId];
+      return true;
+    });
+    if (filtered.length !== next.length) { next = filtered; changed = true; }
+
+    if (changed) Store.set('roadmap.expenseStops', next);
+  }
+
   // Keeps Tax Planning's "CPF Relief" and "Earned Income Relief" figures
   // correct automatically — both are legally tied to actual CPF
   // contributions and earned income, so leaving them as independently
@@ -429,6 +503,7 @@ var App = (function () {
     syncCurrentAgeFromDob();
     syncAutoCpf();
     syncAutoIncomeTax();
+    syncAutoExpenseStops();
     syncAutoReliefs();
     syncMortgageCpfDeduction();
     syncInvestmentAssets();
@@ -448,6 +523,7 @@ var App = (function () {
       syncCurrentAgeFromDob();
       syncAutoCpf();
       syncAutoIncomeTax();
+      syncAutoExpenseStops();
       syncAutoReliefs();
       syncMortgageCpfDeduction();
       syncInvestmentAssets();

@@ -192,14 +192,19 @@ var ModuleRoadmap = (function () {
         if (allCashflowItems.length === 0) {
           stopsCard.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, ['No expense items found on Cashflow yet \u2014 add some there first, or use the custom entry below.']));
         } else {
+          stopsCard.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, [
+            'Items marked \ud83e\udd16 Auto below stop themselves \u2014 an Income Tax item aligns to Retirement Age, and a premium loaded from Insurance Coverage (via Load Premiums from Insurance) aligns to that policy\u2019s own Start Age + Premium Term. Nothing to tick for those; change the real source (Retirement Age, or the policy\u2019s Payment Term) instead.'
+          ]));
           var checklist = Dom.el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:2px 16px' });
           allCashflowItems.forEach(function (item) {
             var stopIdx = expenseStops.findIndex(function (es) { return es.sourceId === item.sourceId; });
             var isChecked = stopIdx > -1;
+            var autoEntry = isChecked ? expenseStops[stopIdx] : null;
+            var isAuto = !!(autoEntry && autoEntry.auto);
             var checkboxRow = Dom.el('div', { style: 'padding:4px 2px;border-bottom:1px solid var(--border)' }, [
               Dom.el('div', { class: 'flex items-center gap-2' }, [
                 Dom.el('input', {
-                  type: 'checkbox', checked: isChecked ? 'checked' : null,
+                  type: 'checkbox', checked: isChecked ? 'checked' : null, disabled: isAuto ? 'disabled' : null,
                   onchange: function (e) {
                     var arr = Store.get('roadmap.expenseStops') || [];
                     if (e.target.checked) {
@@ -212,11 +217,16 @@ var ModuleRoadmap = (function () {
                 }),
                 Dom.el('div', { style: 'flex:1;min-width:0' }, [
                   Dom.el('span', { style: 'font-weight:600;font-size:11px' }, [item.name]),
+                  isAuto ? Dom.el('span', { class: 'badge badge-good', style: 'font-size:8.5px;padding:1px 7px;margin-left:5px' }, ['\ud83e\udd16 AUTO']) : null,
                   Dom.el('span', { class: 'text-tertiary', style: 'font-size:9.5px' }, [' \u2014 ' + item.categoryName + ' \u00b7 ' + Dom.fmtMoney(item.monthlyAmount) + '/mo'])
                 ])
               ])
             ]);
-            if (isChecked) {
+            if (isAuto) {
+              checkboxRow.appendChild(Dom.el('div', { class: 'text-tertiary', style: 'margin:2px 0 2px 24px;font-size:9.5px' }, [
+                'Stops at age ' + Calc.num(autoEntry.endAge) + (autoEntry.auto === 'incomeTax' ? ' \u2014 aligned to Retirement Age' : ' \u2014 aligned to this policy\u2019s Start Age + Premium Term')
+              ]));
+            } else if (isChecked) {
               checkboxRow.appendChild(Dom.el('div', { style: 'display:flex;align-items:center;gap:6px;margin:2px 0 2px 24px' }, [
                 Dom.el('span', { class: 'text-tertiary', style: 'font-size:9.5px' }, ['Stops at age']),
                 Dom.el('div', { style: 'width:70px' }, [Fields.numberInput('roadmap.expenseStops.' + stopIdx + '.endAge', '')])
