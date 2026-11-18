@@ -65,6 +65,20 @@ var App = (function () {
     if (changed) Store.set('cashflowCategories', next);
   }
 
+  // Keeps income.bonus in sync with income.bonusMonths × Salary whenever
+  // Cashflow's Bonus field is set to "No. of Months" mode (a Singapore-
+  // common way to state a bonus, e.g. "2 months AWS") — income.bonus
+  // itself stays the one figure every other calculation (Monthly Income,
+  // Income Tax, etc.) actually reads, so nothing downstream needs to know
+  // which input mode produced it. Left alone entirely in Lump Sum mode
+  // (the default), where income.bonus is typed directly as before.
+  function syncBonusFromMonths() {
+    var income = Store.get('income');
+    if (!income || income.bonusInputMode !== 'months') return;
+    var computed = Math.round(Calc.num(income.bonusMonths) * Calc.num(income.salary) * 100) / 100;
+    if (income.bonus !== computed) Store.set('income.bonus', computed);
+  }
+
   // Keeps any cashflow line item tagged autoIncomeTax: true in sync with
   // the client's income, reliefs, and parenthood rebate — same pattern
   // as syncAutoCpf above, using the same Calc.estimatedNetIncomeTax the
@@ -504,6 +518,7 @@ var App = (function () {
     syncAutoCpf();
     syncAutoIncomeTax();
     syncAutoExpenseStops();
+    syncBonusFromMonths();
     syncAutoReliefs();
     syncMortgageCpfDeduction();
     syncInvestmentAssets();
@@ -524,6 +539,7 @@ var App = (function () {
       syncAutoCpf();
       syncAutoIncomeTax();
       syncAutoExpenseStops();
+      syncBonusFromMonths();
       syncAutoReliefs();
       syncMortgageCpfDeduction();
       syncInvestmentAssets();

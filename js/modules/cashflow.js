@@ -10,7 +10,7 @@
 
 var ModuleCashflow = (function () {
   var INCOME_FIELDS = [
-    ['salary', 'Salary (monthly)'], ['bonus', 'Bonus (annual)'], ['rentalIncome', 'Rental Income (monthly)'],
+    ['salary', 'Salary (monthly)'], ['rentalIncome', 'Rental Income (monthly)'],
     ['businessIncome', 'Business Income (monthly)'], ['investmentIncome', 'Investment Income (annual)']
   ];
   var FREQUENCIES = ['Monthly', 'Quarterly', 'Annually', 'Weekly'];
@@ -94,7 +94,9 @@ var ModuleCashflow = (function () {
       container.appendChild(Dom.el('div', { class: 'section-title', style: 'margin-top:0' }, ['💰 Inflow']));
       var incomeCard = Dom.el('div', { class: 'card mb-3' });
       var incomeRow = Dom.el('div', { class: 'input-row' });
-      INCOME_FIELDS.forEach(function (f) { incomeRow.appendChild(Fields.moneyInput('income.' + f[0], f[1])); });
+      incomeRow.appendChild(Fields.moneyInput('income.salary', 'Salary (monthly)'));
+      incomeRow.appendChild(bonusField(c));
+      INCOME_FIELDS.slice(1).forEach(function (f) { incomeRow.appendChild(Fields.moneyInput('income.' + f[0], f[1])); });
       incomeCard.appendChild(incomeRow);
       incomeCard.appendChild(Dom.el('div', { class: 'mt-3 pt-3', style: 'border-top:1px solid var(--border)' }, [
         Dom.el('div', { class: 'flex justify-between items-center' }, [
@@ -186,6 +188,43 @@ var ModuleCashflow = (function () {
           }
         });
       });
+    }
+
+    // Bonus can be keyed either as a direct annual Lump Sum, or as a
+    // Number of Months (common in Singapore — "2 months AWS + 1 month
+    // performance bonus" etc.), auto-multiplied against Salary so the
+    // advisor doesn't have to do that math by hand. Either way, the
+    // actual figure every other calculation reads (income.bonus) stays
+    // the single source of truth — kept in sync from Months mode by
+    // app.js's syncBonusFromMonths, same auto-sync pattern as CPF/Income
+    // Tax, and left directly editable in Lump Sum mode.
+    function bonusField(c) {
+      var income = c.income || {};
+      var mode = income.bonusInputMode === 'months' ? 'months' : 'lumpsum';
+      var wrap = Dom.el('div', { class: 'field' });
+      wrap.appendChild(Dom.el('label', { class: 'field-label' }, ['Bonus (annual)']));
+      var toggle = Dom.el('div', { class: 'flex gap-1 mb-1' }, [
+        Dom.el('button', {
+          type: 'button', class: 'btn btn-ghost btn-sm' + (mode === 'lumpsum' ? ' btn-primary' : ''), style: 'font-size:9px;padding:2px 6px',
+          onclick: function () { Store.set('income.bonusInputMode', 'lumpsum'); }
+        }, ['Lump Sum']),
+        Dom.el('button', {
+          type: 'button', class: 'btn btn-ghost btn-sm' + (mode === 'months' ? ' btn-primary' : ''), style: 'font-size:9px;padding:2px 6px',
+          onclick: function () { Store.set('income.bonusInputMode', 'months'); }
+        }, ['No. of Months'])
+      ]);
+      wrap.appendChild(toggle);
+      if (mode === 'months') {
+        var monthsField = Fields.numberInput('income.bonusMonths', '', { step: '0.1', placeholder: 'e.g. 2' });
+        wrap.appendChild(monthsField);
+        wrap.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, [
+          '= ' + Dom.fmtMoney(Calc.num(income.bonusMonths) * Calc.num(income.salary)) + '/year (months × Salary)'
+        ]));
+      } else {
+        var lumpField = Fields.moneyInput('income.bonus', '');
+        wrap.appendChild(lumpField);
+      }
+      return wrap;
     }
 
     function categoryCard(cat, catIdx, color) {
