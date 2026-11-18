@@ -14,6 +14,7 @@ var ModuleInsurance = (function () {
     var importRawText = '';
     var pendingImport = null; // null = no review table shown yet; [] = parsed but nothing matched
     var expandedPremiumSplit = {}; // policy id -> bool, persists across re-renders
+    var quickCoverageOpen = false; // collapsed by default — most policies are entered in full below
 
     function draw() {
       var c = Store.getAll();
@@ -24,25 +25,40 @@ var ModuleInsurance = (function () {
       ]));
 
       // ---- Quick-input coverage: faster than keying full policies ----
-      container.appendChild(Dom.el('div', { class: 'section-title', style: 'margin-top:0' }, ['⚡ Quick Coverage Entry']));
-      var quickCard = Dom.el('div', { class: 'card mb-3' });
-      quickCard.appendChild(Dom.el('div', { class: 'text-secondary mb-3' }, [
-        'For a fast estimate without keying every individual policy \u2014 these amounts add directly into the coverage totals below, alongside any policies listed further down.'
-      ]));
+      // Collapsed by default — most advisors key full policies below, so
+      // this stays out of the way until explicitly opened; the "N filled"
+      // hint still shows when something's already entered here, so it's
+      // never silently hidden.
       var quickFieldRows = [
         ['deathTpd', 'Death / TPD'], ['terminalIllness', 'Terminal Illness'], ['earlyStageCI', 'Early Stage CI'],
         ['lateStageCI', 'Late Stage CI'], ['incomeProtection', 'Income Protection'], ['longTermCare', 'Long Term Care'],
         ['accidentalDeath', 'Accidental Death'], ['accidentalMedicalReimbursement', 'Accidental Medical Reimbursement'],
         ['annualHospitalClaimableLimit', 'Annual Hospital Claimable Limit']
       ];
-      for (var qi = 0; qi < quickFieldRows.length; qi += 3) {
-        var qrow = Dom.el('div', { class: 'input-row mt-2' });
-        quickFieldRows.slice(qi, qi + 3).forEach(function (f) {
-          qrow.appendChild(Fields.moneyInput('insuranceQuickCoverage.' + f[0], f[1]));
-        });
-        quickCard.appendChild(qrow);
+      var quickFilledCount = quickFieldRows.filter(function (f) { return Calc.num((c.insuranceQuickCoverage || {})[f[0]]); }).length;
+      container.appendChild(Dom.el('div', {
+        class: 'collapsible-header section-title', style: 'margin-top:0',
+        onclick: function () { quickCoverageOpen = !quickCoverageOpen; Dom.withFocusPreserved(container, draw); }
+      }, [
+        Dom.el('div', { class: 'flex items-center gap-2' }, [
+          Dom.el('svg', { class: 'chevron' + (quickCoverageOpen ? ' open' : ''), width: '16', height: '16', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', html: '<path d="M6 9l6 6 6-6"/>' }),
+          Dom.el('span', {}, ['⚡ Quick Coverage Entry' + (quickFilledCount ? ' (' + quickFilledCount + ' filled)' : '')])
+        ])
+      ]));
+      if (quickCoverageOpen) {
+        var quickCard = Dom.el('div', { class: 'card mb-3' });
+        quickCard.appendChild(Dom.el('div', { class: 'text-secondary mb-3' }, [
+          'For a fast estimate without keying every individual policy \u2014 these amounts add directly into the coverage totals below, alongside any policies listed further down.'
+        ]));
+        for (var qi = 0; qi < quickFieldRows.length; qi += 3) {
+          var qrow = Dom.el('div', { class: 'input-row mt-2' });
+          quickFieldRows.slice(qi, qi + 3).forEach(function (f) {
+            qrow.appendChild(Fields.moneyInput('insuranceQuickCoverage.' + f[0], f[1]));
+          });
+          quickCard.appendChild(qrow);
+        }
+        container.appendChild(quickCard);
       }
-      container.appendChild(quickCard);
 
       container.appendChild(Dom.el('div', { class: 'section-title' }, ['📥 Import Policies']));
       container.appendChild(importPanel());
