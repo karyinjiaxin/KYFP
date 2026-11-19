@@ -97,6 +97,41 @@ var ModuleCouple = (function () {
       table.appendChild(tbody); tableWrap.appendChild(table); breakdownCard.appendChild(tableWrap);
       container.appendChild(breakdownCard);
 
+      // ---- Combined Cash Flow Roadmap ----
+      var roadmapRows = Calc.combinedRoadmapProjection(c, partnerData);
+      container.appendChild(Dom.el('div', { class: 'section-title' }, ['🗺️ Combined Cash Flow Roadmap']));
+      container.appendChild(Dom.el('div', { class: 'text-secondary mb-2' }, [
+        'Each partner’s own year-by-year Cash Flow Roadmap (their own balance, income, expenses, life events) added together by calendar year — not by age, since partners are rarely the same age. A year only one partner’s roadmap covers still shows, using just that partner’s own figures for it.'
+      ]));
+      if (roadmapRows.length === 0) {
+        container.appendChild(Dom.el('div', { class: 'card mb-3 empty-state' }, ['Set Current Age, Retirement Age and Life Expectancy on both partners’ Retirement Planning first.']));
+      } else {
+        var lowestRow = roadmapRows.reduce(function (min, r) { return r.balance < min.balance ? r : min; }, roadmapRows[0]);
+        container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
+          kpiMini('Lowest Combined Balance', Dom.fmtMoney(lowestRow.balance), 'Year ' + lowestRow.year + ' (' + lowestRow.ages.join(', ') + ')', lowestRow.balance < 0 ? 'red' : 'green'),
+          kpiMini('Ends At', Dom.fmtMoney(roadmapRows[roadmapRows.length - 1].balance), 'Year ' + roadmapRows[roadmapRows.length - 1].year, roadmapRows[roadmapRows.length - 1].balance < 0 ? 'red' : 'green')
+        ]));
+        var roadmapCard = Dom.el('div', { class: 'card' });
+        var roadmapTableWrap = Dom.el('div', { class: 'table-scroll' });
+        var roadmapTable = Dom.el('table', { class: 'data-table' });
+        roadmapTable.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, ['Year', 'Ages', 'Combined Balance', 'Income Credited', 'Expenses Deducted', 'Life Event Net'].map(function (h) { return Dom.el('th', {}, [h]); }))]));
+        var roadmapBody = Dom.el('tbody');
+        roadmapRows.forEach(function (r) {
+          var isNegative = r.balance < 0;
+          var eventColor = r.eventNet > 0 ? 'color:var(--good);font-weight:700' : r.eventNet < 0 ? 'color:var(--burgundy);font-weight:700' : '';
+          roadmapBody.appendChild(Dom.el('tr', {}, [
+            Dom.el('td', {}, [String(r.year)]),
+            Dom.el('td', { class: 'text-tertiary' }, [r.ages.join(', ')]),
+            Dom.el('td', { style: 'font-weight:700;' + (isNegative ? 'color:var(--bad)' : '') }, [Dom.fmtMoney(r.balance)]),
+            Dom.el('td', {}, [r.incomeCredited + r.retirementPayoutCredited > 0 ? Dom.fmtMoney(r.incomeCredited + r.retirementPayoutCredited) : '—']),
+            Dom.el('td', { style: 'color:var(--burgundy)' }, ['−' + Dom.fmtMoney(r.expensesDeducted)]),
+            Dom.el('td', { style: eventColor }, [r.eventNet !== 0 ? Dom.fmtMoney(r.eventNet) : '—'])
+          ]));
+        });
+        roadmapTable.appendChild(roadmapBody); roadmapTableWrap.appendChild(roadmapTable); roadmapCard.appendChild(roadmapTableWrap);
+        container.appendChild(roadmapCard);
+      }
+
       container.appendChild(Dom.el('div', { class: 'text-tertiary' }, [
         'To edit either partner\u2019s own numbers, use "Switch to ' + partnerName + '" above, or load either client independently anytime via Settings \u2192 Saved Clients \u2014 nothing about this combined view links or merges their underlying data.'
       ]));

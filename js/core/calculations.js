@@ -1733,6 +1733,46 @@ var Calc = (function () {
     return rows;
   }
 
+  // Each partner's own Cash Flow Roadmap (already a full year-by-year
+  // simulation of their own cash balance) is computed independently, then
+  // the two are added together calendar YEAR by YEAR — not age by age,
+  // since partners are rarely the same age — same "simply added together"
+  // approach as combinedNetWorth/combinedRetirementProjection above. A
+  // year only one partner's roadmap covers (one retires/passes life
+  // expectancy before the other) still shows, using just that partner's
+  // own figures for it, rather than being dropped from the household
+  // view entirely.
+  function combinedRoadmapProjection(clientA, clientB) {
+    var rowsA = roadmapProjection(clientA), rowsB = roadmapProjection(clientB);
+    var byYear = {};
+    function addRows(rows, ageLabel) {
+      rows.forEach(function (r) {
+        var row = byYear[r.year];
+        if (!row) {
+          row = byYear[r.year] = {
+            year: r.year, ages: [], balance: 0, interest: 0, incomeCredited: 0,
+            retirementPayoutCredited: 0, expensesDeducted: 0, eventNet: 0,
+            cpfExcessCredited: 0, hospitalPremiumCash: 0, hospitalPremiumMedisave: 0
+          };
+        }
+        row.ages.push(ageLabel + ' ' + r.age);
+        row.balance += r.balance;
+        row.interest += r.interest;
+        row.incomeCredited += r.incomeCredited;
+        row.retirementPayoutCredited += r.retirementPayoutCredited;
+        row.expensesDeducted += r.expensesDeducted;
+        row.eventNet += r.eventNet;
+        row.cpfExcessCredited += r.cpfExcessCredited;
+        row.hospitalPremiumCash += r.hospitalPremiumCash;
+        row.hospitalPremiumMedisave += r.hospitalPremiumMedisave;
+      });
+    }
+    addRows(rowsA, 'A');
+    addRows(rowsB, 'B');
+    var years = Object.keys(byYear).map(Number).sort(function (a, b) { return a - b; });
+    return years.map(function (y) { return byYear[y]; });
+  }
+
   function combinedRetirementProjection(clientA, clientB) {
     var rpA = retirementProjection(clientA), rpB = retirementProjection(clientB);
     var requiredPortfolio = rpA.requiredPortfolio + rpB.requiredPortfolio;
@@ -2122,6 +2162,7 @@ var Calc = (function () {
     projectedDesiredMonthlyIncome: projectedDesiredMonthlyIncome,
     retirementAssetSplit: retirementAssetSplit, retirementMilestones: retirementMilestones, additionalMonthlyToCloseGap: additionalMonthlyToCloseGap,
     combinedNetWorth: combinedNetWorth, combinedRetirementProjection: combinedRetirementProjection,
+    combinedRoadmapProjection: combinedRoadmapProjection,
     roadmapProjection: roadmapProjection, roadmapRetirementPayoutSuggestion: roadmapRetirementPayoutSuggestion,
     additionalMonthlyForGap: additionalMonthlyForGap,
     emergencyFundMonths: emergencyFundMonths,
