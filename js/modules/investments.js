@@ -24,17 +24,30 @@ var ModuleInvestments = (function () {
 
       (c.investments || []).forEach(function (plan, idx) { container.appendChild(planCard(plan, idx, Calc.ageFromDob((c.personal || {}).dob) || (c.retirement || {}).currentAge)); });
 
-      container.appendChild(Dom.el('button', {
-        class: 'btn btn-secondary mt-3', onclick: function () {
-          var arr = Store.get('investments') || [];
-          arr.push({
-            id: Dom.uid('inv'), name: 'New Investment Plan', assetType: 'Unit Trust', monthlyPremium: 500, startAge: 35, stopAge: 60,
-            dividendYield: 3, welcomeBonus: 0, loyaltyBonus: 0, fees: 1, feesEndAge: 60, expectedReturn: 5,
-            inflation: 2, projectionAge: 65
-          });
-          Store.set('investments', arr);
-        }
-      }, ['+ Add Investment Plan']));
+      container.appendChild(Dom.el('div', { class: 'flex gap-2 mt-3' }, [
+        Dom.el('button', {
+          class: 'btn btn-secondary', onclick: function () {
+            var arr = Store.get('investments') || [];
+            arr.push({
+              id: Dom.uid('inv'), name: 'New Investment Plan', assetType: 'Unit Trust', monthlyPremium: 500, startAge: 35, stopAge: 60,
+              dividendYield: 3, welcomeBonus: 0, loyaltyBonus: 0, fees: 1, feesEndAge: 60, expectedReturn: 5,
+              inflation: 2, projectionAge: 65
+            });
+            Store.set('investments', arr);
+          }
+        }, ['+ Add Investment Plan']),
+        Dom.el('button', {
+          class: 'btn btn-secondary', onclick: function () {
+            var arr = Store.get('investments') || [];
+            arr.push({
+              id: Dom.uid('inv'), name: 'New Endowment Plan', assetType: 'Endowment', monthlyPremium: 500, startAge: 35, stopAge: 55,
+              dividendYield: 3, welcomeBonus: 0, loyaltyBonus: 0, fees: 0, feesEndAge: 0, expectedReturn: 4,
+              inflation: 2, projectionAge: 65
+            });
+            Store.set('investments', arr);
+          }
+        }, ['+ Add Endowment Plan'])
+      ]));
     }
 
     function planCard(plan, idx, currentAge) {
@@ -56,28 +69,44 @@ var ModuleInvestments = (function () {
       ]);
       card.appendChild(f1);
 
+      // Endowment plans don't carry a welcome/loyalty bonus or a separate
+      // advisory fee the way an ILP/Unit Trust might \u2014 those rows are left
+      // out entirely rather than shown with fields that'd just stay at 0,
+      // which would read as "this plan genuinely has none" when really the
+      // concept doesn't apply to it at all.
+      var isEndowment = plan.assetType === 'Endowment';
       card.appendChild(Dom.el('div', { class: 'input-row compact-row mt-2' }, [
         Fields.moneyInput(base + 'monthlyPremium', 'Monthly Premium'),
         Fields.numberInput(base + 'stopAge', 'Stop Contributing Age'),
         Fields.numberInput(base + 'dividendYield', 'Dividend Yield %', { step: '0.1' })
       ]));
-      var f3 = Dom.el('div', { class: 'input-row compact-row mt-2' }, [
-        Fields.moneyInput(base + 'welcomeBonus', 'Welcome Bonus'),
-        Fields.moneyInput(base + 'loyaltyBonus', 'Loyalty Bonus'),
-        Fields.numberInput(base + 'expectedReturn', 'Expected Return %', { step: '0.1' })
-      ]);
-      var f4 = Dom.el('div', { class: 'input-row compact-row mt-2' }, [
-        Fields.numberInput(base + 'fees', 'Fees %', { step: '0.1' }),
-        Fields.numberInput(base + 'feesEndAge', 'Fees End Age'),
-        Fields.numberInput(base + 'inflation', 'Inflation %', { step: '0.1' })
-      ]);
+      if (isEndowment) {
+        card.appendChild(Dom.el('div', { class: 'input-row compact-row mt-2' }, [
+          Fields.numberInput(base + 'expectedReturn', 'Expected Return %', { step: '0.1' }),
+          Fields.numberInput(base + 'inflation', 'Inflation %', { step: '0.1' })
+        ]));
+      } else {
+        var f3 = Dom.el('div', { class: 'input-row compact-row mt-2' }, [
+          Fields.moneyInput(base + 'welcomeBonus', 'Welcome Bonus'),
+          Fields.moneyInput(base + 'loyaltyBonus', 'Loyalty Bonus'),
+          Fields.numberInput(base + 'expectedReturn', 'Expected Return %', { step: '0.1' })
+        ]);
+        var f4 = Dom.el('div', { class: 'input-row compact-row mt-2' }, [
+          Fields.numberInput(base + 'fees', 'Fees %', { step: '0.1' }),
+          Fields.numberInput(base + 'feesEndAge', 'Fees End Age'),
+          Fields.numberInput(base + 'inflation', 'Inflation %', { step: '0.1' })
+        ]);
+        card.appendChild(f3); card.appendChild(f4);
+      }
       var f5 = Dom.el('div', { class: 'input-row compact-row mt-2' }, [
         Fields.numberInput(base + 'dividendSwitchAge', 'Switch to Dividend Fund at Age'),
         Fields.numberInput(base + 'postSwitchDividendYield', 'Dividend Fund Yield %', { step: '0.1' })
       ]);
-      card.appendChild(f3); card.appendChild(f4); card.appendChild(f5);
+      card.appendChild(f5);
       card.appendChild(Dom.el('div', { class: 'text-tertiary mt-2', style: 'line-height:1.5' }, [
-        '"Stop Contributing Age" is when premiums stop; the balance keeps compounding until "Expected Withdrawal Age" even with no further contributions. "Fees End Age" lets a fee that tapers off (e.g. an initial advisory charge) stop being deducted before the plan matures \u2014 leave it equal to Stop Contributing Age if fees apply for as long as you\u2019re contributing. "Switch to Dividend Fund at Age" is optional: leave blank to keep using Dividend Yield throughout. If set, the fund value at that age is whatever this same projection already produces from premiums paid, stop age, and expected return \u2014 nothing separate to reconcile \u2014 and dividends from that age onward use "Dividend Fund Yield" instead.'
+        isEndowment
+          ? '"Stop Contributing Age" is when premiums stop; the balance keeps compounding until "Expected Withdrawal Age" even with no further contributions. "Switch to Dividend Fund at Age" is optional: leave blank to keep using Dividend Yield throughout.'
+          : '"Stop Contributing Age" is when premiums stop; the balance keeps compounding until "Expected Withdrawal Age" even with no further contributions. "Fees End Age" lets a fee that tapers off (e.g. an initial advisory charge) stop being deducted before the plan matures \u2014 leave it equal to Stop Contributing Age if fees apply for as long as you\u2019re contributing. "Switch to Dividend Fund at Age" is optional: leave blank to keep using Dividend Yield throughout. If set, the fund value at that age is whatever this same projection already produces from premiums paid, stop age, and expected return \u2014 nothing separate to reconcile \u2014 and dividends from that age onward use "Dividend Fund Yield" instead.'
       ]));
 
       var f6 = Dom.el('div', { class: 'input-row compact-row mt-2' }, [
@@ -91,7 +120,7 @@ var ModuleInvestments = (function () {
       ]));
 
       card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12px;margin-top:16px;margin-bottom:8px' }, ['Annual Projection Table']));
-      card.appendChild(projectionTable(plan, currentAge));
+      card.appendChild(projectionTable(plan, currentAge, isEndowment));
 
       return card;
     }
@@ -105,7 +134,7 @@ var ModuleInvestments = (function () {
     // product mechanics); every other plan uses investmentPlanProjection,
     // which now exposes feeAmount/totalBonus as explicit dollar figures
     // too, so the same table shape works for both without approximation.
-    function projectionTable(plan, currentAge) {
+    function projectionTable(plan, currentAge, isEndowment) {
       var startAge = Calc.num(plan.startAge);
       var genericRows = Calc.investmentPlanProjection(plan, plan.projectionAge);
       var startFrom = currentAge != null ? Math.max(startAge, currentAge) : startAge;
@@ -114,19 +143,24 @@ var ModuleInvestments = (function () {
         return { year: r.age - startAge, age: r.age, premiumPaid: r.premiumPaid, feeAmount: r.feeAmount, totalBonus: r.totalBonus, accountValue: r.accumulatedValue, annualDividend: r.annualDividend, investmentInflow: r.premiumPaid, switchedToDividendFund: r.switchedToDividendFund };
       });
 
-      var hidden = !!hideFeesAndBonuses[plan.id];
+      // Endowment plans never have bonuses/fees at all (no inputs for
+      // them above), so those columns stay hidden permanently \u2014 no toggle
+      // needed since there's nothing to ever show.
+      var hidden = isEndowment || !!hideFeesAndBonuses[plan.id];
       var wrap = Dom.el('div', {});
       if (currentAge != null && currentAge > startAge) {
         wrap.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, [
           'Table starts from today\u2019s age (' + currentAge + '), not the plan\u2019s original Start Age (' + startAge + ') \u2014 the Investment Value at age ' + currentAge + ' still reflects everything paid in since Start Age.'
         ]));
       }
-      wrap.appendChild(Dom.el('div', { class: 'flex justify-end mb-2' }, [
-        Dom.el('button', {
-          class: 'btn btn-ghost btn-sm',
-          onclick: function () { hideFeesAndBonuses[plan.id] = !hidden; Dom.withFocusPreserved(container, draw); }
-        }, [hidden ? 'Show Fees & Bonuses' : 'Hide Fees & Bonuses'])
-      ]));
+      if (!isEndowment) {
+        wrap.appendChild(Dom.el('div', { class: 'flex justify-end mb-2' }, [
+          Dom.el('button', {
+            class: 'btn btn-ghost btn-sm',
+            onclick: function () { hideFeesAndBonuses[plan.id] = !hidden; Dom.withFocusPreserved(container, draw); }
+          }, [hidden ? 'Show Fees & Bonuses' : 'Hide Fees & Bonuses'])
+        ]));
+      }
 
       var headers = ['Year', 'Age', 'Premium in Cash', 'Investment Inflow'];
       if (!hidden) headers.push('Bonuses', 'Fees');
