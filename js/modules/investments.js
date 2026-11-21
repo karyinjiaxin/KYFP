@@ -4,6 +4,7 @@
 
 var ModuleInvestments = (function () {
   var hideFeesAndBonuses = {}; // plan id -> bool, persists column visibility across re-renders
+  var collapsedProjectionTable = {}; // plan id -> bool, persists table visibility across re-renders
   var INVESTMENT_TYPES = ['Investment Policy (ILP)', 'Unit Trust', 'ETF', 'Shares', 'Bonds', 'Gold', 'Crypto', 'REIT', 'Endowment', 'Other'];
 
   function render(container) {
@@ -119,8 +120,17 @@ var ModuleInvestments = (function () {
         '"Current Investment Value" is optional, for a plan that\u2019s already been running: enter today\u2019s real account value and the age it was observed, and the projection is grounded to that actual figure at that age instead of trusting a recomputation from scratch since Start Age.'
       ]));
 
-      card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12px;margin-top:16px;margin-bottom:8px' }, ['Annual Projection Table']));
-      card.appendChild(projectionTable(plan, currentAge, isEndowment));
+      var tableCollapsed = !!collapsedProjectionTable[plan.id];
+      card.appendChild(Dom.el('div', {
+        class: 'collapsible-header', style: 'margin-top:16px;margin-bottom:8px',
+        onclick: function () { collapsedProjectionTable[plan.id] = !tableCollapsed; Dom.withFocusPreserved(container, draw); }
+      }, [
+        Dom.el('div', { class: 'flex items-center gap-2' }, [
+          Dom.el('svg', { class: 'chevron' + (tableCollapsed ? '' : ' open'), width: '16', height: '16', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', html: '<path d="M6 9l6 6 6-6"/>' }),
+          Dom.el('span', { style: 'font-weight:700;font-size:12px' }, ['Annual Projection Table'])
+        ])
+      ]));
+      if (!tableCollapsed) card.appendChild(projectionTable(plan, currentAge, isEndowment));
 
       return card;
     }
