@@ -227,7 +227,7 @@ var SampleClient = {
     }
   ],
   retirement: {
-    currentAge: 38, retirementAge: 65, lifeExpectancy: 90,
+    currentAge: 38, retirementAge: 55, lifeExpectancy: 85,
     desiredMonthlyIncome: 8000, inflation: 2, cpfLifePayout: 1900,
     expectedReturn: 5, monthlyInvestmentOverride: 0
   },

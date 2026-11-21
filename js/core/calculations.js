@@ -1579,7 +1579,7 @@ var Calc = (function () {
     // plans typically grow substantially over the years until
     // retirement, so today's dividend figure would badly understate
     // what will actually be received once retired.
-    var retirementAge = num((c.retirement || {}).retirementAge) || 65;
+    var retirementAge = num((c.retirement || {}).retirementAge) || 55;
     var i = c.income || {};
     var cpfLifeMonthly = estimatedCpfLifePayout(c);
     var dividendAtRetirement = totalAnnualDividendAtAge(c, retirementAge) / 12;
@@ -1594,7 +1594,7 @@ var Calc = (function () {
     // target, but the roadmap itself should never cut off early just
     // because that input happens to be conservative.
     var lifeExpectancy = Math.max(num((c.retirement || {}).lifeExpectancy) || 90, 90);
-    var retirementAge = num((c.retirement || {}).retirementAge) || 65;
+    var retirementAge = num((c.retirement || {}).retirementAge) || 55;
     var rm = c.roadmap || {};
     var interestRate = (rm.interestRate != null && rm.interestRate !== '' ? num(rm.interestRate) : 0.05) / 100;
     var inflationRate = (rm.inflationRate != null && rm.inflationRate !== '' ? num(rm.inflationRate) : 2) / 100;

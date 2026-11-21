@@ -17,7 +17,7 @@ var ModuleDividends = (function () {
       var currentAge = Calc.ageFromDob((c.personal || {}).dob) || (c.retirement || {}).currentAge;
       var investDividend = Calc.totalAnnualDividendAtAge(c, currentAge);
       var participating = (c.insurance || []).filter(function (p) { return Calc.num(p.dividend) > 0; });
-      var atAge = ((c.retirement || {}).retirementAge) || 65;
+      var atAge = ((c.retirement || {}).retirementAge) || 55;
       var projectedCashValue = Calc.sum(participating, function (p) { return Calc.insuranceCashValueProjected(p, atAge); });
 
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [

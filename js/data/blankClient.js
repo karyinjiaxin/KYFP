@@ -82,7 +82,7 @@ var BlankClient = {
   hospitalPlans: [],
   investments: [],
   retirement: {
-    currentAge: 0, retirementAge: 65, lifeExpectancy: 90,
+    currentAge: 0, retirementAge: 55, lifeExpectancy: 85,
     desiredMonthlyIncome: 0, inflation: 2, cpfLifePayout: 0,
     expectedReturn: 5, monthlyInvestmentOverride: 0
   },
