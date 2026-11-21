@@ -103,7 +103,7 @@ var ModuleRoadmap = (function () {
         Fields.moneyInput('roadmap.retirementPayoutOverride', 'Monthly Retirement Payout')
       ]));
       payoutCard.appendChild(Dom.el('div', { class: 'text-tertiary mt-2' }, [
-        'Auto-suggested from CPF Tab\u2019s CPF LIFE estimate + Investment Planning\u2019s projected dividend income AT Retirement Age (not today\u2019s dividend figure, since investments typically grow substantially by then) + rental/other passive income (currently ' + Dom.fmtMoney(payoutSuggestion) + '/month) \u2014 edit freely, e.g. to model a different CPF LIFE plan or exclude income that won\u2019t actually continue. ',
+        'Auto-suggested from CPF Tab\u2019s CPF LIFE estimate + Wealth Accumulation Planning\u2019s projected dividend income AT Retirement Age (not today\u2019s dividend figure, since investments typically grow substantially by then) + rental/other passive income (currently ' + Dom.fmtMoney(payoutSuggestion) + '/month) \u2014 edit freely, e.g. to model a different CPF LIFE plan or exclude income that won\u2019t actually continue. ',
         Dom.el('a', {
           href: '#', style: 'color:var(--accent);cursor:pointer',
           onclick: function (e) { e.preventDefault(); Store.set('roadmap.retirementPayoutOverride', Math.round(payoutSuggestion * 100) / 100); }
@@ -193,7 +193,7 @@ var ModuleRoadmap = (function () {
           stopsCard.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, ['No expense items found on Cashflow yet \u2014 add some there first, or use the custom entry below.']));
         } else {
           stopsCard.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, [
-            'Items marked \ud83e\udd16 Auto below stop themselves \u2014 an Income Tax item aligns to Retirement Age, and a premium loaded from Insurance Coverage (via Load Premiums from Insurance) aligns to that policy\u2019s own Start Age + Premium Term. Nothing to tick for those; change the real source (Retirement Age, or the policy\u2019s Payment Term) instead.'
+            'Items marked \ud83e\udd16 Auto below stop themselves \u2014 an Income Tax item aligns to Retirement Age, and a premium loaded from Insurance Planning (via Load Premiums from Insurance) aligns to that policy\u2019s own Start Age + Premium Term. Nothing to tick for those; change the real source (Retirement Age, or the policy\u2019s Payment Term) instead.'
           ]));
           var checklist = Dom.el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:2px 16px' });
           allCashflowItems.forEach(function (item) {

@@ -57,7 +57,7 @@ var ModuleCashflow = (function () {
     Store.set('cashflowCategories', next);
     loadInsuranceStatus = added
       ? 'Loaded ' + added + ' polic' + (added === 1 ? 'y' : 'ies') + (skipped ? ' (' + skipped + ' already loaded, left untouched)' : '') + '.'
-      : (skipped ? 'All ' + skipped + ' polic' + (skipped === 1 ? 'y' : 'ies') + ' already loaded — nothing to add.' : 'No policies with a premium found on the Insurance Coverage page.');
+      : (skipped ? 'All ' + skipped + ' polic' + (skipped === 1 ? 'y' : 'ies') + ' already loaded — nothing to add.' : 'No policies with a premium found on the Insurance Planning page.');
   }
 
   function hexToRgba(hex, alpha) {

@@ -65,7 +65,7 @@ var ModuleNetWorth = (function () {
         Dom.el('div', { class: 'flex justify-between items-center' }, [
           Dom.el('div', { class: 'section-title', style: 'margin-top:0' }, ['💎 Assets']),
           Dom.el('button', {
-            class: 'btn btn-secondary btn-sm', title: 'Force-refresh Unit Trusts/ETFs/Stocks/Crypto from Investment Planning, overriding whatever\u2019s currently there',
+            class: 'btn btn-secondary btn-sm', title: 'Force-refresh Unit Trusts/ETFs/Stocks/Crypto from Wealth Accumulation Planning, overriding whatever\u2019s currently there',
             onclick: function () {
               var latest = investmentAssetsByType(Store.getAll());
               Object.keys(ASSET_TYPE_SUGGESTION).forEach(function (field) {
@@ -77,7 +77,7 @@ var ModuleNetWorth = (function () {
                 if (computed) Store.set('assets.' + field, Math.round(computed * 100) / 100);
               });
             }
-          }, ['\u21bb Reload from Investment Planning'])
+          }, ['\u21bb Reload from Wealth Accumulation Planning'])
         ])
       ]);
       var investByType = investmentAssetsByType(c);
@@ -95,15 +95,15 @@ var ModuleNetWorth = (function () {
         var currentValue = Calc.num((c.assets || {})[f[0]]);
         if (suggested && currentValue > 0 && Math.abs(currentValue - suggested) < 1) {
           fieldWrap.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, [
-            '\u2713 Auto-filled from Investment Planning'
+            '\u2713 Auto-filled from Wealth Accumulation Planning'
           ]));
         } else if (suggested && currentValue === 0) {
           fieldWrap.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, [
-            'Will auto-fill from Investment Planning (' + Dom.fmtMoney(suggested) + ') shortly'
+            'Will auto-fill from Wealth Accumulation Planning (' + Dom.fmtMoney(suggested) + ') shortly'
           ]));
         } else if (suggested) {
           fieldWrap.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, [
-            'Investment Planning suggests ' + Dom.fmtMoney(suggested) + ' \u2014 ',
+            'Wealth Accumulation Planning suggests ' + Dom.fmtMoney(suggested) + ' \u2014 ',
             Dom.el('a', {
               href: '#', style: 'color:var(--accent);cursor:pointer',
               onclick: function (e) { e.preventDefault(); Store.set('assets.' + f[0], Math.round(suggested)); }
@@ -114,7 +114,7 @@ var ModuleNetWorth = (function () {
       });
       assetsCard.appendChild(assetsRow);
       assetsCard.appendChild(Dom.el('div', { class: 'text-tertiary mt-2' }, [
-        'Unit Trusts / ETFs / Stocks / Crypto auto-fill from matching Investment Planning plans (by their Type) the first time each field is at S$0 \u2014 once you\u2019ve typed a value in, it\u2019s yours to edit freely and won\u2019t be silently overwritten. Set a field back to 0 to let it auto-fill again.'
+        'Unit Trusts / ETFs / Stocks / Crypto auto-fill from matching Wealth Accumulation Planning plans (by their Type) the first time each field is at S$0 \u2014 once you\u2019ve typed a value in, it\u2019s yours to edit freely and won\u2019t be silently overwritten. Set a field back to 0 to let it auto-fill again.'
       ]));
       assetsCard.appendChild(propertyList(c));
       grid.appendChild(assetsCard);

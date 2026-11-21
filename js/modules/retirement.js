@@ -23,7 +23,7 @@ var ModuleRetirement = (function () {
       container.innerHTML = '';
       container.appendChild(Dom.el('div', { class: 'page-header' }, [
         Dom.el('h1', {}, ['Retirement Planning']),
-        Dom.el('div', { class: 'sub' }, ['Draws on Cashflow surplus, CPF, and Investment Planning to project retirement readiness.'])
+        Dom.el('div', { class: 'sub' }, ['Draws on Cashflow surplus, CPF, and Wealth Accumulation Planning to project retirement readiness.'])
       ]));
 
       container.appendChild(Dom.el('div', { class: 'card mb-3', style: 'background:var(--accent-soft);border-color:var(--accent)' }, [

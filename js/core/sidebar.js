@@ -14,11 +14,11 @@ var Sidebar = (function () {
     ]},
     { section: 'Planning', items: [
       { key: 'houseplan', label: 'House Purchase', ic: 'home', col: 'blue' },
-      { key: 'insurance', label: 'Insurance Coverage', ic: 'shield', col: 'red' },
+      { key: 'insurance', label: 'Insurance Planning', ic: 'shield', col: 'red' },
+      { key: 'investments', label: 'Wealth Accumulation Planning', ic: 'trend', col: 'burgundy' },
       { key: 'hospital', label: 'Hospital Plan Premiums', ic: 'cross', col: 'pink' },
       { key: 'retirement', label: 'Retirement Planning', ic: 'sun', col: 'yellow' },
       { key: 'roadmap', label: 'Cash Flow Roadmap', ic: 'roadmap', col: 'burgundy' },
-      { key: 'investments', label: 'Investment Planning', ic: 'trend', col: 'burgundy' },
       { key: 'dividends', label: 'Insurance + Dividends', ic: 'coin', col: 'orange' },
       { key: 'cpf', label: 'CPF', ic: 'building', col: 'orange' },
       { key: 'tax', label: 'Tax Planning', ic: 'doc', col: 'yellow' },

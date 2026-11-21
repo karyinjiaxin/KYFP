@@ -1,5 +1,5 @@
 /* ============================================================
-   investments.js — Investment Planning module
+   investments.js — Wealth Accumulation Planning module
    ============================================================ */
 
 var ModuleInvestments = (function () {
@@ -11,7 +11,7 @@ var ModuleInvestments = (function () {
       var c = Store.getAll();
       container.innerHTML = '';
       container.appendChild(Dom.el('div', { class: 'page-header' }, [
-        Dom.el('h1', {}, ['Investment Planning']),
+        Dom.el('h1', {}, ['Wealth Accumulation Planning']),
         Dom.el('div', { class: 'sub' }, ['Each plan projects independently, then rolls up into Dashboard, Net Worth, and Retirement.'])
       ]));
 
@@ -183,5 +183,5 @@ var ModuleInvestments = (function () {
     return Store.subscribe('*', Dom.debounce(function () { Dom.withFocusPreserved(container, draw); }, 30));
   }
 
-  return { title: 'Investment Planning', render: render };
+  return { title: 'Wealth Accumulation Planning', render: render };
 })();

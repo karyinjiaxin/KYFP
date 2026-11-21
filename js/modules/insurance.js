@@ -1,5 +1,5 @@
 /* ============================================================
-   insurance.js — Insurance Coverage module
+   insurance.js — Insurance Planning module
    ============================================================ */
 
 var ModuleInsurance = (function () {
@@ -20,7 +20,7 @@ var ModuleInsurance = (function () {
       var c = Store.getAll();
       container.innerHTML = '';
       container.appendChild(Dom.el('div', { class: 'page-header' }, [
-        Dom.el('h1', {}, ['Insurance Coverage']),
+        Dom.el('h1', {}, ['Insurance Planning']),
         Dom.el('div', { class: 'sub' }, ['Policy-level detail feeds the coverage gap, protection ratio, and Proposal automatically.'])
       ]));
 
@@ -700,5 +700,5 @@ var ModuleInsurance = (function () {
     return Store.subscribe('*', Dom.debounce(function () { Dom.withFocusPreserved(container, draw); }, 30));
   }
 
-  return { title: 'Insurance Coverage', render: render };
+  return { title: 'Insurance Planning', render: render };
 })();
