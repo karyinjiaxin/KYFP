@@ -419,6 +419,19 @@ var ModuleInsurance = (function () {
       }
       pendingImport = (guesses || []).map(function (g) { return toReviewRow(g, ''); });
       if (!pendingImport.length) pendingImport = [toReviewRow({}, '')];
+      // A header with a combined "Total Level Term (Death / TPD)" column,
+      // or a "Coverage Term" column (vs. Primary's separate Death/TPD
+      // columns and plain "End Age"), is only ever found on the Secondary
+      // Coverage template — if the advisor left Table Type on Primary
+      // against one of these, every coverage figure quietly reads 0/null
+      // (Primary has no idea what that column means), with no other sign
+      // anything went wrong since company/policy names often still come
+      // through fine via the generic text fallback.
+      var looksSecondary = importMode === 'primary' && (/level\s*term.*(death|tpd)/i.test(text) || /coverage\s*term/i.test(text));
+      if (looksSecondary) {
+        Dom.modalAlert('This looks like a Secondary Coverage table (it has a "Coverage Term" and/or "Total Level Term (Death / TPD)" column), but Table Type is set to Primary — Primary doesn’t recognize those columns, so Death/TPD and other coverage figures will read as 0. Switch Table Type to Secondary above and paste again.');
+        return;
+      }
       var nothingRecognized = pendingImport.every(function (row) {
         return NUMERIC_CHECK_FIELDS.every(function (f) { return !row[f]; });
       });
