@@ -8,6 +8,12 @@ var ModuleInvestments = (function () {
   var INVESTMENT_TYPES = ['Investment Policy (ILP)', 'Unit Trust', 'ETF', 'Shares', 'Bonds', 'Gold', 'Crypto', 'REIT', 'Endowment', 'Other'];
 
   function render(container) {
+    // Transient review-before-save import state — not Store-backed, same
+    // "nothing written until Import is clicked" pattern as Insurance
+    // Planning's import panel. Resets on navigating away and back.
+    var importRawText = '';
+    var pendingImport = null;
+
     function draw() {
       var c = Store.getAll();
       container.innerHTML = '';
@@ -22,6 +28,9 @@ var ModuleInvestments = (function () {
         kpiMini('Current Annual Dividend', Dom.fmtMoney(Calc.totalAnnualDividendAtAge(c, currentAge)), null, 'green'),
         kpiMini('Current Monthly Dividend', Dom.fmtMoney(Calc.totalMonthlyDividendAtAge(c, currentAge)), null, 'pink')
       ]));
+
+      container.appendChild(Dom.el('div', { class: 'section-title' }, ['📥 Import Plans']));
+      container.appendChild(importPanel());
 
       (c.investments || []).forEach(function (plan, idx) { container.appendChild(planCard(plan, idx, Calc.ageFromDob((c.personal || {}).dob) || (c.retirement || {}).currentAge)); });
 
@@ -119,6 +128,9 @@ var ModuleInvestments = (function () {
       card.appendChild(Dom.el('div', { class: 'text-tertiary mt-2', style: 'line-height:1.5' }, [
         '"Current Investment Value" is optional, for a plan that\u2019s already been running: enter today\u2019s real account value and the age it was observed, and the projection is grounded to that actual figure at that age instead of trusting a recomputation from scratch since Start Age.'
       ]));
+      card.appendChild(Dom.el('div', { class: 'mt-2' }, [
+        Fields.textInput(base + 'notes', 'Remarks')
+      ]));
 
       var tableCollapsed = !!collapsedProjectionTable[plan.id];
       card.appendChild(Dom.el('div', {
@@ -133,6 +145,116 @@ var ModuleInvestments = (function () {
       if (!tableCollapsed) card.appendChild(projectionTable(plan, currentAge, isEndowment));
 
       return card;
+    }
+
+    // Turns one parsed guess (OCR.parseWealthAccumulationText's shape:
+    // company/name/policyNo/monthlyPremium/currentValue/dividendYield/
+    // notes) into a review-row object. Fields this import can't know
+    // (Start Age, Stop Contributing Age, Expected Return, etc.) use the
+    // same sensible defaults as "+ Add Endowment Plan" — reviewed and
+    // editable in the table below before anything is saved, same as
+    // Insurance Planning's own import.
+    function toReviewRow(g) {
+      return {
+        include: true,
+        name: g.name || 'New Plan', company: g.company || '', policyNo: g.policyNo || '',
+        monthlyPremium: g.monthlyPremium || 0, currentValue: g.currentValue || 0,
+        dividendYield: g.dividendYield != null ? g.dividendYield : 3,
+        notes: g.notes || ''
+      };
+    }
+
+    function runImportParse(text) {
+      var guesses = OCR.parseWealthAccumulationText(text);
+      if (!guesses) {
+        Dom.modalAlert('Couldn’t find a recognizable header row in that paste — make sure the header row (Plan Name, Monthly/Annual Premium or Invested Amount, …) is included.');
+        return;
+      }
+      pendingImport = guesses.map(toReviewRow);
+      if (!pendingImport.length) pendingImport = [toReviewRow({})];
+      draw();
+    }
+
+    function importPanel() {
+      var wrap = Dom.el('div', { class: 'card mb-3', style: 'border:2px dashed var(--border-strong);background:var(--accent-soft)' });
+      wrap.appendChild(Dom.el('div', { class: 'flex justify-between items-center mb-2', style: 'flex-wrap:wrap;gap:8px' }, [
+        Dom.el('div', {}, [
+          Dom.el('div', { style: 'font-weight:700;font-size:12px' }, ['Import Plans']),
+          Dom.el('div', { class: 'text-tertiary' }, ['Paste a table copied from Excel/Sheets below — handles both "Regular Investment/Endowment" (Monthly/Annual Premium) and "Single Investment/Endowment" (Invested Amount) sheets, even pasted together. You’ll review every row before it’s saved.'])
+        ]),
+        Dom.el('button', {
+          class: 'btn btn-primary btn-sm', onclick: function () {
+            if (!importRawText.trim()) { Dom.modalAlert('Paste a table into the box first.'); return; }
+            runImportParse(importRawText);
+          }
+        }, ['✨ Review & Import'])
+      ]));
+      var textarea = Dom.el('textarea', {
+        rows: 4, placeholder: 'Paste a plan summary table here (copied from Excel/Sheets/a PDF works best).',
+        style: 'width:100%;resize:vertical;font-family:var(--font-ui);font-size:11px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-primary)',
+        oninput: function (e) { importRawText = e.target.value; }
+      });
+      textarea.value = importRawText;
+      wrap.appendChild(textarea);
+      if (pendingImport && pendingImport.length) wrap.appendChild(importReviewTable());
+      return wrap;
+    }
+
+    function importReviewTable() {
+      var box = Dom.el('div', { class: 'mt-3' });
+      box.appendChild(Dom.el('div', { class: 'text-secondary mb-2' }, [pendingImport.length + ' plan' + (pendingImport.length === 1 ? '' : 's') + ' found — uncheck any you don’t want, fix anything that looks wrong, then import.']));
+      var tableWrap = Dom.el('div', { class: 'table-scroll' });
+      var table = Dom.el('table', { class: 'data-table' });
+      table.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, ['', 'Company', 'Plan Name', 'Policy No.', 'Monthly Premium', 'Current Value', 'Dividend Yield %', 'Remarks'].map(function (h) { return Dom.el('th', {}, [h]); }))]));
+      var tbody = Dom.el('tbody');
+      pendingImport.forEach(function (row, i) {
+        function cell(field, isMoney) {
+          var input = Dom.el('input', {
+            type: 'text', value: String(row[field] != null ? row[field] : ''),
+            oninput: function (e) { row[field] = isMoney ? (Calc.num(e.target.value) || 0) : e.target.value; }
+          });
+          return input;
+        }
+        tbody.appendChild(Dom.el('tr', { style: row.include ? '' : 'opacity:0.4' }, [
+          Dom.el('td', {}, [Dom.el('input', { type: 'checkbox', checked: row.include ? 'checked' : null, onchange: function (e) { row.include = e.target.checked; draw(); } })]),
+          Dom.el('td', {}, [cell('company')]),
+          Dom.el('td', {}, [cell('name')]),
+          Dom.el('td', {}, [cell('policyNo')]),
+          Dom.el('td', {}, [cell('monthlyPremium', true)]),
+          Dom.el('td', {}, [cell('currentValue', true)]),
+          Dom.el('td', {}, [cell('dividendYield', true)]),
+          Dom.el('td', {}, [cell('notes')])
+        ]));
+      });
+      table.appendChild(tbody); tableWrap.appendChild(table); box.appendChild(tableWrap);
+      box.appendChild(Dom.el('div', { class: 'flex gap-2 mt-3' }, [
+        Dom.el('button', {
+          class: 'btn btn-primary btn-sm', onclick: function () {
+            var arr = Store.get('investments') || [];
+            var c2 = Store.getAll();
+            // Not knowable from the sheet itself, so defaulted to today's
+            // age rather than 0 — a 0 Start Age would make the projection
+            // table run from age 0, which is never actually right and
+            // just means more rows to scroll past before fixing it.
+            var defaultStartAge = Calc.ageFromDob((c2.personal || {}).dob) || Calc.num((c2.retirement || {}).currentAge) || 35;
+            pendingImport.filter(function (r) { return r.include; }).forEach(function (r) {
+              arr.push({
+                id: Dom.uid('inv'), name: r.name, assetType: 'Endowment',
+                monthlyPremium: Calc.num(r.monthlyPremium), startAge: defaultStartAge, stopAge: defaultStartAge + 10,
+                dividendYield: Calc.num(r.dividendYield), welcomeBonus: 0, loyaltyBonus: 0, fees: 0, feesEndAge: 0,
+                expectedReturn: Calc.num(r.dividendYield) || 4, inflation: 2, projectionAge: 65,
+                currentValue: Calc.num(r.currentValue), currentValueAge: Calc.num(r.currentValue) ? defaultStartAge : 0,
+                notes: [r.company, r.policyNo ? 'Policy No. ' + r.policyNo : '', r.notes].filter(Boolean).join(' — ')
+              });
+            });
+            Store.set('investments', arr);
+            pendingImport = null; importRawText = '';
+            draw();
+          }
+        }, ['Import ' + pendingImport.filter(function (r) { return r.include; }).length + ' Selected']),
+        Dom.el('button', { class: 'btn btn-ghost btn-sm', onclick: function () { pendingImport = null; draw(); } }, ['Cancel'])
+      ]));
+      return box;
     }
 
     // Year-by-year table for every plan, regardless of product: Year, Age,

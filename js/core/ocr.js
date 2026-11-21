@@ -775,6 +775,125 @@ var OCR = (function () {
     return results.length ? results : null;
   }
 
+  // ---------- Wealth Accumulation Planning (endowment/investment plans) ----------
+  // The two templates GE-style investment summary sheets use ("Regular
+  // Investment / Endowment" and "Single Investment / Endowment") share
+  // nearly all their columns — Regular has Monthly/Annual Premium where
+  // Single has a one-off Invested Amount instead — so one parser handles
+  // both, picked column by column from whichever header is actually
+  // present. A paste can contain either table alone, or both stacked
+  // together (the advisor copying a whole sheet at once), so this scans
+  // the WHOLE pasted text for every header-scoring row (not just the
+  // first) and treats each as starting its own block, instead of only
+  // ever recognizing a single table per paste.
+  var WEALTH_COLUMN_ALIASES = [
+    { re: /plan\s*name/i, field: 'policyName' },
+    { re: /^\s*year\s*$/i, field: 'year' },
+    { re: /monthly\s*premium/i, field: 'monthlyPremium' },
+    { re: /annual\s*premium/i, field: 'annualPremium' },
+    { re: /invested\s*amount/i, field: 'investedAmount' },
+    { re: /fund\s*from/i, field: 'fundFrom' },
+    { re: /death\s*coverage/i, field: 'deathCoverage' },
+    { re: /tpd\s*coverage/i, field: 'tpdCoverage' },
+    { re: /maturity\s*amt|approx.*maturity/i, field: 'maturityAmount' },
+    { re: /maturity\s*date/i, field: 'maturityDate' },
+    { re: /projected\s*yield/i, field: 'projectedYield' },
+    { re: /remarks/i, field: 'remarks' }
+  ];
+  function matchWealthColumnField(headerText) {
+    for (var i = 0; i < WEALTH_COLUMN_ALIASES.length; i++) {
+      if (WEALTH_COLUMN_ALIASES[i].re.test(headerText)) return WEALTH_COLUMN_ALIASES[i];
+    }
+    return null;
+  }
+
+  function cellsToWealthPlan(cells) {
+    var rawName = cells.policyName || null;
+    var company = null;
+    for (var i = 0; i < KNOWN_INSURERS.length; i++) {
+      if (rawName && new RegExp(KNOWN_INSURERS[i], 'i').test(rawName)) { company = KNOWN_INSURERS[i]; break; }
+    }
+    var policyNo = null, name = rawName;
+    if (rawName) {
+      var pn = rawName.match(/\(([A-Z]?\d{6,12})\)/);
+      if (pn) { policyNo = pn[1]; name = name.replace(pn[0], ''); }
+      if (company) name = name.replace(new RegExp(company, 'i'), '');
+      name = name.replace(/\s{2,}/g, ' ').trim();
+    }
+    var monthlyPremium = numFromCell(cells.monthlyPremium);
+    var annualPremium = numFromCell(cells.annualPremium);
+    // A Single Investment/Endowment plan (one-off Invested Amount, no
+    // ongoing premium at all) maps onto this app's own "Current
+    // Investment Value" field — it's the same concept: an amount already
+    // put in, grounding the projection to a real observed value, rather
+    // than this app's usual recurring-premium model (which an Invested
+    // Amount plan has no equivalent of).
+    var investedAmount = numFromCell(cells.investedAmount);
+    // Anything this app has no dedicated field for (Fund From, Death/TPD
+    // Coverage text, Maturity Amount/Date, the sheet's own Remarks) is
+    // combined into one readable Remarks note instead of being silently
+    // dropped — reviewed and editable like every other imported field,
+    // not hidden in a column that never gets looked at again.
+    var noteParts = [];
+    if (cells.year) noteParts.push('Year: ' + cells.year.trim());
+    if (cells.fundFrom) noteParts.push('Fund From: ' + cells.fundFrom.trim());
+    if (cells.deathCoverage) noteParts.push('Death Coverage: ' + cells.deathCoverage.trim());
+    if (cells.tpdCoverage) noteParts.push('TPD Coverage: ' + cells.tpdCoverage.trim());
+    if (cells.maturityAmount) noteParts.push('Approx. Maturity Amt: ' + cells.maturityAmount.trim());
+    if (cells.maturityDate) noteParts.push('Maturity Date: ' + cells.maturityDate.trim());
+    if (cells.remarks) noteParts.push(cells.remarks.trim());
+    return {
+      company: company, name: name, policyNo: policyNo || null,
+      monthlyPremium: monthlyPremium !== null ? monthlyPremium : (annualPremium !== null ? Math.round((annualPremium / 12) * 100) / 100 : 0),
+      currentValue: investedAmount,
+      dividendYield: numFromCell(cells.projectedYield),
+      notes: noteParts.length ? noteParts.join(' — ') : null
+    };
+  }
+
+  // A row with nothing in the Plan Name column is either a blank padding
+  // row or the sheet's own "TOTAL" summary row (which lands "TOTAL" in
+  // the No./Plan Name area, not a real plan) — neither is a real plan to
+  // import, so both are skipped the same way.
+  function looksLikeWealthTotalOrBlankRow(cells, nameIdx) {
+    var name = (cells[nameIdx] || '').trim();
+    return !name || /^total$/i.test(name);
+  }
+
+  function parseWealthAccumulationText(text) {
+    if (!text || text.indexOf('\t') === -1) return null;
+    var rows = parseDelimitedRows(text);
+    if (!rows.length) return null;
+
+    var headers = []; // [{ idx, cols, nameIdx }]
+    rows.forEach(function (r, i) {
+      var cols = r.map(function (c) { return matchWealthColumnField(c); });
+      var score = cols.filter(Boolean).length;
+      if (score >= 3) {
+        var nameIdx = cols.findIndex(function (c) { return c && c.field === 'policyName'; });
+        if (nameIdx !== -1) headers.push({ idx: i, cols: cols, nameIdx: nameIdx });
+      }
+    });
+    if (!headers.length) return null;
+
+    var plans = [];
+    headers.forEach(function (h, hi) {
+      var blockEnd = hi + 1 < headers.length ? headers[hi + 1].idx : rows.length;
+      rows.slice(h.idx + 1, blockEnd).forEach(function (r) {
+        if (looksLikeWealthTotalOrBlankRow(r, h.nameIdx)) return;
+        var cells = {};
+        r.forEach(function (c, i) {
+          var col = h.cols[i];
+          if (!col || !col.field || !c.trim()) return;
+          cells[col.field] = (cells[col.field] ? cells[col.field] + ' ' : '') + c.trim();
+        });
+        if (!cells.policyName) return;
+        plans.push(cellsToWealthPlan(cells));
+      });
+    });
+    return plans;
+  }
+
   // onProgress(pct 0-100) is optional. Returns a Promise<{raw, guesses}> —
   // `guesses` is the multi-row result (table reconstruction when the image
   // looks tabular, else the text-block fallback), always an array even for
@@ -824,6 +943,7 @@ var OCR = (function () {
     splitIntoPolicyBlocks: splitIntoPolicyBlocks, extractPolicyFromImage: extractPolicyFromImage,
     extractPoliciesFromImage: extractPoliciesFromImage, reconstructTable: reconstructTable,
     parseSpreadsheetText: parseSpreadsheetText, parseFixedOrderText: parseFixedOrderText,
-    parseSecondaryCoverageText: parseSecondaryCoverageText
+    parseSecondaryCoverageText: parseSecondaryCoverageText,
+    parseWealthAccumulationText: parseWealthAccumulationText
   };
 })();
