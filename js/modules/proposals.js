@@ -29,6 +29,8 @@ var ModuleProposals = (function () {
 
       doc.appendChild(notesSection(c));
 
+      doc.appendChild(dashboardOverview(c, rp));
+
       section(doc, 'Current Situation', [
         propRow('Monthly Income', Dom.fmtMoney(Calc.monthlyIncome(c))),
         propRow('Monthly Expenses', Dom.fmtMoney(Calc.monthlyExpenses(c))),
@@ -78,6 +80,62 @@ var ModuleProposals = (function () {
       }));
 
       container.appendChild(doc);
+    }
+
+    // A single at-a-glance scorecard up top, in three parts the advisor
+    // asked for specifically — Where You Are Today (current snapshot),
+    // Where You're Headed (retirement trajectory), and Gaps to Note (a
+    // scannable numeric list, distinct from "Problems Identified" below
+    // it, which explains WHY each one matters rather than just sizing it).
+    // KPI tiles mirror Dashboard's own look for visual consistency between
+    // what the advisor sees day-to-day and what the client receives.
+    function kpiTile(label, value, accent) {
+      return Dom.el('div', { class: 'card kpi-card' + (accent ? ' kpi-accent-' + accent : '') }, [
+        Dom.el('div', { class: 'kpi-label' }, [label]),
+        Dom.el('div', { class: 'kpi-value' }, [value])
+      ]);
+    }
+    function dashboardOverview(c, rp) {
+      var wrap = Dom.el('div', { class: 'mb-3' });
+      var efMonths = Calc.emergencyFundMonths(c);
+      var efTarget = (c.emergencyFund || {}).targetMonths || 6;
+      var savingsRate = Calc.savingsRate(c);
+      var nwGoalPct = Calc.netWorthGoalProgress(c);
+      var targetRetireAge = Calc.num((c.retirement || {}).retirementAge);
+
+      wrap.appendChild(Dom.el('div', { class: 'section-title', style: 'margin-top:0' }, ['📊 Dashboard Overview']));
+
+      wrap.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12px;margin-bottom:6px' }, ['Where You Are Today']));
+      wrap.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
+        kpiTile('Net Worth', Dom.fmtMoney(Calc.netWorth(c)), 'violet'),
+        kpiTile('Monthly Income', Dom.fmtMoney(Calc.monthlyIncome(c)), 'green'),
+        kpiTile('Monthly Expenses', Dom.fmtMoney(Calc.monthlyExpenses(c)), 'orange'),
+        kpiTile('Savings Rate', Dom.fmtPct(savingsRate), savingsRate >= 20 ? 'green' : 'red'),
+        kpiTile('Insurance Coverage', Dom.fmtMoney(Calc.totalCoverage(c)), 'red'),
+        kpiTile('Investment Assets', Dom.fmtMoney(Calc.investmentAssetsTotal(c)), 'burgundy'),
+        kpiTile('Emergency Fund', efMonths.toFixed(1) + ' mo', efMonths >= efTarget ? 'green' : 'red')
+      ]));
+
+      wrap.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12px;margin-bottom:6px' }, ['Where You’re Headed']));
+      wrap.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
+        kpiTile('Target Retirement Age', targetRetireAge || '—', 'indigo'),
+        kpiTile('Required Portfolio', Dom.fmtMoney(rp.requiredPortfolio), 'blue'),
+        kpiTile('Projected Assets', Dom.fmtMoney(rp.projectedAssets), 'burgundy'),
+        kpiTile('Retirement Readiness', rp.successProbability.toFixed(0) + '%', rp.successProbability >= 100 ? 'green' : 'yellow'),
+        kpiTile('Net Worth Goal Progress', Dom.fmtPct(nwGoalPct), nwGoalPct >= 100 ? 'green' : 'yellow')
+      ]));
+
+      wrap.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12px;margin-bottom:2px' }, ['Gaps to Note']));
+      var gapRows = [];
+      var coverageGap = Calc.coverageGap(c);
+      if (coverageGap > 0) gapRows.push(propRow('Protection Gap', Dom.fmtMoney(coverageGap)));
+      if (rp.retirementGap > 0) gapRows.push(propRow('Retirement Gap (at age ' + targetRetireAge + ')', Dom.fmtMoney(rp.retirementGap)));
+      if (savingsRate < 20) gapRows.push(propRow('Savings Rate', Dom.fmtPct(savingsRate) + ' vs 20%+ target'));
+      if (efMonths < efTarget) gapRows.push(propRow('Emergency Fund', efMonths.toFixed(1) + ' vs ' + efTarget + ' month target'));
+      if (!gapRows.length) gapRows.push(Dom.el('div', { class: 'text-secondary' }, ['No material gaps identified — current plan is well on track.']));
+      wrap.appendChild(Dom.el('div', { class: 'mb-3' }, gapRows));
+
+      return wrap;
     }
 
     // Free-text commentary the advisor can personalise per client — e.g. a
