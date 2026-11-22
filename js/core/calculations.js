@@ -1664,9 +1664,35 @@ var Calc = (function () {
       balance += interest;
 
       var isWorking = age < retirementAge;
+      // A life event can also model a change to income itself — "Stop
+      // Work" (a career break, retrenchment) or "Reduce Pay %" (going
+      // part-time, a pay cut) — for its own age range, same Starts At
+      // Age/Duration fields as any other event, rather than needing a
+      // separate mechanism. Checked here (before income is credited)
+      // rather than down with the other events, since it changes THIS
+      // year's income itself, not a one-off amount added on top of it.
+      // A Stop Work event takes full priority over any Reduce Pay event
+      // active the same year — income is either fully stopped or
+      // reduced, never both compounded.
+      var incomeEventsThisYear = lifeEvents.filter(function (ev) {
+        var effect = (ev.incomeEffect || '').toLowerCase();
+        if (effect !== 'stop work' && effect !== 'reduce pay') return false;
+        var evAge = num(ev.age);
+        var duration = Math.max(1, ev.durationYears != null && ev.durationYears !== '' ? num(ev.durationYears) : 1);
+        return age >= evAge && age < evAge + duration;
+      });
+      var incomeMultiplier = 1;
+      if (incomeEventsThisYear.some(function (ev) { return (ev.incomeEffect || '').toLowerCase() === 'stop work'; })) {
+        incomeMultiplier = 0;
+      } else {
+        incomeEventsThisYear.forEach(function (ev) {
+          if ((ev.incomeEffect || '').toLowerCase() === 'reduce pay') incomeMultiplier *= Math.max(0, 1 - num(ev.incomeReducePct) / 100);
+        });
+      }
+
       var incomeCredited = 0, retirementPayoutCredited = 0;
       if (isWorking) {
-        incomeCredited = annualIncome;
+        incomeCredited = annualIncome * incomeMultiplier;
         balance += incomeCredited;
       } else {
         retirementPayoutCredited = annualRetirementPayout;

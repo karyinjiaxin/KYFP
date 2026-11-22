@@ -115,11 +115,11 @@ var ModuleRoadmap = (function () {
       container.appendChild(payoutCard);
 
       // ---- Life events ----
-      container.appendChild(Dom.el('div', { class: 'section-title' }, ['\ud83c\udfe1 Life Events (one-off, recurring, or pay-in/payout)']));
+      container.appendChild(Dom.el('div', { class: 'section-title' }, ['\ud83c\udfe1 Life Events (one-off, recurring, pay-in/payout, or a change to income)']));
       var eventsCard = Dom.el('div', { class: 'card mb-3' });
       var events = rm.lifeEvents || [];
       if (events.length === 0) {
-        eventsCard.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, ['None yet. Covers three patterns: a one-off lump sum (home purchase, a child\u2019s education) \u2014 leave Duration at 1 year; a recurring outflow for a fixed term (a car loan repayment, insurance premiums for 20 years) \u2014 set Duration to the number of years; or a pay-in-then-payout product (a retirement/endowment plan: pay in for X years, then receive $Y/year for Z years from a later age) \u2014 add it as TWO events sharing a name: one Outflow for the pay-in phase, one Inflow (starting at the payout age) for the payout phase.']));
+        eventsCard.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, ['None yet. Covers three patterns: a one-off lump sum (home purchase, a child\u2019s education) \u2014 leave Duration at 1 year; a recurring outflow for a fixed term (a car loan repayment, insurance premiums for 20 years) \u2014 set Duration to the number of years; or a pay-in-then-payout product (a retirement/endowment plan: pay in for X years, then receive $Y/year for Z years from a later age) \u2014 add it as TWO events sharing a name: one Outflow for the pay-in phase, one Inflow (starting at the payout age) for the payout phase. Separately, "Income During This Period" on any event can simulate a career break (Stop Work) or a pay cut/going part-time (Reduce Pay %) for that same age range \u2014 independent of Amount/Direction, so an event can be a pure income change, a pure lump sum, or both together.']));
       }
       events.forEach(function (ev, idx) {
         var row = Dom.el('div', { class: 'input-row compact-row mb-2', style: 'align-items:end' }, [
@@ -134,12 +134,34 @@ var ModuleRoadmap = (function () {
           onclick: function () { var arr = Store.get('roadmap.lifeEvents'); arr.splice(idx, 1); Store.set('roadmap.lifeEvents', arr); }
         }, ['Remove']));
         eventsCard.appendChild(row);
+
+        // Optional: the SAME age range above can also simulate a change to
+        // income itself — a career break (Stop Work) or a pay cut/going
+        // part-time (Reduce Pay) — rather than needing a separate event
+        // type. Independent of Amount/Direction above: an event can be a
+        // pure income change, a pure lump sum, or both at once (e.g. a
+        // retrenchment with a one-off severance AND a pay gap after).
+        var incomeEffect = ev.incomeEffect || 'None';
+        var incomeRow = Dom.el('div', { class: 'input-row compact-row mb-1', style: 'align-items:end' }, [
+          Fields.selectInput('roadmap.lifeEvents.' + idx + '.incomeEffect', 'Income During This Period', ['None', 'Stop Work', 'Reduce Pay'])
+        ]);
+        if (incomeEffect === 'Reduce Pay') {
+          incomeRow.appendChild(Fields.numberInput('roadmap.lifeEvents.' + idx + '.incomeReducePct', 'Reduce Pay By %', { step: '1' }));
+        }
+        eventsCard.appendChild(incomeRow);
+
         var duration = ev.durationYears != null && ev.durationYears !== '' ? Calc.num(ev.durationYears) : 1;
         var endAge = Calc.num(ev.age) + Math.max(1, duration) - 1;
+        var incomeDescription = incomeEffect === 'Stop Work'
+          ? (' Income stops entirely from age ' + Calc.num(ev.age) + ' to ' + endAge + '.')
+          : incomeEffect === 'Reduce Pay'
+            ? (' Income reduced by ' + Calc.num(ev.incomeReducePct) + '% from age ' + Calc.num(ev.age) + ' to ' + endAge + '.')
+            : '';
         eventsCard.appendChild(Dom.el('div', { class: 'text-tertiary mb-3', style: 'margin-top:-8px' }, [
-          duration <= 1
+          (duration <= 1
             ? ('One-off ' + ((ev.direction || '').toLowerCase() === 'inflow' ? 'inflow' : 'outflow') + ' at age ' + Calc.num(ev.age) + '.')
             : (((ev.direction || '').toLowerCase() === 'inflow' ? 'Inflow' : 'Outflow') + ' of ' + Dom.fmtMoney(Calc.num(ev.amount)) + '/year from age ' + Calc.num(ev.age) + ' to ' + endAge + ' (' + duration + ' years).')
+          ) + incomeDescription
         ]));
       });
       eventsCard.appendChild(Dom.el('button', {
@@ -298,8 +320,12 @@ var ModuleRoadmap = (function () {
         rows.forEach(function (r) {
           var isNegative = r.balance < 0;
           var eventLabel = r.events.length ? r.events.map(function (ev) {
+            var incomeEffectLower = (ev.incomeEffect || '').toLowerCase();
+            var incomeNote = incomeEffectLower === 'stop work' ? 'Stop Work' : incomeEffectLower === 'reduce pay' ? ('Pay \u2212' + Calc.num(ev.incomeReducePct) + '%') : null;
+            if (incomeNote && !Calc.num(ev.amount)) return ev.name + ' (' + incomeNote + ')';
             var sign = (ev.direction || '').toLowerCase() === 'inflow' ? '+' : '\u2212';
-            return ev.name + ' (' + sign + Dom.fmtMoney(Calc.num(ev.amount)) + ')';
+            var amountPart = ev.name + ' (' + sign + Dom.fmtMoney(Calc.num(ev.amount)) + ')';
+            return incomeNote ? amountPart + ' + ' + incomeNote : amountPart;
           }).join(', ') : '\u2014';
           var eventColor = r.eventNet > 0 ? 'color:var(--good);font-weight:700' : r.eventNet < 0 ? 'color:var(--burgundy);font-weight:700' : '';
           var isTransitionYear = r.age === retirementAge;
