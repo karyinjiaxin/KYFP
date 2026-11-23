@@ -177,5 +177,90 @@ var Charts = (function () {
     return chart;
   }
 
-  return { render: render, destroy: destroy, themeColors: themeColors, available: available, leaderLineDonutOptions: leaderLineDonutOptions };
+  // The five Dashboard charts' configs (data + options, no canvas) — a
+  // single source of truth so Dashboard and the Summary report's "Show
+  // all Dashboard graphs" section can never drift apart from each other.
+  // Each caller renders these into its OWN canvas id (two pages can show
+  // the same chart at once in a multi-tab printout, so ids can't collide).
+  function dashboardConfigs(c) {
+    var t = themeColors();
+    var cats = c.cashflowCategories || [];
+    var colors = t.palette.concat(['#E0A458', '#6FA394', '#B98BB0', '#8B7EC8']);
+
+    var spendDonut = {
+      type: 'doughnut',
+      data: {
+        labels: cats.map(function (cat) { return cat.name; }),
+        datasets: [{ data: cats.map(Calc.categoryAnnualTotal), backgroundColor: colors }]
+      },
+      options: Object.assign({ scales: { x: false, y: false } }, leaderLineDonutOptions(t.text))
+    };
+
+    // With fewer than 2 history points a line chart just draws a dot, so
+    // show today's figures as a simple bar instead; the line chart takes
+    // over once there's a real trend to show.
+    var hist = Calc.netWorthHistorySeries(c);
+    var nwHistory = hist.length < 2 ? {
+      type: 'bar',
+      data: {
+        labels: ['Assets', 'Net Worth', 'Liabilities'],
+        datasets: [{
+          data: [Calc.totalAssets(c), Calc.netWorth(c), Calc.totalLiabilities(c)],
+          backgroundColor: [t.palette[1], t.palette[2], t.palette[3]]
+        }]
+      },
+      options: { plugins: { legend: { display: false } } }
+    } : {
+      type: 'line',
+      data: {
+        labels: hist.map(function (h) { return h.month; }),
+        datasets: [
+          { label: 'Assets', data: hist.map(function (h) { return h.assets; }), borderColor: t.palette[1], backgroundColor: 'rgba(97,28,60,0.14)', fill: true, tension: 0.3 },
+          { label: 'Net Worth', data: hist.map(function (h) { return h.netWorth; }), borderColor: t.brass, backgroundColor: t.brassSoft, fill: true, tension: 0.3 },
+          { label: 'Liabilities', data: hist.map(function (h) { return -h.liabilities; }), borderColor: t.palette[3], backgroundColor: 'rgba(214,72,74,0.15)', fill: true, tension: 0.3 }
+        ]
+      }
+    };
+
+    var savingsGoal = Calc.num((c.budgetGoals || {}).savingsRateGoal);
+    var savingsActual = Calc.savingsRate(c);
+    var savingsRateChart = {
+      type: 'bar',
+      data: { labels: ['Goal', 'Actual'], datasets: [{ data: [savingsGoal, savingsActual], backgroundColor: [t.palette[1], t.palette[0]] }] },
+      options: { plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: function (v) { return v + '%'; } } } } }
+    };
+
+    var nwGoal = Calc.num((c.budgetGoals || {}).netWorthGoal);
+    var nwCurrent = Calc.netWorth(c);
+    var nwGoalChart = {
+      type: 'bar',
+      data: { labels: ['Goal', 'Current'], datasets: [{ data: [nwGoal, nwCurrent], backgroundColor: [t.palette[1], t.brass] }] },
+      options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+    };
+
+    var invLabels = [], invValues = [];
+    (c.investments || []).forEach(function (plan) {
+      var rows = Calc.investmentPlanProjection(plan, plan.projectionAge);
+      rows.forEach(function (r, idx) {
+        if (!invLabels[idx]) invLabels[idx] = 'Age ' + r.age;
+        invValues[idx] = (invValues[idx] || 0) + r.accumulatedValue;
+      });
+    });
+    var trend = Calc.linearTrendline(invValues);
+    var investTrend = {
+      type: 'bar',
+      data: {
+        labels: invLabels,
+        datasets: [
+          { type: 'bar', label: 'Balance', data: invValues, backgroundColor: t.brass },
+          { type: 'line', label: 'Trend', data: trend, borderColor: t.palette[1], borderDash: [5, 4], pointRadius: 0, fill: false }
+        ]
+      },
+      options: { plugins: { legend: { display: false } } }
+    };
+
+    return { spendDonut: spendDonut, nwHistory: nwHistory, savingsRate: savingsRateChart, nwGoal: nwGoalChart, investTrend: investTrend };
+  }
+
+  return { render: render, destroy: destroy, themeColors: themeColors, available: available, leaderLineDonutOptions: leaderLineDonutOptions, dashboardConfigs: dashboardConfigs };
 })();

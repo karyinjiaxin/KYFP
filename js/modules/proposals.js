@@ -30,6 +30,7 @@ var ModuleProposals = (function () {
       doc.appendChild(notesSection(c));
 
       doc.appendChild(dashboardOverview(c, rp));
+      doc.appendChild(dashboardGraphsSection());
 
       section(doc, 'Current Situation', [
         propRow('Monthly Income', Dom.fmtMoney(Calc.monthlyIncome(c))),
@@ -124,6 +125,51 @@ var ModuleProposals = (function () {
           options: { indexAxis: 'y', plugins: { legend: { display: false } } }
         });
       }
+
+      // The same five charts shown on the Dashboard page itself — configs
+      // come from Charts.dashboardConfigs so they can never disagree with
+      // what the advisor sees there, just rendered into this report's own
+      // canvas ids (a multi-tab printout can show Dashboard and Summary
+      // together, so ids can't collide between the two pages).
+      var dashCfg = Charts.dashboardConfigs(c);
+      Charts.render(document.getElementById('propSpendDonut'), dashCfg.spendDonut);
+      Charts.render(document.getElementById('propNwHistory'), dashCfg.nwHistory);
+      Charts.render(document.getElementById('propSavingsRate'), dashCfg.savingsRate);
+      Charts.render(document.getElementById('propNwGoal'), dashCfg.nwGoal);
+      Charts.render(document.getElementById('propInvestTrend'), dashCfg.investTrend);
+    }
+
+    // Same chart set as the Dashboard page, reproduced here so the printed
+    // Summary carries every graph the advisor sees day-to-day, not just
+    // the Dashboard Overview's own 3 summary bars above.
+    function dashboardGraphsSection() {
+      var wrap = Dom.el('div', { class: 'mb-3' });
+      wrap.appendChild(Dom.el('div', { class: 'section-title' }, ['📈 Dashboard Graphs']));
+      var grid2 = Dom.el('div', { class: 'grid grid-2 mb-3' });
+      grid2.appendChild(Dom.el('div', { class: 'card' }, [
+        Dom.el('div', { class: 'card-title' }, ['Annual Spending by Category']),
+        Dom.el('div', { class: 'chart-wrap tall' }, [Dom.el('canvas', { id: 'propSpendDonut' })])
+      ]));
+      grid2.appendChild(Dom.el('div', { class: 'card' }, [
+        Dom.el('div', { class: 'card-title' }, ['Assets, Debt & Net Worth']),
+        Dom.el('div', { class: 'chart-wrap tall' }, [Dom.el('canvas', { id: 'propNwHistory' })])
+      ]));
+      wrap.appendChild(grid2);
+      var grid3 = Dom.el('div', { class: 'grid grid-3 mb-3' });
+      grid3.appendChild(Dom.el('div', { class: 'card' }, [
+        Dom.el('div', { class: 'card-title' }, ['Saving Rate: Goal vs Actual']),
+        Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propSavingsRate' })])
+      ]));
+      grid3.appendChild(Dom.el('div', { class: 'card' }, [
+        Dom.el('div', { class: 'card-title' }, ['Net Worth Goal vs Current']),
+        Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propNwGoal' })])
+      ]));
+      grid3.appendChild(Dom.el('div', { class: 'card' }, [
+        Dom.el('div', { class: 'card-title' }, ['Investment Balance Trend']),
+        Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propInvestTrend' })])
+      ]));
+      wrap.appendChild(grid3);
+      return wrap;
     }
 
     // A single at-a-glance scorecard up top, in three parts the advisor
