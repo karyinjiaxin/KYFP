@@ -102,7 +102,7 @@ var ModuleSettings = (function () {
       var aboutCard = Dom.el('div', { class: 'card' }, [
         Dom.el('div', { class: 'section-title', style: 'margin-top:0' }, ['ℹ️ About']),
         Dom.el('div', { class: 'text-secondary' }, [
-          'Every module reads and writes the same client master object. Editing any field — income, a policy, an investment plan — recalculates Dashboard, Financial Ratios, Retirement, and the Proposal automatically.'
+          'Every module reads and writes the same client master object. Editing any field — income, a policy, an investment plan — recalculates Dashboard, Financial Ratios, Retirement, and the Summary automatically.'
         ])
       ]);
       container.appendChild(aboutCard);

@@ -1,5 +1,5 @@
 /* ============================================================
-   proposals.js — Proposal Generator
+   proposals.js — Summary (client financial summary report)
    Pulls from every module's derived data. Print-to-PDF via
    the browser print dialog (css @media print hides chrome).
    ============================================================ */
@@ -14,7 +14,7 @@ var ModuleProposals = (function () {
       container.innerHTML = '';
       container.appendChild(Dom.el('div', { class: 'page-header no-print flex justify-between items-center' }, [
         Dom.el('div', {}, [
-          Dom.el('h1', {}, ['Proposal Generator']),
+          Dom.el('h1', {}, ['Summary']),
           Dom.el('div', { class: 'sub' }, ['Auto-compiled from every module. Use Print (top right) to export as PDF.'])
         ]),
         Dom.el('button', { class: 'btn btn-primary', onclick: function () { window.print(); } }, ['Print / Export PDF'])
@@ -23,7 +23,7 @@ var ModuleProposals = (function () {
       var doc = Dom.el('div', { class: 'card', id: 'proposalDoc' });
 
       doc.appendChild(Dom.el('div', { style: 'text-align:center;margin-bottom:24px' }, [
-        Dom.el('div', { style: 'font-family:var(--font-serif);font-size:20px;font-weight:700' }, ['Financial Advisory Proposal']),
+        Dom.el('div', { style: 'font-family:var(--font-serif);font-size:20px;font-weight:700' }, ['Financial Advisory Summary']),
         Dom.el('div', { class: 'text-secondary', style: 'margin-top:4px' }, ['Prepared for ' + ((c.personal || {}).name || 'Client') + ' · ' + new Date().toLocaleDateString('en-SG', { year: 'numeric', month: 'long', day: 'numeric' })])
       ]));
 
@@ -80,6 +80,50 @@ var ModuleProposals = (function () {
       }));
 
       container.appendChild(doc);
+
+      requestAnimationFrame(function () { drawOverviewCharts(c, rp); });
+    }
+
+    // Bar charts for the Dashboard Overview section — drawn after the doc
+    // is in the live DOM (canvases need to exist first). Canvas is a real
+    // bitmap once rendered, so these print into the PDF/printout fine,
+    // same as any other chart in the app.
+    function drawOverviewCharts(c, rp) {
+      var t = Charts.themeColors();
+      var monthlyIncome = Calc.monthlyIncome(c), monthlyExpenses = Calc.monthlyExpenses(c);
+      Charts.render(document.getElementById('propIncomeExpenseChart'), {
+        type: 'bar',
+        data: {
+          labels: ['Monthly Income', 'Monthly Expenses', 'Monthly Surplus'],
+          datasets: [{ data: [monthlyIncome, monthlyExpenses, Math.max(0, monthlyIncome - monthlyExpenses)], backgroundColor: [t.palette[2], t.palette[3], t.palette[0]] }]
+        },
+        options: { plugins: { legend: { display: false } } }
+      });
+
+      Charts.render(document.getElementById('propRetirementChart'), {
+        type: 'bar',
+        data: {
+          labels: ['Required Portfolio', 'Projected Assets'],
+          datasets: [{ data: [rp.requiredPortfolio, rp.projectedAssets], backgroundColor: [t.palette[0], rp.projectedAssets >= rp.requiredPortfolio ? (t.good || t.palette[2]) : t.palette[3]] }]
+        },
+        options: { plugins: { legend: { display: false } } }
+      });
+
+      var gapsChartCanvas = document.getElementById('propGapsChart');
+      if (gapsChartCanvas) {
+        var gapLabels = [], gapValues = [];
+        var coverageGap = Calc.coverageGap(c);
+        var efMonths = Calc.emergencyFundMonths(c);
+        var efTarget = (c.emergencyFund || {}).targetMonths || 6;
+        if (coverageGap > 0) { gapLabels.push('Protection Gap'); gapValues.push(coverageGap); }
+        if (rp.retirementGap > 0) { gapLabels.push('Retirement Gap'); gapValues.push(rp.retirementGap); }
+        if (efMonths < efTarget) { gapLabels.push('Emergency Fund Gap'); gapValues.push((efTarget - efMonths) * Calc.monthlyExpenses(c)); }
+        Charts.render(gapsChartCanvas, {
+          type: 'bar',
+          data: { labels: gapLabels, datasets: [{ data: gapValues, backgroundColor: t.palette[3] }] },
+          options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+        });
+      }
     }
 
     // A single at-a-glance scorecard up top, in three parts the advisor
@@ -115,6 +159,9 @@ var ModuleProposals = (function () {
         kpiTile('Investment Assets', Dom.fmtMoney(Calc.investmentAssetsTotal(c)), 'burgundy'),
         kpiTile('Emergency Fund', efMonths.toFixed(1) + ' mo', efMonths >= efTarget ? 'green' : 'red')
       ]));
+      wrap.appendChild(Dom.el('div', { class: 'card mb-3' }, [
+        Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propIncomeExpenseChart' })])
+      ]));
 
       wrap.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12px;margin-bottom:6px' }, ['Where You’re Headed']));
       wrap.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
@@ -124,6 +171,9 @@ var ModuleProposals = (function () {
         kpiTile('Retirement Readiness', rp.successProbability.toFixed(0) + '%', rp.successProbability >= 100 ? 'green' : 'yellow'),
         kpiTile('Net Worth Goal Progress', Dom.fmtPct(nwGoalPct), nwGoalPct >= 100 ? 'green' : 'yellow')
       ]));
+      wrap.appendChild(Dom.el('div', { class: 'card mb-3' }, [
+        Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propRetirementChart' })])
+      ]));
 
       wrap.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12px;margin-bottom:2px' }, ['Gaps to Note']));
       var gapRows = [];
@@ -132,8 +182,14 @@ var ModuleProposals = (function () {
       if (rp.retirementGap > 0) gapRows.push(propRow('Retirement Gap (at age ' + targetRetireAge + ')', Dom.fmtMoney(rp.retirementGap)));
       if (savingsRate < 20) gapRows.push(propRow('Savings Rate', Dom.fmtPct(savingsRate) + ' vs 20%+ target'));
       if (efMonths < efTarget) gapRows.push(propRow('Emergency Fund', efMonths.toFixed(1) + ' vs ' + efTarget + ' month target'));
+      var hasDollarGap = coverageGap > 0 || rp.retirementGap > 0 || efMonths < efTarget;
       if (!gapRows.length) gapRows.push(Dom.el('div', { class: 'text-secondary' }, ['No material gaps identified — current plan is well on track.']));
       wrap.appendChild(Dom.el('div', { class: 'mb-3' }, gapRows));
+      if (hasDollarGap) {
+        wrap.appendChild(Dom.el('div', { class: 'card mb-3' }, [
+          Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propGapsChart' })])
+        ]));
+      }
 
       return wrap;
     }
@@ -181,5 +237,5 @@ var ModuleProposals = (function () {
     draw();
     return Store.subscribe('*', Dom.debounce(function () { Dom.withFocusPreserved(container, draw); }, 30));
   }
-  return { title: 'Proposals', render: render };
+  return { title: 'Summary', render: render };
 })();

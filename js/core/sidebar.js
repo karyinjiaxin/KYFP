@@ -29,7 +29,7 @@ var Sidebar = (function () {
     { section: 'Client', items: [
       { key: 'sessionnotes', label: 'Session Notes', ic: 'note', col: 'pink' },
       { key: 'meetingnotes', label: 'Meeting Notes', ic: 'cal', col: 'indigo' },
-      { key: 'proposals', label: 'Proposals', ic: 'file', col: 'cyan' },
+      { key: 'proposals', label: 'Summary', ic: 'file', col: 'cyan' },
       { key: 'settings', label: 'Settings', ic: 'gear', col: 'cyan' }
     ]}
   ];

@@ -21,7 +21,7 @@ var ModuleInsurance = (function () {
       container.innerHTML = '';
       container.appendChild(Dom.el('div', { class: 'page-header' }, [
         Dom.el('h1', {}, ['Insurance Planning']),
-        Dom.el('div', { class: 'sub' }, ['Policy-level detail feeds the coverage gap, protection ratio, and Proposal automatically.'])
+        Dom.el('div', { class: 'sub' }, ['Policy-level detail feeds the coverage gap, protection ratio, and Summary automatically.'])
       ]));
 
       container.appendChild(Dom.el('div', { class: 'section-title', style: 'margin-top:0' }, ['🔎 Need Analysis']));
