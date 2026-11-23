@@ -233,6 +233,17 @@ var Calc = (function () {
     });
   }
 
+  // Death coverage ONLY — literally just the Death Coverage field on each
+  // Life policy, deliberately NOT the usual max(Death, TPD) treatment
+  // used everywhere else (Death/TPD Gap, etc.) and NOT CI/Accident/other
+  // coverage types. A policy with only TPD filled in (no Death figure)
+  // contributes 0 here, by design — this is meant to answer "how much
+  // Death benefit is there", not "how much Death/TPD protection".
+  function totalDeathOnlyCoverage(c) {
+    return sum((c.insurance || []).filter(function (p) { return p.type === 'Life'; }), function (p) { return num(p.coverage); })
+      + num(((c.insuranceQuickCoverage || {})).deathTpd);
+  }
+
   // Total Sum Assured — a literal sum of every Death/TPD/CI figure across
   // every policy, deliberately different from totalCoverage() above (which
   // takes whichever of Death/TPD is higher, since TPD is usually an
@@ -2169,7 +2180,7 @@ var Calc = (function () {
     propertyValueTotal: propertyValueTotal, propertyLoanTotal: propertyLoanTotal,
     policyAnnualPremium: policyAnnualPremium, totalAnnualPremium: totalAnnualPremium, totalMonthlyPremium: totalMonthlyPremium,
     policyCashPremium: policyCashPremium,
-    totalCoverageByType: totalCoverageByType, totalCoverage: totalCoverage, recommendedLifeCoverage: recommendedLifeCoverage,
+    totalCoverageByType: totalCoverageByType, totalCoverage: totalCoverage, totalDeathOnlyCoverage: totalDeathOnlyCoverage, recommendedLifeCoverage: recommendedLifeCoverage,
     totalSumAssured: totalSumAssured, policyTotalSumAssured: policyTotalSumAssured,
     recommendedDeathTpdCoverage: recommendedDeathTpdCoverage, recommendedCICoverage: recommendedCICoverage,
     deathTpdCoverageHeld: deathTpdCoverageHeld, ciCoverageHeld: ciCoverageHeld, deathTpdGap: deathTpdGap, ciGap: ciGap,

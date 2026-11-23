@@ -36,7 +36,7 @@ var ModuleProposals = (function () {
         propRow('Monthly Expenses', Dom.fmtMoney(Calc.monthlyExpenses(c))),
         propRow('Savings Rate', Dom.fmtPct(Calc.savingsRate(c))),
         propRow('Net Worth', Dom.fmtMoney(Calc.netWorth(c))),
-        propRow('Total Insurance Coverage', Dom.fmtMoney(Calc.totalCoverage(c))),
+        propRow('Total Death Coverage', Dom.fmtMoney(Calc.totalDeathOnlyCoverage(c))),
         propRow('Investment Assets', Dom.fmtMoney(Calc.investmentAssetsTotal(c)))
       ]);
 
@@ -155,7 +155,7 @@ var ModuleProposals = (function () {
         kpiTile('Monthly Income', Dom.fmtMoney(Calc.monthlyIncome(c)), 'green'),
         kpiTile('Monthly Expenses', Dom.fmtMoney(Calc.monthlyExpenses(c)), 'orange'),
         kpiTile('Savings Rate', Dom.fmtPct(savingsRate), savingsRate >= 20 ? 'green' : 'red'),
-        kpiTile('Insurance Coverage', Dom.fmtMoney(Calc.totalCoverage(c)), 'red'),
+        kpiTile('Death Coverage', Dom.fmtMoney(Calc.totalDeathOnlyCoverage(c)), 'red'),
         kpiTile('Investment Assets', Dom.fmtMoney(Calc.investmentAssetsTotal(c)), 'burgundy'),
         kpiTile('Emergency Fund', efMonths.toFixed(1) + ' mo', efMonths >= efTarget ? 'green' : 'red')
       ]));
