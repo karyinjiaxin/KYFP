@@ -365,9 +365,16 @@ table.data-table.compact-table td { padding: 6px 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* Print (Proposal export) */
-.print-multi-root { display: none; }
+/* Positioned off-screen rather than display:none — Chart.js sizes each
+   canvas off its container's live layout box (responsive:true), so a
+   display:none container (zero width/height at the moment the charts
+   render, before @media print ever applies) made every chart draw at
+   0x0, i.e. blank in the printed PDF. A real, fixed-width layout box
+   keeps chart rendering correct while staying invisible on screen. */
+.print-multi-root { position: fixed; top: 0; left: -99999px; width: 800px; visibility: hidden; }
 .print-only { display: none; }
 @media print {
+  .print-multi-root { position: static; left: auto; width: auto; visibility: visible; }
   .sidebar, .topbar { display: none !important; }
   /* .app-shell is "height: 100vh" on screen (so the sidebar/content fill
      the window) — print never reset it, so every printout reserved one
