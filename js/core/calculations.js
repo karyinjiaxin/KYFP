@@ -1753,16 +1753,16 @@ var Calc = (function () {
         balance += retirementPayoutCredited;
       }
 
-      // 'cpfTopUp' and 'srsContribution' entries are shown in
-      // stoppedThisYear (for the "stopped" badge/checklist) same as any
-      // other stop, but excluded from accumulatedExpenseReduction — those
-      // items were already pulled out of annualExpenses above and are
-      // handled by the isWorking/incomeMultiplier-gated term below
-      // instead, so reducing annualExpenses for them here too would
-      // double-count the same stop.
+      // 'cpfContribution', 'cpfTopUp' and 'srsContribution' entries are
+      // shown in stoppedThisYear (for the "stopped" badge/checklist) same
+      // as any other stop, but excluded from accumulatedExpenseReduction
+      // — those items were already pulled out of annualExpenses above
+      // and are handled by the isWorking/incomeMultiplier-gated term
+      // below instead, so reducing annualExpenses for them here too
+      // would double-count the same stop.
       var stoppedThisYear = expenseStops.filter(function (es) { return num(es.endAge) === age; });
       stoppedThisYear.forEach(function (es) {
-        if (es.auto === 'cpfTopUp' || es.auto === 'srsContribution') return;
+        if (es.auto === 'cpfContribution' || es.auto === 'cpfTopUp' || es.auto === 'srsContribution') return;
         accumulatedExpenseReduction += num(es.monthlyAmount) * 12 * Math.pow(1 + inflationRate, age - currentAge);
       });
 

@@ -128,16 +128,16 @@ var App = (function () {
     var stops = Store.get('roadmap.expenseStops') || [];
     var next = stops.map(function (es) { return Object.assign({}, es); });
     var changed = false;
-    var validSourceIds = { incomeTax: {}, insurancePremium: {}, cpfTopUp: {}, srsContribution: {} };
+    var validSourceIds = { incomeTax: {}, insurancePremium: {}, cpfTopUp: {}, srsContribution: {}, cpfContribution: {} };
 
     // Tags that stop at Retirement Age for the same reason Income Tax
-    // does: all three (CPF voluntary top-up, SRS contribution, and the
-    // mandatory CPF deduction's own Income Tax relief) are funded out of
-    // working income, so none of them keep going once that income does
-    // not — "if stop work or retire, match the SRS and CPF contribution
-    // stop age to end at the same time" as the client's own target
-    // Retirement Age, not a separately guessed one.
-    var retirementAgeStopTags = { autoIncomeTax: 'incomeTax', autoCpfTopUp: 'cpfTopUp', autoSrsContribution: 'srsContribution' };
+    // does: all four (the mandatory CPF deduction, CPF voluntary top-up,
+    // SRS contribution, and Income Tax itself) are funded out of working
+    // income, so none of them keep going once that income does not —
+    // "if stop work or retire, match the SRS and CPF contribution stop
+    // age to end at the same time" as the client's own target Retirement
+    // Age, not a separately guessed one.
+    var retirementAgeStopTags = { autoIncomeTax: 'incomeTax', autoCpfTopUp: 'cpfTopUp', autoSrsContribution: 'srsContribution', autoCpf: 'cpfContribution' };
 
     cats.forEach(function (cat) {
       (cat.items || []).forEach(function (item) {
