@@ -1753,12 +1753,21 @@ var Calc = (function () {
         balance += retirementPayoutCredited;
       }
 
-      var stoppedThisYear = expenseStops.filter(function (es) { return num(es.endAge) === age; });
+      // 'cpfTopUp' and 'srsContribution' auto-stops are excluded here —
+      // those items were already pulled out of annualExpenses above and
+      // are handled by the isWorking/incomeMultiplier-gated term below
+      // instead, so reducing annualExpenses for them here too would
+      // double-count the same stop.
+      var stoppedThisYear = expenseStops.filter(function (es) { return num(es.endAge) === age && es.auto !== 'cpfTopUp' && es.auto !== 'srsContribution'; });
       stoppedThisYear.forEach(function (es) {
         accumulatedExpenseReduction += num(es.monthlyAmount) * 12 * Math.pow(1 + inflationRate, age - currentAge);
       });
 
-      var expensesDeducted = Math.max(0, annualExpenses - accumulatedExpenseReduction) + cpfContributionAnnual * incomeMultiplier;
+      // CPF Contribution/Top-up/SRS Contribution are tied to working
+      // income — they stop entirely once retired (isWorking false), and
+      // while still working they scale with the same Stop Work/Reduce
+      // Pay multiplier applied to income above.
+      var expensesDeducted = Math.max(0, annualExpenses - accumulatedExpenseReduction) + cpfContributionAnnual * (isWorking ? incomeMultiplier : 0);
       balance -= expensesDeducted;
 
       // Life events now support more than a single one-off lump sum:
