@@ -1125,6 +1125,14 @@ var Calc = (function () {
     var oa = num(cpf.oa), sa = num(cpf.sa), ma = num(cpf.ma), ra = num(cpf.ra);
     var currentYear = new Date().getFullYear();
     var bhsLockedAt65 = null;
+    // A Stop Work/Reduce Pay life event on Cash Flow Roadmap means real
+    // wages (and so real mandatory CPF contribution, which is a % of
+    // wage) drop too — without this, a modelled career break would still
+    // show CPF growing as if nothing happened. Only the mandatory
+    // Ordinary/Additional Wage contribution below is scaled; voluntary
+    // top-ups are a deliberate advisor entry independent of salary, so
+    // they're untouched even during a stoppage.
+    var roadmapLifeEvents = (c.roadmap || {}).lifeEvents || [];
 
     var rows = [{
       age: currentAge, oa: oa, sa: sa, ma: ma, ra: ra, total: oa + sa + ma + ra,
@@ -1144,7 +1152,8 @@ var Calc = (function () {
       // bonus is actually paid and CPF-contributed in practice; stops at
       // Stop Work Age same as the mandatory Ordinary Wage contribution.
       var awContribution = isWorking ? annualAdditionalWageCpf(c, age).contribution : 0;
-      var mandatoryAnnual = contrib.total * 12 + awContribution;
+      var roadmapMultiplier = lifeEventIncomeMultiplier(roadmapLifeEvents, age);
+      var mandatoryAnnual = (contrib.total * 12 + awContribution) * roadmapMultiplier;
       var mandatoryOA = mandatoryAnnual * contrib.allocation.oa;
       var mandatorySAPortion = mandatoryAnnual * contrib.allocation.sa;
       var mandatoryMA = mandatoryAnnual * contrib.allocation.ma;
@@ -1583,6 +1592,28 @@ var Calc = (function () {
   // (grown by the Roadmap's own inflation assumption) deduct every year
   // regardless of work status. Life events draw down a lump sum from the
   // running balance in the specific year they happen.
+  // How much of a normal year's income (and, by extension, income-tied CPF
+  // contribution) actually applies at this age, given any Stop Work /
+  // Reduce Pay life event active then — 0 for Stop Work (full priority
+  // over a Reduce Pay active the same year, never compounded with it),
+  // otherwise the product of every active Reduce Pay event's multiplier.
+  // Shared by roadmapProjection (the income side) and cpfProjectionFull
+  // (mandatory CPF contribution scales with wage, so it's affected the
+  // same way) so a scenario can't tell the two a different story.
+  function lifeEventIncomeMultiplier(lifeEvents, age) {
+    var active = (lifeEvents || []).filter(function (ev) {
+      var effect = (ev.incomeEffect || '').toLowerCase();
+      if (effect !== 'stop work' && effect !== 'reduce pay') return false;
+      var evAge = num(ev.age);
+      var duration = Math.max(1, ev.durationYears != null && ev.durationYears !== '' ? num(ev.durationYears) : 1);
+      return age >= evAge && age < evAge + duration;
+    });
+    if (active.some(function (ev) { return (ev.incomeEffect || '').toLowerCase() === 'stop work'; })) return 0;
+    var multiplier = 1;
+    active.forEach(function (ev) { if ((ev.incomeEffect || '').toLowerCase() === 'reduce pay') multiplier *= Math.max(0, 1 - num(ev.incomeReducePct) / 100); });
+    return multiplier;
+  }
+
   function roadmapRetirementPayoutSuggestion(c) {
     // Uses dividend/investment income AT RETIREMENT AGE, not today's
     // figure — passiveIncomeMonthly() is tied to current age (correct
@@ -1663,6 +1694,19 @@ var Calc = (function () {
     var annualExpenses = monthlyExpenses(c) * 12;
     var annualRetirementPayout = retirementPayoutMonthly * 12;
     var lifeEvents = rm.lifeEvents || [];
+    // The CPF Contribution auto-item (Cashflow → Investment) is itself
+    // tied to income — during a Stop Work/Reduce Pay event, CPF
+    // contribution really does drop along with the wage it's deducted
+    // from, so it's pulled out of the general expense base and scaled by
+    // the SAME multiplier applied to income each year below, instead of
+    // being deducted in full regardless (which would double-penalize a
+    // stoppage: no income credited, yet the full CPF "expense" still
+    // subtracted as if nothing changed).
+    var cpfContributionAnnual = 0;
+    (c.cashflowCategories || []).forEach(function (cat) {
+      (cat.items || []).forEach(function (item) { if (item.autoCpf) cpfContributionAnnual += itemAnnual(item); });
+    });
+    annualExpenses -= cpfContributionAnnual;
     // Expenses that stop at a given age (mortgage paid off, an insurance
     // term ending, etc.) — not modelled as life events since they're a
     // permanent REDUCTION to the ongoing expense base from that point
@@ -1698,21 +1742,7 @@ var Calc = (function () {
       // A Stop Work event takes full priority over any Reduce Pay event
       // active the same year — income is either fully stopped or
       // reduced, never both compounded.
-      var incomeEventsThisYear = lifeEvents.filter(function (ev) {
-        var effect = (ev.incomeEffect || '').toLowerCase();
-        if (effect !== 'stop work' && effect !== 'reduce pay') return false;
-        var evAge = num(ev.age);
-        var duration = Math.max(1, ev.durationYears != null && ev.durationYears !== '' ? num(ev.durationYears) : 1);
-        return age >= evAge && age < evAge + duration;
-      });
-      var incomeMultiplier = 1;
-      if (incomeEventsThisYear.some(function (ev) { return (ev.incomeEffect || '').toLowerCase() === 'stop work'; })) {
-        incomeMultiplier = 0;
-      } else {
-        incomeEventsThisYear.forEach(function (ev) {
-          if ((ev.incomeEffect || '').toLowerCase() === 'reduce pay') incomeMultiplier *= Math.max(0, 1 - num(ev.incomeReducePct) / 100);
-        });
-      }
+      var incomeMultiplier = lifeEventIncomeMultiplier(lifeEvents, age);
 
       var incomeCredited = 0, retirementPayoutCredited = 0;
       if (isWorking) {
@@ -1728,7 +1758,7 @@ var Calc = (function () {
         accumulatedExpenseReduction += num(es.monthlyAmount) * 12 * Math.pow(1 + inflationRate, age - currentAge);
       });
 
-      var expensesDeducted = Math.max(0, annualExpenses - accumulatedExpenseReduction);
+      var expensesDeducted = Math.max(0, annualExpenses - accumulatedExpenseReduction) + cpfContributionAnnual * incomeMultiplier;
       balance -= expensesDeducted;
 
       // Life events now support more than a single one-off lump sum:
@@ -1778,6 +1808,7 @@ var Calc = (function () {
 
       if (isWorking) annualIncome *= (1 + incomeGrowthRate);
       annualExpenses *= (1 + inflationRate);
+      cpfContributionAnnual *= (1 + inflationRate);
       accumulatedExpenseReduction *= (1 + inflationRate);
     }
     return rows;
