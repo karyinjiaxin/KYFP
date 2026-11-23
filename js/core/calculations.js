@@ -1139,6 +1139,15 @@ var Calc = (function () {
     var voluntaryEndAge = cpf.voluntaryEndAge != null && cpf.voluntaryEndAge !== '' && num(cpf.voluntaryEndAge) > 0 ? num(cpf.voluntaryEndAge) : 999;
     var homePurchaseAge = cpf.homePurchaseAge != null && cpf.homePurchaseAge !== '' ? num(cpf.homePurchaseAge) : null;
     var homePurchaseOA = num(cpf.homePurchaseDownpaymentOA);
+    // One-time CPF OA effect of a Decoupling / property-share transfer
+    // (House Purchase page's Decoupling section) — a withdrawal when this
+    // client is the one buying out their spouse's share (CPF OA funding
+    // part of the lump sum), or a refund credit when this client is the
+    // one selling their share (CPF Board refunds the OA originally used
+    // for that share, plus accrued interest, from the sale proceeds).
+    var decouplingAge = cpf.decouplingAge != null && cpf.decouplingAge !== '' ? num(cpf.decouplingAge) : null;
+    var decouplingOAWithdrawal = num(cpf.decouplingOAWithdrawal);
+    var decouplingOARefund = num(cpf.decouplingOARefund);
     var oa = num(cpf.oa), sa = num(cpf.sa), ma = num(cpf.ma), ra = num(cpf.ra);
     var currentYear = new Date().getFullYear();
     var bhsLockedAt65 = null;
@@ -1235,6 +1244,13 @@ var Calc = (function () {
       // exactly when the client reaches the specified age.
       var homePurchaseThisYear = (homePurchaseAge !== null && age + 1 === homePurchaseAge) ? Math.min(oa, homePurchaseOA) : 0;
       oa = oa - homePurchaseThisYear;
+
+      // One-time Decoupling OA withdrawal/refund — same "happens exactly
+      // when the client reaches the specified age" mechanic as the home
+      // purchase downpayment above, just two-directional (withdrawal if
+      // buying out a spouse's share, refund if selling one's own).
+      var decouplingThisYear = (decouplingAge !== null && age + 1 === decouplingAge) ? Math.min(oa, decouplingOAWithdrawal) : 0;
+      oa = oa - decouplingThisYear + (decouplingAge !== null && age + 1 === decouplingAge ? decouplingOARefund : 0);
 
       var transitioned55 = false, transitionedToCpfLife = false, addedSA = 0, addedRA = 0, redirectedToOA = 0;
       // True for the transition row itself and every row after it — from
@@ -2243,6 +2259,51 @@ var Calc = (function () {
     };
   }
 
+  // ---------- DECOUPLING / PROPERTY SHARE TRANSFER BETWEEN SPOUSES ----------
+  // Models one spouse selling their ownership share of the current
+  // property to the other (a common way to free up one spouse to buy a
+  // SECOND property without ABSD, since they then own none). Each spouse
+  // is their own separate client file in this app (Couple Planning is a
+  // read-only combined view, never a shared record), so this is run once
+  // per spouse's own file with the role set to match what actually
+  // happens to THEM — the seller enters it as "Selling" on their own
+  // file, the buyer as "Buying" on theirs — and each remaps that spouse's
+  // own CPF/cash accordingly. Once the selling spouse is property-free,
+  // they use this same House Purchase page's main Property & Purchase
+  // fields, on their own file, to plan the subsequent property in their
+  // own name — already fully supported, no further code needed there.
+  function decouplingSummary(c) {
+    var d = ((c.housePurchase || {}).decoupling) || {};
+    var value = num(d.currentPropertyValue);
+    var sharePct = Dom_clamp(num(d.transferSharePct), 0, 100);
+    var active = value > 0 && sharePct > 0;
+    var transferValue = value * sharePct / 100;
+    var bsd = buyersStampDuty(transferValue);
+    var role = d.role === 'Buying' ? 'Buying' : 'Selling';
+    // Buyer pays both the transfer consideration (to the selling spouse)
+    // and the Buyer's Stamp Duty (to IRAS) — split cash/CPF same as any
+    // other property purchase; defaults to fully CPF-funded (0% cash),
+    // the same CPF-maximizing default the main purchase calculator uses
+    // for Monthly Mortgage above.
+    var cashPortionPct = Dom_clamp(d.cashPortionPct != null && d.cashPortionPct !== '' ? num(d.cashPortionPct) : 0, 0, 100);
+    var totalBuyerOutlay = transferValue + bsd;
+    var cashPortion = totalBuyerOutlay * cashPortionPct / 100;
+    var cpfPortion = totalBuyerOutlay - cashPortion;
+    // CPF Refund is keyed in by the advisor (CPF Board computes the exact
+    // figure — original OA/SA used for that share plus accrued interest —
+    // on request; not something this planner can derive on its own). Net
+    // cash to the seller is whatever of the transfer value isn't first
+    // clawed back into their own CPF account.
+    var cpfRefund = Math.max(0, num(d.cpfRefundAmount));
+    var netCashToSeller = Math.max(0, transferValue - cpfRefund);
+    return {
+      active: active, role: role, propertyValue: round0(value), transferSharePct: sharePct, transferValue: round0(transferValue),
+      bsd: round0(bsd), totalBuyerOutlay: round0(totalBuyerOutlay), cashPortionPct: cashPortionPct,
+      cashPortion: round0(cashPortion), cpfPortion: round0(cpfPortion),
+      cpfRefund: round0(cpfRefund), netCashToSeller: round0(netCashToSeller)
+    };
+  }
+
   return {
     num: num, sum: sum, ageFromDob: ageFromDob, parseDateString: parseDateString, totalCpfBalance: totalCpfBalance,
     monthlyIncome: monthlyIncome, annualIncomeExclInvestment: annualIncomeExclInvestment, monthlyExpenses: monthlyExpenses, monthlySurplus: monthlySurplus,
@@ -2299,6 +2360,7 @@ var Calc = (function () {
     additionalBuyerStampDuty: additionalBuyerStampDuty, ABSD_RATES: ABSD_RATES,
     housePurchaseLoanRules: housePurchaseLoanRules, mortgageMonthlyPayment: mortgageMonthlyPayment,
     maxLoanForPayment: maxLoanForPayment, housePurchaseLoanEligibility: housePurchaseLoanEligibility,
-    housePurchaseGrantsTotal: housePurchaseGrantsTotal, housePurchaseSummary: housePurchaseSummary
+    housePurchaseGrantsTotal: housePurchaseGrantsTotal, housePurchaseSummary: housePurchaseSummary,
+    decouplingSummary: decouplingSummary
   };
 })();

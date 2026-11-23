@@ -264,6 +264,72 @@ var ModuleHousePurchase = (function () {
         syncCard.appendChild(Dom.el('div', { class: 'text-tertiary' }, ['Enter a Purchase Price above to activate syncing into Net Worth, CPF, Cashflow and the Roadmap.']));
       }
       container.appendChild(syncCard);
+
+      // ---- Decoupling / Transfer of Property Share ----
+      renderDecoupling(container, c);
+    }
+
+    function renderDecoupling(container, c) {
+      var d = ((c.housePurchase || {}).decoupling) || {};
+      var role = d.role === 'Buying' ? 'Buying' : 'Selling';
+      var ds = Calc.decouplingSummary(c);
+      var txAge = decouplingAge(c);
+
+      container.appendChild(Dom.el('div', { class: 'section-title' }, ['🔁 Decoupling — Transfer of Property Share']));
+      var card = Dom.el('div', { class: 'card mb-3' });
+      card.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, [
+        'Models one spouse selling their ownership share of the CURRENT property to the other — a common way to free up one spouse to buy a second property without ABSD, since they then own none. Each spouse is their own separate client file in this app, so run this once per spouse’s own file, with the role set to what actually happens to THEM: the selling spouse picks "Selling" on their own file, the buying spouse picks "Buying" on theirs. Once the selling spouse is property-free, use this page’s own Property & Purchase fields above, on THEIR file, to plan their subsequent property — already fully supported.'
+      ]));
+      card.appendChild(Dom.el('div', { class: 'input-row' }, [
+        Fields.selectInput('housePurchase.decoupling.role', 'My Role in This Transaction', ['Selling', 'Buying']),
+        Fields.moneyInput('housePurchase.decoupling.currentPropertyValue', 'Current Property Market Value'),
+        Fields.numberInput('housePurchase.decoupling.transferSharePct', 'Share Being Transferred (%)', { step: '1', placeholder: '50' })
+      ]));
+      card.appendChild(Dom.el('div', { class: 'input-row mt-2' }, [
+        Fields.textInput('housePurchase.decoupling.transactionYear', 'Year of Transaction', { type: 'number', placeholder: String(new Date().getFullYear()) })
+      ]));
+
+      if (ds.active) {
+        card.appendChild(Dom.el('div', { class: 'grid grid-kpi mt-3 mb-2' }, [
+          kpiMini('Transfer Value (Lump Sum)', Dom.fmtMoney(ds.transferValue), 'Payable by the buying spouse to the selling spouse', 'blue'),
+          kpiMini('Stamp Duty (BSD) Payable', Dom.fmtMoney(ds.bsd), 'Payable by the buying spouse to IRAS', 'orange'),
+          kpiMini('Total Buyer Outlay', Dom.fmtMoney(ds.totalBuyerOutlay), 'Transfer Value + BSD', 'violet')
+        ]));
+
+        if (role === 'Buying') {
+          card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:11.5px;margin:12px 0 8px' }, ['Funding the Outlay (' + Dom.fmtMoney(ds.totalBuyerOutlay) + ' total)']));
+          card.appendChild(Dom.el('div', { class: 'input-row' }, [
+            Fields.numberInput('housePurchase.decoupling.cashPortionPct', 'Cash Portion %', { step: '1', placeholder: '0' })
+          ]));
+          card.appendChild(Dom.el('div', { class: 'text-tertiary mt-1 mb-2' }, [
+            'Currently: ' + Dom.fmtMoney(ds.cashPortion) + ' cash + ' + Dom.fmtMoney(ds.cpfPortion) + ' from CPF OA. Defaults to fully CPF-funded.'
+          ]));
+          card.appendChild(Dom.el('div', { class: 'text-secondary' }, [
+            'Rental income once sole owner: enter it directly on Cashflow → Income → Rental Income — the same field the rest of the app already reads everywhere (Dashboard, Retirement, Roadmap).'
+          ]));
+        } else {
+          card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:11.5px;margin:12px 0 8px' }, ['CPF Refund (from CPF Board, incl. accrued interest)']));
+          card.appendChild(Dom.el('div', { class: 'input-row' }, [
+            Fields.moneyInput('housePurchase.decoupling.cpfRefundAmount', 'CPF Refund Amount')
+          ]));
+          card.appendChild(Dom.el('div', { class: 'text-tertiary mt-1' }, [
+            'Request this exact figure from CPF Board before the transaction — it’s the OA/SA originally used for the share being sold, plus accrued interest, and is clawed back from the sale proceeds automatically. Net cash to you: ' + Dom.fmtMoney(ds.netCashToSeller) + ' (' + Dom.fmtMoney(ds.transferValue) + ' transfer value − ' + Dom.fmtMoney(ds.cpfRefund) + ' CPF refund).'
+          ]));
+        }
+
+        card.appendChild(Dom.el('div', { class: 'mt-3 pt-2', style: 'border-top:1px solid var(--border)' }, [
+          Dom.el('div', { class: 'text-secondary', style: 'line-height:1.7' }, [
+            role === 'Buying'
+              ? ('✓ CPF → a one-time OA withdrawal of ' + Dom.fmtMoney(ds.cpfPortion) + ' at age ' + (txAge != null ? txAge : '—') + '.')
+              : ('✓ CPF → a one-time OA refund credit of ' + Dom.fmtMoney(ds.cpfRefund) + ' at age ' + (txAge != null ? txAge : '—') + '.'),
+            Dom.el('br'),
+            '✓ Cash Flow Roadmap → a one-off "' + (role === 'Buying' ? 'Property Share Purchase — Lump Sum' : 'Property Share Sale — Net Proceeds') + '" ' + (role === 'Buying' ? 'outflow' : 'inflow') + ' of ' + Dom.fmtMoney(role === 'Buying' ? ds.cashPortion : ds.netCashToSeller) + ' at age ' + (txAge != null ? txAge : '—') + '.'
+          ])
+        ]));
+      } else {
+        card.appendChild(Dom.el('div', { class: 'text-tertiary mt-2' }, ['Enter a Current Property Market Value and Share Being Transferred % above to activate this.']));
+      }
+      container.appendChild(card);
     }
 
     function typeDescription(type) {
@@ -340,5 +406,18 @@ var ModuleHousePurchase = (function () {
     return currentAge + (purchaseYear - currentYear);
   }
 
-  return { title: 'House Purchase', render: render, housePurchaseAge: housePurchaseAge };
+  // Age the client reaches in the Decoupling section's stated Transaction
+  // Year — same mechanic as housePurchaseAge above, for the separate
+  // "Transfer of Property Share" event.
+  function decouplingAge(c) {
+    var d = ((c.housePurchase || {}).decoupling) || {};
+    var transactionYear = Calc.num(d.transactionYear);
+    if (!transactionYear) return null;
+    var currentAge = Calc.ageFromDob((c.personal || {}).dob) || Calc.num((c.retirement || {}).currentAge);
+    if (!currentAge) return null;
+    var currentYear = new Date().getFullYear();
+    return currentAge + (transactionYear - currentYear);
+  }
+
+  return { title: 'House Purchase', render: render, housePurchaseAge: housePurchaseAge, decouplingAge: decouplingAge };
 })();

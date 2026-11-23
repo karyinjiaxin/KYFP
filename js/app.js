@@ -430,6 +430,77 @@ var App = (function () {
     if (eventsChanged) Store.set('roadmap.lifeEvents', nextEvents);
   }
 
+  // Decoupling / property-share transfer (House Purchase > Decoupling
+  // section) — same two-piece sync as House Purchase above, just for a
+  // one-off transaction with this client in either role:
+  //  1) A one-time CPF OA withdrawal (Buying: funding this client's own
+  //     share of the cash/CPF split) or refund (Selling: the CPF
+  //     originally used for the sold share, plus accrued interest),
+  //     landed into CPF's own fields that cpfProjectionFull already
+  //     reads at that exact age.
+  //  2) A one-off Roadmap life event for the cash side of the same
+  //     transaction — an outflow for the buying spouse, an inflow for
+  //     the selling spouse.
+  // Rental income from the property, once this client is sole owner, is
+  // just entered directly into Cashflow's existing Rental Income field —
+  // no separate synced field needed, since that's already the one place
+  // this app tracks rental income.
+  var syncingDecoupling = false;
+  function syncDecoupling() {
+    if (syncingDecoupling) return;
+    syncingDecoupling = true;
+    try {
+      syncDecouplingImpl();
+    } finally {
+      syncingDecoupling = false;
+    }
+  }
+  function syncDecouplingImpl() {
+    var c = Store.getAll();
+    var s = Calc.decouplingSummary(c);
+    var txAge = s.active && ModuleHousePurchase ? ModuleHousePurchase.decouplingAge(c) : null;
+
+    // 1) CPF one-time OA withdrawal/refund
+    var cpfData = c.cpf || {};
+    if (s.active && txAge != null) {
+      var targetWithdrawal = s.role === 'Buying' ? s.cpfPortion : 0;
+      var targetRefund = s.role === 'Selling' ? s.cpfRefund : 0;
+      if (cpfData.decouplingAge !== txAge || cpfData.decouplingOAWithdrawal !== targetWithdrawal || cpfData.decouplingOARefund !== targetRefund) {
+        Store.set('cpf.decouplingAge', txAge);
+        Store.set('cpf.decouplingOAWithdrawal', targetWithdrawal);
+        Store.set('cpf.decouplingOARefund', targetRefund);
+      }
+    } else if (cpfData.decouplingAge != null || Calc.num(cpfData.decouplingOAWithdrawal) || Calc.num(cpfData.decouplingOARefund)) {
+      Store.set('cpf.decouplingAge', '');
+      Store.set('cpf.decouplingOAWithdrawal', 0);
+      Store.set('cpf.decouplingOARefund', 0);
+    }
+
+    // 2) Roadmap one-off life event
+    var events = Store.get('roadmap.lifeEvents');
+    if (!Array.isArray(events)) events = [];
+    var nextEvents = JSON.parse(JSON.stringify(events));
+    var existingEvent = nextEvents.filter(function (ev) { return ev.source === 'decoupling'; })[0];
+    var eventsChanged = false;
+    if (s.active && txAge != null) {
+      var amount = s.role === 'Buying' ? s.cashPortion : s.netCashToSeller;
+      var direction = s.role === 'Buying' ? 'Outflow' : 'Inflow';
+      var name = s.role === 'Buying' ? 'Property Share Purchase — Lump Sum' : 'Property Share Sale — Net Proceeds';
+      if (existingEvent) {
+        if (existingEvent.age !== txAge || existingEvent.amount !== amount || existingEvent.direction !== direction || existingEvent.name !== name) {
+          existingEvent.age = txAge; existingEvent.amount = amount; existingEvent.direction = direction; existingEvent.durationYears = 1; existingEvent.name = name; eventsChanged = true;
+        }
+      } else {
+        nextEvents.push({ name: name, age: txAge, amount: amount, direction: direction, durationYears: 1, source: 'decoupling' });
+        eventsChanged = true;
+      }
+    } else if (existingEvent) {
+      nextEvents = nextEvents.filter(function (ev) { return ev.source !== 'decoupling'; });
+      eventsChanged = true;
+    }
+    if (eventsChanged) Store.set('roadmap.lifeEvents', nextEvents);
+  }
+
   // Auto-fills Net Worth's Unit Trusts/ETFs/Stocks/Crypto from matching
   // Investment Planning plans (by Type) — but only while the field is
   // still at its untouched default (0), so a value the advisor typed in
@@ -604,6 +675,7 @@ var App = (function () {
     syncRetirementSumGrowthDefault();
     syncGapClosingDefaults();
     syncHousePurchase();
+    syncDecoupling();
     // Each sync function is also wired to its own specific path(s) below
     // for fast, targeted reaction during normal editing — but ALL of
     // them also need to re-run on a broad '*' reset (New Client, Switch
@@ -626,9 +698,12 @@ var App = (function () {
       syncRetirementSumGrowthDefault();
       syncGapClosingDefaults();
       syncHousePurchase();
+      syncDecoupling();
     });
     Store.subscribe('housePurchase', syncHousePurchase);
+    Store.subscribe('housePurchase', syncDecoupling);
     Store.subscribe('personal.dob', syncHousePurchase);
+    Store.subscribe('personal.dob', syncDecoupling);
     Store.subscribe('personal.dob', syncCurrentAgeFromDob);
     Store.subscribe('personal.employmentStatus', syncAutoCpf);
     Store.subscribe('personal.dob', syncAutoCpf);
