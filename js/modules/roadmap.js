@@ -215,7 +215,7 @@ var ModuleRoadmap = (function () {
           stopsCard.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, ['No expense items found on Cashflow yet \u2014 add some there first, or use the custom entry below.']));
         } else {
           stopsCard.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, [
-            'Items marked \ud83e\udd16 Auto below stop themselves \u2014 an Income Tax item aligns to Retirement Age, and a premium loaded from Insurance Planning (via Load Premiums from Insurance) aligns to that policy\u2019s own Start Age + Premium Term. Nothing to tick for those; change the real source (Retirement Age, or the policy\u2019s Payment Term) instead.'
+            'Items marked \ud83e\udd16 Auto below stop themselves \u2014 Income Tax, CPF Top-up, and SRS Contribution items all align to Retirement Age (all three stop being funded once working income does), and a premium loaded from Insurance Planning (via Load Premiums from Insurance) aligns to that policy\u2019s own Start Age + Premium Term. Nothing to tick for those; change the real source (Retirement Age, or the policy\u2019s Payment Term) instead.'
           ]));
           var checklist = Dom.el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:2px 16px' });
           allCashflowItems.forEach(function (item) {
@@ -246,7 +246,7 @@ var ModuleRoadmap = (function () {
             ]);
             if (isAuto) {
               checkboxRow.appendChild(Dom.el('div', { class: 'text-tertiary', style: 'margin:2px 0 2px 24px;font-size:9.5px' }, [
-                'Stops at age ' + Calc.num(autoEntry.endAge) + (autoEntry.auto === 'incomeTax' ? ' \u2014 aligned to Retirement Age' : ' \u2014 aligned to this policy\u2019s Start Age + Premium Term')
+                'Stops at age ' + Calc.num(autoEntry.endAge) + (autoEntry.auto === 'insurancePremium' ? ' \u2014 aligned to this policy\u2019s Start Age + Premium Term' : ' \u2014 aligned to Retirement Age')
               ]));
             } else if (isChecked) {
               checkboxRow.appendChild(Dom.el('div', { style: 'display:flex;align-items:center;gap:6px;margin:2px 0 2px 24px' }, [

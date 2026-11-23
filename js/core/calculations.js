@@ -1694,17 +1694,17 @@ var Calc = (function () {
     var annualExpenses = monthlyExpenses(c) * 12;
     var annualRetirementPayout = retirementPayoutMonthly * 12;
     var lifeEvents = rm.lifeEvents || [];
-    // The CPF Contribution auto-item (Cashflow → Investment) is itself
-    // tied to income — during a Stop Work/Reduce Pay event, CPF
-    // contribution really does drop along with the wage it's deducted
-    // from, so it's pulled out of the general expense base and scaled by
-    // the SAME multiplier applied to income each year below, instead of
-    // being deducted in full regardless (which would double-penalize a
-    // stoppage: no income credited, yet the full CPF "expense" still
-    // subtracted as if nothing changed).
+    // The CPF Contribution, CPF Top-up, and SRS Contribution auto-items
+    // (Cashflow → Investment) are all tied to working income — during a
+    // Stop Work/Reduce Pay event they really do drop along with the wage
+    // they're funded from, so they're pulled out of the general expense
+    // base and scaled by the SAME multiplier applied to income each year
+    // below, instead of being deducted in full regardless (which would
+    // double-penalize a stoppage: no income credited, yet the full
+    // "expense" still subtracted as if nothing changed).
     var cpfContributionAnnual = 0;
     (c.cashflowCategories || []).forEach(function (cat) {
-      (cat.items || []).forEach(function (item) { if (item.autoCpf) cpfContributionAnnual += itemAnnual(item); });
+      (cat.items || []).forEach(function (item) { if (item.autoCpf || item.autoCpfTopUp || item.autoSrsContribution) cpfContributionAnnual += itemAnnual(item); });
     });
     annualExpenses -= cpfContributionAnnual;
     // Expenses that stop at a given age (mortgage paid off, an insurance

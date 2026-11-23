@@ -128,24 +128,35 @@ var App = (function () {
     var stops = Store.get('roadmap.expenseStops') || [];
     var next = stops.map(function (es) { return Object.assign({}, es); });
     var changed = false;
-    var validSourceIds = { incomeTax: {}, insurancePremium: {} };
+    var validSourceIds = { incomeTax: {}, insurancePremium: {}, cpfTopUp: {}, srsContribution: {} };
+
+    // Tags that stop at Retirement Age for the same reason Income Tax
+    // does: all three (CPF voluntary top-up, SRS contribution, and the
+    // mandatory CPF deduction's own Income Tax relief) are funded out of
+    // working income, so none of them keep going once that income does
+    // not — "if stop work or retire, match the SRS and CPF contribution
+    // stop age to end at the same time" as the client's own target
+    // Retirement Age, not a separately guessed one.
+    var retirementAgeStopTags = { autoIncomeTax: 'incomeTax', autoCpfTopUp: 'cpfTopUp', autoSrsContribution: 'srsContribution' };
 
     cats.forEach(function (cat) {
       (cat.items || []).forEach(function (item) {
         var sourceId = cat.id + '.' + item.id;
         var monthlyAmount = Math.round(Calc.itemMonthly(item) * 100) / 100;
 
-        if (item.autoIncomeTax) {
-          validSourceIds.incomeTax[sourceId] = true;
-          var existingTax = next.filter(function (es) { return es.sourceId === sourceId && es.auto === 'incomeTax'; })[0];
-          if (!existingTax) {
-            next.push({ sourceId: sourceId, name: item.name, monthlyAmount: monthlyAmount, endAge: retirementAge, auto: 'incomeTax' });
+        Object.keys(retirementAgeStopTags).forEach(function (tag) {
+          if (!item[tag]) return;
+          var auto = retirementAgeStopTags[tag];
+          validSourceIds[auto][sourceId] = true;
+          var existing = next.filter(function (es) { return es.sourceId === sourceId && es.auto === auto; })[0];
+          if (!existing) {
+            next.push({ sourceId: sourceId, name: item.name, monthlyAmount: monthlyAmount, endAge: retirementAge, auto: auto });
             changed = true;
-          } else if (existingTax.endAge !== retirementAge || existingTax.monthlyAmount !== monthlyAmount) {
-            existingTax.endAge = retirementAge; existingTax.monthlyAmount = monthlyAmount;
+          } else if (existing.endAge !== retirementAge || existing.monthlyAmount !== monthlyAmount) {
+            existing.endAge = retirementAge; existing.monthlyAmount = monthlyAmount;
             changed = true;
           }
-        }
+        });
 
         if (item.insurancePolicyId) {
           var policy = insurance.filter(function (p) { return p.id === item.insurancePolicyId; })[0];
@@ -171,8 +182,7 @@ var App = (function () {
     // deleted, un-tagged, unlinked from its policy, or the policy became
     // Whole-of-Life (Payment Term cleared back to 0).
     var filtered = next.filter(function (es) {
-      if (es.auto === 'incomeTax') return !!validSourceIds.incomeTax[es.sourceId];
-      if (es.auto === 'insurancePremium') return !!validSourceIds.insurancePremium[es.sourceId];
+      if (validSourceIds[es.auto]) return !!validSourceIds[es.auto][es.sourceId];
       return true;
     });
     if (filtered.length !== next.length) { next = filtered; changed = true; }
