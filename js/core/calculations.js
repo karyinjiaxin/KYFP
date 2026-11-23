@@ -2280,15 +2280,42 @@ var Calc = (function () {
     var transferValue = value * sharePct / 100;
     var bsd = buyersStampDuty(transferValue);
     var role = d.role === 'Buying' ? 'Buying' : 'Selling';
-    // Buyer pays both the transfer consideration (to the selling spouse)
-    // and the Buyer's Stamp Duty (to IRAS) — split cash/CPF same as any
-    // other property purchase; defaults to fully CPF-funded (0% cash),
-    // the same CPF-maximizing default the main purchase calculator uses
-    // for Monthly Mortgage above.
-    var cashPortionPct = Dom_clamp(d.cashPortionPct != null && d.cashPortionPct !== '' ? num(d.cashPortionPct) : 0, 0, 100);
     var totalBuyerOutlay = transferValue + bsd;
-    var cashPortion = totalBuyerOutlay * cashPortionPct / 100;
-    var cpfPortion = totalBuyerOutlay - cashPortion;
+    // Financing: in practice banks require the buying spouse to fully
+    // REFINANCE the property in their sole name — one new, bigger loan
+    // that pays off whatever's left on the existing mortgage AND funds
+    // the buyout, not two separate loan facilities on the same property.
+    // 'Loan' mode models that combined refinance; 'CashCpf' (default)
+    // assumes the whole outlay is funded without any new loan.
+    var financeMode = d.financeMode === 'Loan' ? 'Loan' : 'CashCpf';
+    var existingLoanBalance = Math.max(0, num(d.existingLoanBalance));
+    // Refinancing a property already owned typically gets a LOWER LTV
+    // ceiling than a fresh purchase (banks treat it more conservatively)
+    // — defaults to the same 75% as a first loan as a simplification,
+    // editable since the actual limit varies by bank/situation.
+    var ltvPct = Dom_clamp(d.ltvPct != null && d.ltvPct !== '' ? num(d.ltvPct) : 75, 0, 100);
+    var maxLoanAmount = value * ltvPct / 100;
+    var totalNeeded = existingLoanBalance + totalBuyerOutlay;
+    var cashPortionPct = Dom_clamp(d.cashPortionPct != null && d.cashPortionPct !== '' ? num(d.cashPortionPct) : 0, 0, 100);
+    var loanAmount = 0, shortfall = totalBuyerOutlay, loanExceedsLtv = false;
+    var loanInterestRate = 0, loanTenureYears = 0, newMonthlyMortgage = 0, newMonthlyCpf = 0, newMonthlyCash = 0;
+    if (role === 'Buying' && financeMode === 'Loan') {
+      loanAmount = Dom_clamp(d.loanAmount != null && d.loanAmount !== '' ? num(d.loanAmount) : Math.min(totalNeeded, maxLoanAmount), 0, totalNeeded);
+      loanExceedsLtv = loanAmount > maxLoanAmount + 1;
+      shortfall = Math.max(0, totalNeeded - loanAmount);
+      loanInterestRate = round2(d.loanInterestRate != null && d.loanInterestRate !== '' ? num(d.loanInterestRate) : 3.5);
+      loanTenureYears = round0(num(d.loanTenureYears) || 25);
+      newMonthlyMortgage = mortgageMonthlyPayment(loanAmount, loanInterestRate, loanTenureYears);
+      newMonthlyCpf = Dom_clamp(d.monthlyCpfAmount != null && d.monthlyCpfAmount !== '' ? num(d.monthlyCpfAmount) : newMonthlyMortgage, 0, newMonthlyMortgage);
+      newMonthlyCash = newMonthlyMortgage - newMonthlyCpf;
+    }
+    // The one-time cash/CPF split below applies to whatever's actually
+    // being paid upfront: the FULL outlay in CashCpf mode, or just the
+    // shortfall left after the new loan in Loan mode (the loan itself
+    // isn't a one-time cash/CPF draw — it shows up as the new monthly
+    // mortgage instead).
+    var cashPortion = shortfall * cashPortionPct / 100;
+    var cpfPortion = shortfall - cashPortion;
     // CPF Refund is keyed in by the advisor (CPF Board computes the exact
     // figure — original OA/SA used for that share plus accrued interest —
     // on request; not something this planner can derive on its own). Net
@@ -2299,6 +2326,10 @@ var Calc = (function () {
     return {
       active: active, role: role, propertyValue: round0(value), transferSharePct: sharePct, transferValue: round0(transferValue),
       bsd: round0(bsd), totalBuyerOutlay: round0(totalBuyerOutlay), cashPortionPct: cashPortionPct,
+      financeMode: financeMode, existingLoanBalance: round0(existingLoanBalance), ltvPct: ltvPct, maxLoanAmount: round0(maxLoanAmount),
+      totalNeeded: round0(totalNeeded), loanAmount: round0(loanAmount), loanExceedsLtv: loanExceedsLtv, shortfall: round0(shortfall),
+      loanInterestRate: loanInterestRate, loanTenureYears: loanTenureYears,
+      newMonthlyMortgage: round0(newMonthlyMortgage), newMonthlyCpf: round0(newMonthlyCpf), newMonthlyCash: round0(newMonthlyCash),
       cashPortion: round0(cashPortion), cpfPortion: round0(cpfPortion),
       cpfRefund: round0(cpfRefund), netCashToSeller: round0(netCashToSeller)
     };

@@ -499,6 +499,23 @@ var App = (function () {
       eventsChanged = true;
     }
     if (eventsChanged) Store.set('roadmap.lifeEvents', nextEvents);
+
+    // 3) New combined refinance loan -> Mortgage Details (same fields the
+    // main House Purchase page writes) — only when financing the buyout
+    // via a new loan, and only while the main House Purchase page isn't
+    // ALSO actively managing those same fields for an unrelated purchase,
+    // to avoid the two sync functions fighting over the same fields.
+    var mainPurchaseActive = Calc.num((c.housePurchase || {}).purchasePrice) > 0;
+    if (s.active && s.role === 'Buying' && s.financeMode === 'Loan' && !mainPurchaseActive) {
+      var md = c.liabilities && c.liabilities.mortgageDetails;
+      if (!md || md.monthlyCash !== s.newMonthlyCash || md.monthlyCPF !== s.newMonthlyCpf ||
+        md.tenureYears !== s.loanTenureYears || md.interestRate !== s.loanInterestRate) {
+        Store.set('liabilities.mortgageDetails.monthlyCash', s.newMonthlyCash);
+        Store.set('liabilities.mortgageDetails.monthlyCPF', s.newMonthlyCpf);
+        Store.set('liabilities.mortgageDetails.tenureYears', s.loanTenureYears);
+        Store.set('liabilities.mortgageDetails.interestRate', s.loanInterestRate);
+      }
+    }
   }
 
   // Auto-fills Net Worth's Unit Trusts/ETFs/Stocks/Crypto from matching

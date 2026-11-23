@@ -297,7 +297,44 @@ var ModuleHousePurchase = (function () {
         ]));
 
         if (role === 'Buying') {
-          card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:11.5px;margin:12px 0 8px' }, ['Funding the Outlay (' + Dom.fmtMoney(ds.totalBuyerOutlay) + ' total)']));
+          card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:11.5px;margin:12px 0 8px' }, ['Financing the Outlay (' + Dom.fmtMoney(ds.totalBuyerOutlay) + ' total)']));
+          card.appendChild(Dom.el('div', { class: 'input-row mb-2' }, [
+            Fields.selectInput('housePurchase.decoupling.financeMode', 'Financing', ['CashCpf', 'Loan'])
+          ]));
+
+          if (ds.financeMode === 'Loan') {
+            card.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, [
+              'Banks require the buying spouse to fully REFINANCE the property in their sole name — one new, bigger loan that pays off whatever’s left on the existing mortgage AND funds the buyout, not two separate loan facilities on the same property.'
+            ]));
+            card.appendChild(Dom.el('div', { class: 'input-row' }, [
+              Fields.moneyInput('housePurchase.decoupling.existingLoanBalance', 'Existing Mortgage Balance (to be paid off)'),
+              Fields.numberInput('housePurchase.decoupling.ltvPct', 'LTV Limit on New Loan (%)', { step: '1', placeholder: '75' })
+            ]));
+            card.appendChild(Dom.el('div', { class: 'text-tertiary mt-1 mb-2' }, [
+              'Total Needed (existing balance + transfer value + BSD): ' + Dom.fmtMoney(ds.totalNeeded) + '. Max Loan at ' + ds.ltvPct + '% LTV: ' + Dom.fmtMoney(ds.maxLoanAmount) + '. A refinance after decoupling often gets a LOWER LTV than a fresh purchase in practice — check with the bank; the % above is editable.'
+            ]));
+            card.appendChild(Dom.el('div', { class: 'input-row' }, [
+              Fields.moneyInput('housePurchase.decoupling.loanAmount', 'New Loan Amount'),
+              Fields.numberInput('housePurchase.decoupling.loanInterestRate', 'Interest Rate % p.a.', { step: '0.01', placeholder: '3.5' }),
+              Fields.numberInput('housePurchase.decoupling.loanTenureYears', 'Loan Tenure (yrs)', { placeholder: '25' })
+            ]));
+            if (ds.loanExceedsLtv) {
+              card.appendChild(Dom.el('div', { class: 'mt-1', style: 'color:var(--bad);font-weight:600;font-size:11px' }, ['⚠ New Loan Amount exceeds the LTV limit above.']));
+            }
+            card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:11.5px;margin:12px 0 8px' }, ['New Monthly Mortgage (' + Dom.fmtMoney(ds.newMonthlyMortgage) + ')']));
+            card.appendChild(Dom.el('div', { class: 'input-row' }, [
+              Fields.moneyInput('housePurchase.decoupling.monthlyCpfAmount', 'Paid via CPF OA ($/mo)'),
+              Dom.el('div', { class: 'field' }, [
+                Dom.el('label', { class: 'field-label' }, ['Paid via Cash ($/mo)']),
+                Dom.el('div', { class: 'input-prefix' }, [Dom.el('span', {}, ['S$']), Dom.el('input', { type: 'text', value: Dom.fmtMoney(ds.newMonthlyCash).replace('S$', ''), disabled: true })])
+              ])
+            ]));
+            card.appendChild(Dom.el('div', { class: 'text-tertiary mt-1 mb-2' }, [
+              'This replaces the old mortgage on Net Worth → Mortgage Details entirely, same as a fresh House Purchase would.'
+            ]));
+          }
+
+          card.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:11.5px;margin:12px 0 8px' }, [(ds.financeMode === 'Loan' ? 'Remaining Shortfall ' : 'Upfront Cash/CPF ') + '(' + Dom.fmtMoney(ds.shortfall) + ')']));
           card.appendChild(Dom.el('div', { class: 'input-row' }, [
             Fields.numberInput('housePurchase.decoupling.cashPortionPct', 'Cash Portion %', { step: '1', placeholder: '0' })
           ]));
@@ -323,8 +360,10 @@ var ModuleHousePurchase = (function () {
               ? ('✓ CPF → a one-time OA withdrawal of ' + Dom.fmtMoney(ds.cpfPortion) + ' at age ' + (txAge != null ? txAge : '—') + '.')
               : ('✓ CPF → a one-time OA refund credit of ' + Dom.fmtMoney(ds.cpfRefund) + ' at age ' + (txAge != null ? txAge : '—') + '.'),
             Dom.el('br'),
-            '✓ Cash Flow Roadmap → a one-off "' + (role === 'Buying' ? 'Property Share Purchase — Lump Sum' : 'Property Share Sale — Net Proceeds') + '" ' + (role === 'Buying' ? 'outflow' : 'inflow') + ' of ' + Dom.fmtMoney(role === 'Buying' ? ds.cashPortion : ds.netCashToSeller) + ' at age ' + (txAge != null ? txAge : '—') + '.'
-          ])
+            '✓ Cash Flow Roadmap → a one-off "' + (role === 'Buying' ? 'Property Share Purchase — Lump Sum' : 'Property Share Sale — Net Proceeds') + '" ' + (role === 'Buying' ? 'outflow' : 'inflow') + ' of ' + Dom.fmtMoney(role === 'Buying' ? ds.cashPortion : ds.netCashToSeller) + ' at age ' + (txAge != null ? txAge : '—') + '.',
+            (role === 'Buying' && ds.financeMode === 'Loan') ? Dom.el('br') : null,
+            (role === 'Buying' && ds.financeMode === 'Loan') ? ('✓ Net Worth → Mortgage Details: Monthly Payment (Cash) = ' + Dom.fmtMoney(ds.newMonthlyCash) + ', Monthly Payment (CPF/OA) = ' + Dom.fmtMoney(ds.newMonthlyCpf) + ', Loan Tenure = ' + ds.loanTenureYears + ' yrs, Interest Rate = ' + ds.loanInterestRate + '% (only while no main House Purchase is also active on this file).') : null
+          ].filter(Boolean))
         ]));
       } else {
         card.appendChild(Dom.el('div', { class: 'text-tertiary mt-2' }, ['Enter a Current Property Market Value and Share Being Transferred % above to activate this.']));
