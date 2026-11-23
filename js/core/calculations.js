@@ -1598,7 +1598,20 @@ var Calc = (function () {
     return cpfLifeMonthly + dividendAtRetirement + otherPassive;
   }
 
-  function roadmapProjection(c) {
+  // opts.baseline strips every Life Event and the auto-added House
+  // Purchase mortgage expense item, for a "if nothing changes — no home
+  // purchase, no new planned life events" scenario to compare the real
+  // (with whatever's actually been planned) projection against. Clones
+  // `c` rather than mutating it, so the caller's own data is untouched.
+  function roadmapProjection(c, opts) {
+    if (opts && opts.baseline) {
+      var clone = JSON.parse(JSON.stringify(c));
+      clone.roadmap = Object.assign({}, clone.roadmap, { lifeEvents: [] });
+      clone.cashflowCategories = (clone.cashflowCategories || []).map(function (cat) {
+        return Object.assign({}, cat, { items: (cat.items || []).filter(function (i) { return !i.autoHousePurchase; }) });
+      });
+      c = clone;
+    }
     var currentAge = ageFromDob((c.personal || {}).dob) || num((c.retirement || {}).currentAge) || 30;
     // Always shows at least to age 90, even if Life Expectancy elsewhere
     // is set lower — Life Expectancy there drives the retirement funding

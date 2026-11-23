@@ -31,6 +31,7 @@ var ModuleProposals = (function () {
 
       doc.appendChild(dashboardOverview(c, rp));
       doc.appendChild(dashboardGraphsSection());
+      doc.appendChild(scenarioComparisonSection(c));
 
       section(doc, 'Current Situation', [
         propRow('Monthly Income', Dom.fmtMoney(Calc.monthlyIncome(c))),
@@ -82,7 +83,7 @@ var ModuleProposals = (function () {
 
       container.appendChild(doc);
 
-      requestAnimationFrame(function () { drawOverviewCharts(c, rp); });
+      requestAnimationFrame(function () { drawOverviewCharts(c, rp); drawScenarioChart(c); });
     }
 
     // Bar charts for the Dashboard Overview section — drawn after the doc
@@ -170,6 +171,85 @@ var ModuleProposals = (function () {
       ]));
       wrap.appendChild(grid3);
       return wrap;
+    }
+
+    // A plain-English baseline statement, then — if the advisor has
+    // actually added any scenario (a Life Event on Cash Flow Roadmap, or
+    // an active House Purchase) — a before/after comparison against that
+    // baseline. The baseline is "if nothing changes": working to the
+    // client's own target Retirement Age, no home purchase, no planned
+    // life events — i.e. Calc.roadmapProjection(c, {baseline:true}), NOT
+    // a hardcoded age. Scenarios themselves are added on Roadmap/House
+    // Purchase (already full-featured there), not re-entered here — this
+    // section only shows the IMPACT of whatever's already been planned.
+    function scenarioComparisonSection(c) {
+      var wrap = Dom.el('div', { class: 'mb-3' });
+      var retirementAge = Calc.num((c.retirement || {}).retirementAge);
+      var name = (c.personal || {}).name || 'The client';
+      var baselineRows = Calc.roadmapProjection(c, { baseline: true });
+      var baselineAtRetirement = baselineRows.filter(function (r) { return r.age === retirementAge; })[0] || baselineRows[baselineRows.length - 1];
+
+      wrap.appendChild(Dom.el('div', { class: 'section-title' }, ['🧭 Baseline Projection']));
+      if (baselineAtRetirement) {
+        var monthlyAtRetirement = baselineAtRetirement.retirementPayoutCredited / 12;
+        wrap.appendChild(Dom.el('div', { class: 'card mb-3', style: 'font-size:12.5px;line-height:1.7' }, [
+          'If ' + name + ' continues working until age ' + retirementAge + ' — with no home purchase and no other planned life events — they are projected to retire with a savings balance of around ',
+          Dom.el('b', {}, [Dom.fmtMoney(baselineAtRetirement.balance)]),
+          ' and approximately ',
+          Dom.el('b', {}, [Dom.fmtMoney(monthlyAtRetirement) + '/month']),
+          ' in retirement income (CPF LIFE, dividends, and other passive income).'
+        ]));
+      } else {
+        wrap.appendChild(Dom.el('div', { class: 'card mb-3 text-secondary' }, ['Set Current Age, Retirement Age and Life Expectancy on Retirement Planning to see a baseline projection.']));
+      }
+
+      var activeEvents = (c.roadmap || {}).lifeEvents || [];
+      var housePurchaseActive = Calc.num((c.housePurchase || {}).purchasePrice) > 0;
+      wrap.appendChild(Dom.el('div', { class: 'section-title' }, ['🔀 Scenario Impact']));
+      if (!activeEvents.length && !housePurchaseActive) {
+        wrap.appendChild(Dom.el('div', { class: 'card mb-3 text-secondary' }, [
+          'No scenarios added yet. Add one on Cash Flow Roadmap’s Life Events (e.g. Stop Work, Reduce Pay, a car loan) or House Purchase Planning — this section will show the impact on the cashflow automatically, compared to the baseline above.'
+        ]));
+      } else {
+        var scenarioRows = Calc.roadmapProjection(c);
+        var scenarioAtRetirement = scenarioRows.filter(function (r) { return r.age === retirementAge; })[0] || scenarioRows[scenarioRows.length - 1];
+        var baselineLowest = baselineRows.reduce(function (min, r) { return r.balance < min.balance ? r : min; }, baselineRows[0] || { balance: 0, age: 0 });
+        var scenarioLowest = scenarioRows.reduce(function (min, r) { return r.balance < min.balance ? r : min; }, scenarioRows[0] || { balance: 0, age: 0 });
+
+        var scenarioNames = activeEvents.map(function (ev) { return ev.name || 'Unnamed Event'; });
+        if (housePurchaseActive) scenarioNames.push('Home Purchase');
+        wrap.appendChild(Dom.el('div', { class: 'text-secondary mb-2' }, ['Active scenarios: ' + scenarioNames.join(', ') + '.']));
+
+        wrap.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
+          kpiTile('Baseline Lowest Balance', Dom.fmtMoney(baselineLowest.balance), baselineLowest.balance < 0 ? 'red' : 'green'),
+          kpiTile('With Scenarios: Lowest Balance', Dom.fmtMoney(scenarioLowest.balance), scenarioLowest.balance < 0 ? 'red' : 'green'),
+          kpiTile('Baseline Balance at Retirement', Dom.fmtMoney(baselineAtRetirement ? baselineAtRetirement.balance : 0), 'blue'),
+          kpiTile('With Scenarios: Balance at Retirement', Dom.fmtMoney(scenarioAtRetirement ? scenarioAtRetirement.balance : 0), (scenarioAtRetirement && baselineAtRetirement && scenarioAtRetirement.balance < baselineAtRetirement.balance) ? 'red' : 'blue')
+        ]));
+        wrap.appendChild(Dom.el('div', { class: 'card mb-3' }, [
+          Dom.el('div', { class: 'card-title' }, ['Savings Balance: Baseline vs With Scenarios']),
+          Dom.el('div', { class: 'chart-wrap tall' }, [Dom.el('canvas', { id: 'propScenarioChart' })])
+        ]));
+      }
+      return wrap;
+    }
+
+    function drawScenarioChart(c) {
+      var canvas = document.getElementById('propScenarioChart');
+      if (!canvas) return;
+      var t = Charts.themeColors();
+      var baselineRows = Calc.roadmapProjection(c, { baseline: true });
+      var scenarioRows = Calc.roadmapProjection(c);
+      Charts.render(canvas, {
+        type: 'line',
+        data: {
+          labels: baselineRows.map(function (r) { return r.age; }),
+          datasets: [
+            { label: 'Baseline', data: baselineRows.map(function (r) { return r.balance; }), borderColor: t.palette[1], backgroundColor: 'transparent', tension: 0.2 },
+            { label: 'With Scenarios', data: scenarioRows.map(function (r) { return r.balance; }), borderColor: t.palette[3], backgroundColor: 'transparent', tension: 0.2, borderDash: [6, 4] }
+          ]
+        }
+      });
     }
 
     // A single at-a-glance scorecard up top, in three parts the advisor
