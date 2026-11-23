@@ -60,7 +60,7 @@ var ModuleProposals = (function () {
       section(doc, 'Recommendations — Investments', [
         propRow('Current Investment Value', Dom.fmtMoney(Calc.investmentValueAtAge(c, currentAge))),
         propRow('Monthly Dividend Income', Dom.fmtMoney(Calc.totalMonthlyDividendAtAge(c, currentAge))),
-        propRow('Suggested Monthly Surplus to Invest', Dom.fmtMoney(Math.max(0, Calc.monthlySurplus(c) * 0.7)))
+        propRow('Monthly Investment Needed to Close Retirement Gap', Dom.fmtMoney(Calc.monthlyInvestmentToCloseGap(c)))
       ]);
 
       section(doc, 'Recommendations — Retirement', [

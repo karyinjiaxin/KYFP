@@ -26,7 +26,7 @@ var ModuleNetWorth = (function () {
   var ASSET_TYPE_SUGGESTION = { 'unitTrusts': 'Unit Trust', 'etfs': 'ETF', 'stocks': 'Shares', 'crypto': 'Crypto' };
 
   var ASSET_FIELDS = [
-    ['cash', 'Cash'], ['stocks', 'Stocks'], ['etfs', 'ETFs'],
+    ['cash', 'Cash'], ['moneyMarketFunds', 'Money Market Funds'], ['stocks', 'Stocks'], ['etfs', 'ETFs'],
     ['unitTrusts', 'Unit Trusts'], ['crypto', 'Crypto'], ['cpfIs', 'CPF Investment Scheme (CPF IS)'], ['srsInvestments', 'SRS Investments'],
     ['business', 'Business'], ['insuranceCashValue', 'Insurance Cash Value']
   ];
@@ -138,9 +138,9 @@ var ModuleNetWorth = (function () {
         Charts.render(document.getElementById('nwAllocChart'), {
           type: 'doughnut',
           data: {
-            labels: ['Cash', 'CPF', 'Stocks', 'ETFs', 'Unit Trusts', 'Crypto', 'CPF IS', 'SRS Investments', 'Property (net)', 'Business', 'Insurance CV'],
+            labels: ['Cash', 'Money Market Funds', 'CPF', 'Stocks', 'ETFs', 'Unit Trusts', 'Crypto', 'CPF IS', 'SRS Investments', 'Property (net)', 'Business', 'Insurance CV'],
             datasets: [{
-              data: [Calc.num(a.cash), Calc.totalCpfBalance(c), Calc.num(a.stocks), Calc.num(a.etfs), Calc.num(a.unitTrusts), Calc.num(a.crypto), Calc.num(a.cpfIs), Calc.num(a.srsInvestments), Calc.propertyValueTotal(c) - Calc.propertyLoanTotal(c), Calc.num(a.business), Calc.num(a.insuranceCashValue)],
+              data: [Calc.num(a.cash), Calc.num(a.moneyMarketFunds), Calc.totalCpfBalance(c), Calc.num(a.stocks), Calc.num(a.etfs), Calc.num(a.unitTrusts), Calc.num(a.crypto), Calc.num(a.cpfIs), Calc.num(a.srsInvestments), Calc.propertyValueTotal(c) - Calc.propertyLoanTotal(c), Calc.num(a.business), Calc.num(a.insuranceCashValue)],
               backgroundColor: t.palette.concat(['#E0A458', '#6FA394', '#B98BB0', '#8B7EC8', '#5B8FA8'])
             }]
           },

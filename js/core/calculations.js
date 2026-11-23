@@ -136,7 +136,7 @@ var Calc = (function () {
     // — adding investmentValueAtAge() on top would double-count the same
     // money once via these fields and again by recomputing the plans
     // directly.
-    return num(a.cash) + totalCpfBalance(c) + num(a.stocks) + num(a.etfs) + num(a.unitTrusts) +
+    return num(a.cash) + num(a.moneyMarketFunds) + totalCpfBalance(c) + num(a.stocks) + num(a.etfs) + num(a.unitTrusts) +
       num(a.crypto) + propertyValueTotal(c) + num(a.business) + num(a.insuranceCashValue) +
       num(a.cpfIs) + num(a.srsInvestments);
   }
@@ -151,7 +151,7 @@ var Calc = (function () {
   function netWorth(c) { return totalAssets(c) - totalLiabilities(c); }
   function liquidAssets(c) {
     var a = c.assets || {};
-    return num(a.cash) + num(a.stocks) + num(a.etfs) + num(a.unitTrusts) + num(a.crypto);
+    return num(a.cash) + num(a.moneyMarketFunds) + num(a.stocks) + num(a.etfs) + num(a.unitTrusts) + num(a.crypto);
   }
   function investmentAssetsTotal(c) {
     var a = c.assets || {};
@@ -841,6 +841,23 @@ var Calc = (function () {
       retirementGap: retirementGap,
       successProbability: successProbability
     };
+  }
+
+  // The actual extra monthly amount (on top of whatever's already being
+  // invested) needed to fully close the Retirement Gap by retirement
+  // age — the PMT of a future-value-of-annuity formula solved for the
+  // gap itself, growing at the same Expected Return used everywhere else
+  // in Retirement Planning. Not a generic "invest some of your surplus"
+  // suggestion; this is the number that actually gets Projected Assets
+  // up to Required Portfolio.
+  function monthlyInvestmentToCloseGap(c) {
+    var rp = retirementProjection(c);
+    if (rp.retirementGap <= 0 || rp.yearsToRetirement <= 0) return 0;
+    var r = c.retirement || {};
+    var monthlyGrowth = num(r.expectedReturn) / 100 / 12;
+    var n = rp.yearsToRetirement * 12;
+    var annuityFactor = monthlyGrowth > 0 ? (Math.pow(1 + monthlyGrowth, n) - 1) / monthlyGrowth : n;
+    return annuityFactor > 0 ? rp.retirementGap / annuityFactor : 0;
   }
 
   // Year-by-year path from today's actual assets to the projected balance
@@ -2250,7 +2267,7 @@ var Calc = (function () {
     totalInvestmentValue: totalInvestmentValue, totalAnnualDividend: totalAnnualDividend, totalMonthlyDividend: totalMonthlyDividend,
     investmentValueAtAge: investmentValueAtAge, totalAnnualDividendAtAge: totalAnnualDividendAtAge, totalMonthlyDividendAtAge: totalMonthlyDividendAtAge,
     passiveIncomeMonthly: passiveIncomeMonthly,
-    retirementProjection: retirementProjection, financialIndependencePercent: financialIndependencePercent, projectedRetirementAge: projectedRetirementAge,
+    retirementProjection: retirementProjection, monthlyInvestmentToCloseGap: monthlyInvestmentToCloseGap, financialIndependencePercent: financialIndependencePercent, projectedRetirementAge: projectedRetirementAge,
     retirementAssetTrajectory: retirementAssetTrajectory, requiredPortfolioPace: requiredPortfolioPace,
     projectedDesiredMonthlyIncome: projectedDesiredMonthlyIncome,
     retirementAssetSplit: retirementAssetSplit, retirementMilestones: retirementMilestones, additionalMonthlyToCloseGap: additionalMonthlyToCloseGap,
