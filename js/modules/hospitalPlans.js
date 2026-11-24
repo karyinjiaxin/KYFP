@@ -267,6 +267,14 @@ var InsurerRates = (function () {
   var PLAN_TIERS = { 'Great Eastern': ['P Plus', 'P Prime', 'A Plus', 'B Plus'], 'AIA': ['A', 'B', 'B Lite'] };
   var RIDER_OPTIONS = { 'Great Eastern': GE_RIDER_OPTIONS, 'AIA': AIA_RIDER_OPTIONS };
   var ADDON_OPTIONS = { 'Great Eastern': [{ label: 'N/A', family: null, key: null }], 'AIA': AIA_ADDON_OPTIONS };
+  // Full product names for the Plan dropdown — the stored value stays
+  // the short tier key the rate tables are keyed by ('A', 'P Plus', …),
+  // but the dropdown itself shows the real product name so it doesn't
+  // read as a bare, out-of-context letter.
+  var PLAN_LABELS = {
+    'Great Eastern': { 'P Plus': 'GREAT SupremeHealth P Plus', 'P Prime': 'GREAT SupremeHealth P Prime', 'A Plus': 'GREAT SupremeHealth A Plus', 'B Plus': 'GREAT SupremeHealth B Plus' },
+    'AIA': { 'A': 'AIA HealthShield Gold Max A', 'B': 'AIA HealthShield Gold Max B', 'B Lite': 'AIA HealthShield Gold Max B Lite' }
+  };
 
   // MediShield Life base premium — a SEPARATE layer from the "Additional
   // Private Insurance Coverage" above, fully payable by MediSave (not
@@ -323,6 +331,7 @@ var InsurerRates = (function () {
   return {
     GSH_PLANS: PLAN_TIERS['Great Eastern'],
     PLAN_TIERS: PLAN_TIERS,
+    PLAN_LABELS: PLAN_LABELS,
     RIDER_OPTIONS: RIDER_OPTIONS,
     ADDON_OPTIONS: ADDON_OPTIONS,
     mainPlanRate: mainPlanRate,
@@ -455,7 +464,7 @@ var ModuleHospitalPlans = (function () {
       var todayRow = geProjection(p, todaysAge, todaysAge)[0] || { cash: 0, medisave: 0 };
 
       var insurer = p.insurer || 'Great Eastern';
-      var planLabel = insurer === 'AIA' ? 'AIA HealthShield Gold Max ' + p.gshPlan : 'GREAT SupremeHealth ' + p.gshPlan;
+      var planLabel = (InsurerRates.PLAN_LABELS[insurer] || {})[p.gshPlan] || ((insurer === 'AIA' ? 'AIA HealthShield Gold Max ' : 'GREAT SupremeHealth ') + p.gshPlan);
       var riderLabel = p.riderFamily ? ' + ' + (p.riderFamily === 'GTC2' ? 'GTC2 ' : p.riderFamily === 'AIA' ? 'AIA Max ' : 'GTC ') + p.riderKey : '';
       var addonLabel = p.addonFamily ? ' + AIA Max A Cancer Care Booster' : '';
       var card = Dom.el('div', { class: 'card mb-3 compact-fields' });
@@ -469,7 +478,7 @@ var ModuleHospitalPlans = (function () {
       // ---- Client / Plan / Rider selectors ----
       card.appendChild(Dom.el('div', { class: 'input-row mb-3' }, [
         insurerSelect(p, idx),
-        Fields.selectInput(base + 'gshPlan', 'Plan', InsurerRates.PLAN_TIERS[insurer] || InsurerRates.PLAN_TIERS['Great Eastern']),
+        planSelect(p, idx),
         riderSelect(p, idx),
         addonSelect(p, idx)
       ].filter(Boolean)));
@@ -566,6 +575,34 @@ var ModuleHospitalPlans = (function () {
       insurers.forEach(function (name) {
         var o = Dom.el('option', { value: name }, [name]);
         if (name === current) o.setAttribute('selected', 'selected');
+        select.appendChild(o);
+      });
+      wrap.appendChild(select);
+      return wrap;
+    }
+
+    // Shows each tier's full product name (e.g. "AIA HealthShield Gold
+    // Max A") rather than the bare tier key the rate tables are keyed by
+    // internally — Fields.selectInput only supports plain-string options
+    // whose value IS the label shown, so this is its own select, same
+    // pattern as insurerSelect/riderSelect above.
+    function planSelect(p, idx) {
+      var base = 'hospitalPlans.' + idx + '.';
+      var insurer = p.insurer || 'Great Eastern';
+      var tiers = InsurerRates.PLAN_TIERS[insurer] || InsurerRates.PLAN_TIERS['Great Eastern'];
+      var labels = InsurerRates.PLAN_LABELS[insurer] || {};
+      var wrap = Dom.el('div', { class: 'field' });
+      wrap.appendChild(Dom.el('label', { class: 'field-label' }, ['Plan']));
+      var select = Dom.el('select', {
+        onchange: function (e) {
+          var arr = Store.get('hospitalPlans');
+          arr[idx].gshPlan = e.target.value;
+          Store.set('hospitalPlans', arr);
+        }
+      });
+      tiers.forEach(function (tier) {
+        var o = Dom.el('option', { value: tier }, [labels[tier] || tier]);
+        if (tier === p.gshPlan) o.setAttribute('selected', 'selected');
         select.appendChild(o);
       });
       wrap.appendChild(select);
