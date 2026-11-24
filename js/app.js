@@ -701,8 +701,12 @@ var App = (function () {
     // Resize every live chart right before printing — print CSS forces a
     // real 2/3-column grid (see styles.css), and Chart.js's own
     // ResizeObserver isn't reliably catching that layout change across
-    // browsers on its own.
-    window.addEventListener('beforeprint', function () { Charts.resizeAll(); });
+    // browsers on its own. The leader-lines donut also swaps to Chart.js's
+    // own built-in legend for the print snapshot (see
+    // Charts.usePrintSafeLegend's own comment for why), swapping back once
+    // printing is done.
+    window.addEventListener('beforeprint', function () { Charts.resizeAll(); Charts.usePrintSafeLegend(); });
+    window.addEventListener('afterprint', function () { Charts.restoreNormalLegend(); });
     syncCurrentAgeFromDob();
     syncAutoCpf();
     syncAutoIncomeTax();

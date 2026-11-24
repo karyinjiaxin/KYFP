@@ -205,23 +205,54 @@ var Charts = (function () {
     Object.keys(instances).forEach(function (id) {
       try {
         var chart = instances[id];
-        // Chart.js animates a resize over several hundred ms by default —
-        // window.print() takes its snapshot almost immediately after this
-        // runs (on 'beforeprint'), so it was catching a mid-animation
-        // frame where the arc geometry hadn't finished settling into its
-        // final layout yet, while a custom label (drawn fresh every
-        // frame, correctly tied to its own slice's CURRENT transitional
-        // position) could land somewhere that reads as mismatched once
-        // the arcs finish animating a moment later — on screen this
-        // never shows since the animation always completes normally.
-        // Disabling animation first makes the resize instant, so there's
-        // no transitional frame for the print snapshot to ever catch.
         var original = chart.options.animation;
         chart.options.animation = false;
         chart.resize();
         chart.options.animation = original;
       } catch (e) {}
     });
+  }
+
+  // The leader-lines donut (pulled-out labels connected by a hand-drawn
+  // line, used so the legend can be hidden) only has room to position
+  // those labels reliably at the width it's normally shown on screen.
+  // Printing forces it into a narrower column (see the chart-row-2/
+  // chart-row-3 print CSS), and at that width the collision-avoidance
+  // math has to push labels further to avoid overlapping each other —
+  // far enough, on a small enough circle, that a label can end up
+  // sitting next to a DIFFERENT slice than the one its leader line
+  // actually traces back to, reading as mismatched at a glance even
+  // though the line itself is technically still correct (confirmed by
+  // hovering the arc on screen, where the tooltip always shows the true
+  // value — this was never a data bug). Rather than trying to make that
+  // custom geometry robust at every possible width, print swaps to
+  // Chart.js's own built-in legend (a plain swatch + text pairing Chart.js
+  // manages natively, so it can't ever attach to the wrong slice) for the
+  // print snapshot specifically, then swaps back once printing is done so
+  // the normal pulled-out-label look returns on screen.
+  var printLegendSwap = [];
+  function usePrintSafeLegend() {
+    printLegendSwap = [];
+    Object.keys(instances).forEach(function (id) {
+      var chart = instances[id];
+      var plugins = chart.options && chart.options.plugins;
+      if (!plugins || !plugins.leaderLines) return;
+      printLegendSwap.push({ chart: chart, legendDisplay: plugins.legend ? plugins.legend.display : undefined, leaderLinesEnabled: plugins.leaderLines.enabled });
+      plugins.leaderLines.enabled = false;
+      plugins.legend = plugins.legend || {};
+      plugins.legend.display = true;
+      chart.update('none');
+    });
+  }
+  function restoreNormalLegend() {
+    printLegendSwap.forEach(function (entry) {
+      var plugins = entry.chart.options && entry.chart.options.plugins;
+      if (!plugins) return;
+      plugins.leaderLines.enabled = entry.leaderLinesEnabled;
+      if (plugins.legend) plugins.legend.display = entry.legendDisplay;
+      try { entry.chart.update('none'); } catch (e) {}
+    });
+    printLegendSwap = [];
   }
 
   function render(canvas, config) {
@@ -348,5 +379,9 @@ var Charts = (function () {
     return { spendDonut: spendDonut, nwHistory: nwHistory, savingsRate: savingsRateChart, nwGoal: nwGoalChart, investTrend: investTrend };
   }
 
-  return { render: render, destroy: destroy, resizeAll: resizeAll, themeColors: themeColors, available: available, leaderLineDonutOptions: leaderLineDonutOptions, dashboardConfigs: dashboardConfigs, categoryColors: categoryColors };
+  return {
+    render: render, destroy: destroy, resizeAll: resizeAll, themeColors: themeColors, available: available,
+    leaderLineDonutOptions: leaderLineDonutOptions, dashboardConfigs: dashboardConfigs, categoryColors: categoryColors,
+    usePrintSafeLegend: usePrintSafeLegend, restoreNormalLegend: restoreNormalLegend
+  };
 })();
