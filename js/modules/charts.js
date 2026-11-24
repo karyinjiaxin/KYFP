@@ -203,7 +203,24 @@ var Charts = (function () {
   // 'beforeprint' instead of relying on that observer alone.
   function resizeAll() {
     Object.keys(instances).forEach(function (id) {
-      try { instances[id].resize(); } catch (e) {}
+      try {
+        var chart = instances[id];
+        // Chart.js animates a resize over several hundred ms by default —
+        // window.print() takes its snapshot almost immediately after this
+        // runs (on 'beforeprint'), so it was catching a mid-animation
+        // frame where the arc geometry hadn't finished settling into its
+        // final layout yet, while a custom label (drawn fresh every
+        // frame, correctly tied to its own slice's CURRENT transitional
+        // position) could land somewhere that reads as mismatched once
+        // the arcs finish animating a moment later — on screen this
+        // never shows since the animation always completes normally.
+        // Disabling animation first makes the resize instant, so there's
+        // no transitional frame for the print snapshot to ever catch.
+        var original = chart.options.animation;
+        chart.options.animation = false;
+        chart.resize();
+        chart.options.animation = original;
+      } catch (e) {}
     });
   }
 
