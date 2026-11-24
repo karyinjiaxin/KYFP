@@ -167,7 +167,7 @@ var InsurerRates = (function () {
 
   // Which riders are offered against each GSH plan tier, and which rider
   // family (GTC vs GTC2) each belongs to.
-  var RIDER_OPTIONS = {
+  var GE_RIDER_OPTIONS = {
     'P Plus': [
       { label: 'N/A', family: null, key: null },
       { label: 'GTC P Signature (renewal only)', family: 'GTC', key: 'P Signature' },
@@ -179,12 +179,106 @@ var InsurerRates = (function () {
     'B Plus': [{ label: 'N/A', family: null, key: null }, { label: 'GTC B', family: 'GTC', key: 'B' }, { label: 'GTC2 B', family: 'GTC2', key: 'B' }]
   };
 
+  // ---------- AIA HEALTHSHIELD GOLD MAX (main plan, MediSave + Cash) ----------
+  // [fromAge, toAge, premium, cashOutlay] — same shape/derivation as GSH
+  // above. Source: AIA Renewal Notice "Premium rates" Table 1 (Annual
+  // premium for AIA HSG Max, S$ incl. 9% GST, Singapore Citizens/PRs),
+  // information correct as at 26 Aug 2025, supplied directly by the user.
+  // Cash outlay = max(0, premium − Additional Withdrawal Limit), using
+  // AIA's own AWL bands (same page): 1–40: S$300, 41–70: S$600, 71+:
+  // S$900 — cross-checked against the same document's separate detailed
+  // breakdown table for the 'A' tier (every age band matches exactly).
+  var AIA_HSG = {
+    'A': [
+      [1, 20, 310.00, 10.00], [21, 25, 310.00, 10.00], [26, 30, 399.00, 99.00],
+      [31, 35, 484.00, 184.00], [36, 40, 539.00, 239.00], [41, 45, 1216.00, 616.00],
+      [46, 50, 1319.00, 719.00], [51, 55, 1879.00, 1279.00], [56, 60, 2387.00, 1787.00],
+      [61, 65, 3225.00, 2625.00], [66, 70, 4739.00, 4139.00], [71, 73, 6295.00, 5395.00],
+      [74, 75, 6972.00, 6072.00], [76, 78, 8718.00, 7818.00], [79, 80, 9721.00, 8821.00],
+      [81, 83, 10333.00, 9433.00], [84, 85, 10437.00, 9537.00], [86, 88, 10541.00, 9641.00],
+      [89, 90, 10647.00, 9747.00], [91, 93, 11180.00, 10280.00], [94, 95, 11740.00, 10840.00],
+      [96, 98, 12559.00, 11659.00], [99, 200, 12687.00, 11787.00]
+    ],
+    'B': [
+      [1, 20, 120.00, 0], [21, 25, 128.00, 0], [26, 30, 128.00, 0],
+      [31, 35, 197.00, 0], [36, 40, 197.00, 0], [41, 45, 385.00, 0],
+      [46, 50, 385.00, 0], [51, 55, 539.00, 0], [56, 60, 587.00, 0],
+      [61, 65, 856.00, 256.00], [66, 70, 1598.00, 998.00], [71, 73, 2210.00, 1310.00],
+      [74, 75, 2389.00, 1489.00], [76, 78, 3400.00, 2500.00], [79, 80, 3414.00, 2514.00],
+      [81, 83, 3479.00, 2579.00], [84, 85, 3567.00, 2667.00], [86, 88, 3686.00, 2786.00],
+      [89, 90, 3886.00, 2986.00], [91, 93, 4216.00, 3316.00], [94, 95, 4551.00, 3651.00],
+      [96, 98, 5086.00, 4186.00], [99, 200, 5475.00, 4575.00]
+    ],
+    'B Lite': [
+      [1, 20, 69.26, 0], [21, 25, 71.30, 0], [26, 30, 71.30, 0],
+      [31, 35, 103.90, 0], [36, 40, 103.90, 0], [41, 45, 165.02, 0],
+      [46, 50, 202.70, 0], [51, 55, 219.00, 0], [56, 60, 242.44, 0],
+      [61, 65, 366.72, 0], [66, 70, 590.84, 0], [71, 73, 876.06, 0],
+      [74, 75, 1028.86, 128.86], [76, 78, 1394.58, 494.58], [79, 80, 1394.58, 494.58],
+      [81, 83, 1444.50, 544.50], [84, 85, 1494.42, 594.42], [86, 88, 1660.46, 760.46],
+      [89, 90, 1930.42, 1030.42], [91, 93, 2109.70, 1209.70], [94, 95, 2297.14, 1397.14],
+      [96, 98, 2597.66, 1697.66], [99, 200, 2813.62, 1913.62]
+    ]
+  };
+
+  // ---------- AIA riders (fully cash-payable, no MediSave) ----------
+  // AIA Max VitalCare — only offered with the HSG Max 'A' tier (AIA Max
+  // VitalHealth, a different/cheaper product line, is the one offered
+  // with B/B Lite, but isn't in the source document's detailed table and
+  // isn't included here — N/A is the only option for those tiers until
+  // that data is confirmed). Source: AIA Renewal Notice's detailed
+  // "Breakdown of standard premiums for AIA MAX VITALCARE and AIA MAX A
+  // CANCER CARE BOOSTER" table (standard level premiums, annual, incl.
+  // GST), supplied directly by the user — every age band cross-checked
+  // against that same user's own actual billed premium (age 38 -> S$1,846
+  // VitalCare + S$61.90 Cancer Care Booster, both match exactly).
+  var AIA_VITALCARE = [
+    [1, 15, 1418.00], [16, 20, 1418.00], [21, 25, 1418.00], [26, 30, 1418.00],
+    [31, 35, 1846.00], [36, 40, 1846.00], [41, 45, 3076.00], [46, 50, 3076.00],
+    [51, 55, 3782.00], [56, 60, 5186.00], [61, 65, 7475.00], [66, 70, 9659.00],
+    [71, 73, 10247.00], [74, 75, 11245.00], [76, 78, 11706.00], [79, 80, 12170.00],
+    [81, 83, 12289.00], [84, 85, 12412.00], [86, 88, 12539.00], [89, 90, 12660.00],
+    [91, 93, 12785.00], [94, 95, 12915.00], [96, 98, 13044.00], [99, 200, 13176.00]
+  ];
+  // AIA Max A Cancer Care Booster — an optional add-on rider stacked on
+  // top of the main VitalCare rider above (not an alternative to it), so
+  // it's a separate rider slot in the UI rather than another option in
+  // the same dropdown.
+  var AIA_CANCER_BOOSTER = [
+    [1, 15, 35.50], [16, 20, 35.50], [21, 25, 35.50], [26, 30, 45.80],
+    [31, 35, 55.80], [36, 40, 61.90], [41, 45, 140.00], [46, 50, 152.20],
+    [51, 55, 216.50], [56, 60, 275.00], [61, 65, 371.50], [66, 70, 546.20],
+    [71, 73, 725.50], [74, 75, 803.70], [76, 78, 1004.90], [79, 80, 1120.50],
+    [81, 83, 1191.20], [84, 85, 1203.20], [86, 88, 1215.00], [89, 90, 1227.30],
+    [91, 93, 1288.80], [94, 95, 1353.30], [96, 98, 1447.70], [99, 200, 1462.50]
+  ];
+
+  var AIA_RIDER_OPTIONS = {
+    'A': [{ label: 'N/A', family: null, key: null }, { label: 'AIA Max VitalCare', family: 'AIA', key: 'VitalCare' }],
+    'B': [{ label: 'N/A', family: null, key: null }],
+    'B Lite': [{ label: 'N/A', family: null, key: null }]
+  };
+  var AIA_ADDON_OPTIONS = [{ label: 'N/A', family: null, key: null }, { label: 'AIA Max A Cancer Care Booster', family: 'AIA_ADDON', key: 'CancerCareBooster' }];
+
+  // Plan tiers and rider options are keyed by insurer first — a plan
+  // picked under one insurer can only ever offer that SAME insurer's own
+  // riders (e.g. Great Eastern SupremeHealth can never show "AIA Max
+  // VitalCare" as an option), matching how these products actually work.
+  var PLAN_TIERS = { 'Great Eastern': ['P Plus', 'P Prime', 'A Plus', 'B Plus'], 'AIA': ['A', 'B', 'B Lite'] };
+  var RIDER_OPTIONS = { 'Great Eastern': GE_RIDER_OPTIONS, 'AIA': AIA_RIDER_OPTIONS };
+  var ADDON_OPTIONS = { 'Great Eastern': [{ label: 'N/A', family: null, key: null }], 'AIA': AIA_ADDON_OPTIONS };
+
   // MediShield Life base premium — a SEPARATE layer from the "Additional
   // Private Insurance Coverage" above, fully payable by MediSave (not
-  // subject to the Additional Withdrawal Limit at all). The total premium
-  // for an Integrated Shield Plan is this PLUS the additional private
-  // coverage premium. Source: same GSH Premiums Table, "MediShield Life
-  // Premiums" column, accurate as of 1 October 2025 per the document.
+  // subject to the Additional Withdrawal Limit at all), and the SAME
+  // nationally-administered scheme regardless of which insurer's
+  // Integrated Shield Plan it's paired with — one shared table covers
+  // every insurer. The total premium for an Integrated Shield Plan is
+  // this PLUS the additional private coverage premium. Source: GSH
+  // Premiums Table (accurate as of 1 October 2025) and independently
+  // cross-checked against the AIA Renewal Notice's own "Basic MediShield
+  // Life premium" column — identical figures in both, as expected for a
+  // single national scheme.
   var MEDISHIELD_LIFE = [
     [1, 20, 200], [21, 30, 295], [31, 40, 503], [41, 50, 637], [51, 60, 903],
     [61, 65, 1131], [66, 70, 1326], [71, 73, 1643], [74, 75, 1816], [76, 78, 2027],
@@ -194,8 +288,10 @@ var InsurerRates = (function () {
     return lookupBand(MEDISHIELD_LIFE, age)[2];
   }
 
-  function gshRate(plan, age) {
-    var band = lookupBand(GSH[plan] || GSH['P Plus'], age);
+  function mainPlanRate(insurer, plan, age) {
+    var table = insurer === 'AIA' ? AIA_HSG : GSH;
+    var fallback = insurer === 'AIA' ? 'A' : 'P Plus';
+    var band = lookupBand(table[plan] || table[fallback], age);
     var mshl = medishieldLifePremium(age);
     // mshl is fully MediSave-payable and NOT subject to the AWL; only the
     // "additional private coverage" portion (band[2]) has its own
@@ -212,15 +308,25 @@ var InsurerRates = (function () {
   }
   function riderRate(family, key, age) {
     if (!family || !key) return 0;
-    var table = family === 'GTC2' ? GTC2 : GTC;
+    var table = family === 'GTC2' ? GTC2 : family === 'GTC' ? GTC : family === 'AIA' ? AIA_VITALCARE_TABLES : family === 'AIA_ADDON' ? AIA_ADDON_TABLES : null;
+    if (!table) return 0;
     var band = lookupBand(table[key] || [[1, 200, 0]], age);
     return band[2];
   }
+  // riderRate above looks up `table[key]` — AIA's rider tables are flat
+  // arrays (one product each), not keyed objects like GTC/GTC2 (several
+  // tiers sharing one family), so they're wrapped in a single-key object
+  // here rather than changing riderRate's lookup shape for just one case.
+  var AIA_VITALCARE_TABLES = { 'VitalCare': AIA_VITALCARE };
+  var AIA_ADDON_TABLES = { 'CancerCareBooster': AIA_CANCER_BOOSTER };
 
   return {
-    GSH_PLANS: ['P Plus', 'P Prime', 'A Plus', 'B Plus'],
+    GSH_PLANS: PLAN_TIERS['Great Eastern'],
+    PLAN_TIERS: PLAN_TIERS,
     RIDER_OPTIONS: RIDER_OPTIONS,
-    gshRate: gshRate,
+    ADDON_OPTIONS: ADDON_OPTIONS,
+    mainPlanRate: mainPlanRate,
+    gshRate: function (plan, age) { return mainPlanRate('Great Eastern', plan, age); }, // back-compat alias
     riderRate: riderRate
   };
 })();
@@ -287,7 +393,7 @@ var ModuleHospitalPlans = (function () {
       ]));
       container.appendChild(Dom.el('div', { class: 'card mb-3', style: 'background:var(--accent-soft);border-color:var(--accent)' }, [
         Dom.el('div', { class: 'text-tertiary', style: 'line-height:1.5' }, [
-          '\u2139 Illustration only, not financial advice. GREAT SupremeHealth and GREAT TotalCare/TotalCare 2 premiums are Great Eastern\u2019s own published rates (effective 1 April 2026 for GSH/GTC2, 1 November 2025 for legacy GTC), inclusive of GST, for standard lives. Actual premiums depend on underwriting, any loadings, and rate revisions after this date \u2014 confirm current rates with Great Eastern before presenting to a client.'
+          '\u2139 Illustration only, not financial advice. GREAT SupremeHealth and GREAT TotalCare/TotalCare 2 premiums are Great Eastern\u2019s own published rates (effective 1 April 2026 for GSH/GTC2, 1 November 2025 for legacy GTC); AIA HealthShield Gold Max and AIA Max VitalCare/Cancer Care Booster premiums are AIA\u2019s own published rates (information correct as at 26 Aug 2025) \u2014 both inclusive of GST, for standard lives. Actual premiums depend on underwriting, any loadings, and rate revisions after these dates \u2014 confirm current rates with the insurer before presenting to a client.'
         ])
       ]));
 
@@ -310,7 +416,7 @@ var ModuleHospitalPlans = (function () {
       arr.push({
         id: Dom.uid('hosp'), company: 'Great Eastern', policyName: 'GREAT SupremeHealth',
         coverage: 1500000, endAge: 99,
-        insurer: 'Great Eastern', gshPlan: 'P Plus', riderFamily: null, riderKey: null, paymentMode: 'MediSave + Cash',
+        insurer: 'Great Eastern', gshPlan: 'P Plus', riderFamily: null, riderKey: null, addonFamily: null, addonKey: null, paymentMode: 'MediSave + Cash',
         projectFrom: "Today's Age", funding: { mode: 'Regular', amount: 0, growthRate: 5, dividendRate: 4 }
       });
       Store.set('hospitalPlans', arr);
@@ -348,20 +454,25 @@ var ModuleHospitalPlans = (function () {
       var last = proj[proj.length - 1] || { cumCash: 0, cumMedisave: 0 };
       var todayRow = geProjection(p, todaysAge, todaysAge)[0] || { cash: 0, medisave: 0 };
 
+      var insurer = p.insurer || 'Great Eastern';
+      var planLabel = insurer === 'AIA' ? 'AIA HealthShield Gold Max ' + p.gshPlan : 'GREAT SupremeHealth ' + p.gshPlan;
+      var riderLabel = p.riderFamily ? ' + ' + (p.riderFamily === 'GTC2' ? 'GTC2 ' : p.riderFamily === 'AIA' ? 'AIA Max ' : 'GTC ') + p.riderKey : '';
+      var addonLabel = p.addonFamily ? ' + AIA Max A Cancer Care Booster' : '';
       var card = Dom.el('div', { class: 'card mb-3 compact-fields' });
       card.appendChild(Dom.el('div', { class: 'policy-head' }, [
         Dom.el('div', {}, [
-          Dom.el('div', { class: 'policy-title' }, ['GREAT SupremeHealth ' + p.gshPlan + (p.riderFamily ? ' + ' + (p.riderFamily === 'GTC2' ? 'GTC2 ' : 'GTC ') + p.riderKey : '')]),
-          Dom.el('div', { class: 'policy-sub' }, [p.insurer || 'Great Eastern'])
+          Dom.el('div', { class: 'policy-title' }, [planLabel + riderLabel + addonLabel]),
+          Dom.el('div', { class: 'policy-sub' }, [insurer])
         ])
       ]));
 
       // ---- Client / Plan / Rider selectors ----
       card.appendChild(Dom.el('div', { class: 'input-row mb-3' }, [
-        Fields.selectInput(base + 'insurer', 'Insurer', ['Great Eastern']),
-        Fields.selectInput(base + 'gshPlan', 'Plan (GSH)', InsurerRates.GSH_PLANS),
-        riderSelect(p, idx)
-      ]));
+        insurerSelect(p, idx),
+        Fields.selectInput(base + 'gshPlan', 'Plan', InsurerRates.PLAN_TIERS[insurer] || InsurerRates.PLAN_TIERS['Great Eastern']),
+        riderSelect(p, idx),
+        addonSelect(p, idx)
+      ].filter(Boolean)));
       card.appendChild(Dom.el('div', { class: 'input-row narrow-row mb-3' }, [
         Fields.selectInput(base + 'paymentMode', 'Payment Method', ['MediSave + Cash', 'Full Cash'])
       ]));
@@ -390,13 +501,13 @@ var ModuleHospitalPlans = (function () {
 
       // ---- Today's premium ----
       card.appendChild(Dom.el('div', { class: 'grid grid-3', style: 'margin-bottom:12px' }, [
-        heroStat("Today's Premium (Age " + todaysAge + ")", Dom.fmtMoney(todayRow.cash + todayRow.medisave), 'GSH cash ' + Dom.fmtMoney(todayRow.gshCash) + ' + GTC cash ' + Dom.fmtMoney(todayRow.gtcCash) + ' + MediSave ' + Dom.fmtMoney(todayRow.medisave), '#8E1D42'),
-        heroStat('Total MediSave Premiums', Dom.fmtMoney(last.cumMedisave), range.from + '\u2013' + range.to + ' cumulative, GSH only', '#3E8FB1'),
-        heroStat('Total Cash Premiums (GSH + GTC)', Dom.fmtMoney(last.cumCash), range.from + '\u2013' + range.to + ' cumulative', '#611C3C')
+        heroStat("Today's Premium (Age " + todaysAge + ")", Dom.fmtMoney(todayRow.cash + todayRow.medisave), 'Main plan cash ' + Dom.fmtMoney(todayRow.gshCash) + ' + rider cash ' + Dom.fmtMoney(todayRow.gtcCash) + ' + MediSave ' + Dom.fmtMoney(todayRow.medisave), '#8E1D42'),
+        heroStat('Total MediSave Premiums', Dom.fmtMoney(last.cumMedisave), range.from + '\u2013' + range.to + ' cumulative, main plan only', '#3E8FB1'),
+        heroStat('Total Cash Premiums (Main Plan + Rider)', Dom.fmtMoney(last.cumCash), range.from + '\u2013' + range.to + ' cumulative', '#611C3C')
       ]));
       card.appendChild(Dom.el('div', { class: 'grid grid-2', style: 'margin-bottom:16px' }, [
-        heroStat('\u2014 of which GSH Cash', Dom.fmtMoney(last.cumGshCash), 'GREAT SupremeHealth, above the CPF Additional Withdrawal Limit', '#7C6FB0'),
-        heroStat('\u2014 of which GTC Cash', Dom.fmtMoney(last.cumGtcCash), (p.riderKey ? (p.riderFamily === 'GTC2' ? 'GTC2 ' : 'GTC ') + p.riderKey : 'No rider selected') + ', fully cash-payable (no MediSave)', '#1C9166')
+        heroStat('\u2014 of which Main Plan Cash', Dom.fmtMoney(last.cumGshCash), planLabel + ', above the CPF Additional Withdrawal Limit', '#7C6FB0'),
+        heroStat('\u2014 of which Rider Cash', Dom.fmtMoney(last.cumGtcCash), ((p.riderKey ? riderLabel.replace(/^ \+ /, '') : 'No rider selected') + addonLabel) + ', fully cash-payable (no MediSave)', '#1C9166')
       ]));
 
       card.appendChild(Dom.el('div', { class: 'input-row mb-3' }, [
@@ -429,17 +540,92 @@ var ModuleHospitalPlans = (function () {
       return card;
     }
 
+    // Switching Insurer resets the Plan to that insurer's own first tier
+    // and clears the Rider/Add-on, which otherwise might carry over a
+    // value that's invalid under the new insurer (e.g. a Great Eastern
+    // plan tier like "P Plus" while Insurer now reads "AIA") — the exact
+    // "not possible to have GE SupremeHealth with AIA Max VitalCare"
+    // mismatch this restructure is meant to prevent.
+    function insurerSelect(p, idx) {
+      var base = 'hospitalPlans.' + idx + '.';
+      var insurers = Object.keys(InsurerRates.PLAN_TIERS);
+      var current = p.insurer || 'Great Eastern';
+      var wrap = Dom.el('div', { class: 'field' });
+      wrap.appendChild(Dom.el('label', { class: 'field-label' }, ['Insurer']));
+      var select = Dom.el('select', {
+        onchange: function (e) {
+          var arr = Store.get('hospitalPlans');
+          var newInsurer = e.target.value;
+          arr[idx].insurer = newInsurer;
+          arr[idx].gshPlan = InsurerRates.PLAN_TIERS[newInsurer][0];
+          arr[idx].riderFamily = null; arr[idx].riderKey = null;
+          arr[idx].addonFamily = null; arr[idx].addonKey = null;
+          Store.set('hospitalPlans', arr);
+        }
+      });
+      insurers.forEach(function (name) {
+        var o = Dom.el('option', { value: name }, [name]);
+        if (name === current) o.setAttribute('selected', 'selected');
+        select.appendChild(o);
+      });
+      wrap.appendChild(select);
+      return wrap;
+    }
+
     function riderSelect(p, idx) {
       var base = 'hospitalPlans.' + idx + '.';
-      var options = InsurerRates.RIDER_OPTIONS[p.gshPlan] || InsurerRates.RIDER_OPTIONS['P Plus'];
+      var insurer = p.insurer || 'Great Eastern';
+      var byInsurer = InsurerRates.RIDER_OPTIONS[insurer] || InsurerRates.RIDER_OPTIONS['Great Eastern'];
+      var options = byInsurer[p.gshPlan] || byInsurer[Object.keys(byInsurer)[0]];
       var wrap = Dom.el('div', { class: 'field' });
       wrap.appendChild(Dom.el('label', { class: 'field-label' }, ['Rider']));
       var current = p.riderFamily && p.riderKey ? (p.riderFamily + '|' + p.riderKey) : 'N/A';
+      // A rider carried over from a different Plan tier (e.g. switching
+      // from 'A' to 'B' with VitalCare still selected) is no longer a
+      // valid option here — clear it immediately rather than silently
+      // keep charging a rider the UI no longer shows as selected.
+      if (current !== 'N/A' && !options.some(function (opt) { return (opt.family ? (opt.family + '|' + opt.key) : 'N/A') === current; })) {
+        var arrFix = Store.get('hospitalPlans');
+        arrFix[idx].riderFamily = null; arrFix[idx].riderKey = null;
+        Store.set('hospitalPlans', arrFix);
+        current = 'N/A';
+      }
       var select = Dom.el('select', {
         onchange: function (e) {
           var arr = Store.get('hospitalPlans');
           if (e.target.value === 'N/A') { arr[idx].riderFamily = null; arr[idx].riderKey = null; }
           else { var parts = e.target.value.split('|'); arr[idx].riderFamily = parts[0]; arr[idx].riderKey = parts[1]; }
+          Store.set('hospitalPlans', arr);
+        }
+      });
+      options.forEach(function (opt) {
+        var value = opt.family ? (opt.family + '|' + opt.key) : 'N/A';
+        var o = Dom.el('option', { value: value }, [opt.label]);
+        if (value === current) o.setAttribute('selected', 'selected');
+        select.appendChild(o);
+      });
+      wrap.appendChild(select);
+      return wrap;
+    }
+
+    // Add-on riders (currently only AIA Max A Cancer Care Booster) stack
+    // on top of the main Rider above rather than replacing it, so they're
+    // a separate dropdown — hidden entirely for an insurer with no add-on
+    // product in this dataset (Great Eastern), rather than showing a
+    // dropdown whose only option is ever N/A.
+    function addonSelect(p, idx) {
+      var base = 'hospitalPlans.' + idx + '.';
+      var insurer = p.insurer || 'Great Eastern';
+      var options = InsurerRates.ADDON_OPTIONS[insurer];
+      if (!options || options.length < 2) return null;
+      var wrap = Dom.el('div', { class: 'field' });
+      wrap.appendChild(Dom.el('label', { class: 'field-label' }, ['Add-on Rider']));
+      var current = p.addonFamily && p.addonKey ? (p.addonFamily + '|' + p.addonKey) : 'N/A';
+      var select = Dom.el('select', {
+        onchange: function (e) {
+          var arr = Store.get('hospitalPlans');
+          if (e.target.value === 'N/A') { arr[idx].addonFamily = null; arr[idx].addonKey = null; }
+          else { var parts = e.target.value.split('|'); arr[idx].addonFamily = parts[0]; arr[idx].addonKey = parts[1]; }
           Store.set('hospitalPlans', arr);
         }
       });

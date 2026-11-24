@@ -1511,14 +1511,16 @@ var Calc = (function () {
   // given plan's premium. Foreigners on "Full Cash" payment mode can't
   // use MediSave, so their MediSave-eligible portion folds into cash.
   function hospitalPlanPremiumRow(policy, age) {
-    var gsh = InsurerRates.gshRate(policy.gshPlan, age);
+    var insurer = policy.insurer || 'Great Eastern';
+    var gsh = InsurerRates.mainPlanRate(insurer, policy.gshPlan, age);
     var riderPremium = InsurerRates.riderRate(policy.riderFamily, policy.riderKey, age);
+    var addonPremium = InsurerRates.riderRate(policy.addonFamily, policy.addonKey, age);
     var isFullCash = policy.paymentMode === 'Full Cash' || policy.paymentMode === 'Full Cash Only (Foreigners)';
     var gshCash = gsh.cash + (isFullCash ? gsh.medisave : 0);
-    var gtcCash = riderPremium;
+    var gtcCash = riderPremium + addonPremium;
     var cash = gshCash + gtcCash;
     var medisave = isFullCash ? 0 : gsh.medisave;
-    return { age: age, totalPremium: gsh.premium + riderPremium, cash: cash, medisave: medisave, gshCash: gshCash, gtcCash: gtcCash };
+    return { age: age, totalPremium: gsh.premium + riderPremium + addonPremium, cash: cash, medisave: medisave, gshCash: gshCash, gtcCash: gtcCash };
   }
   // "Today's Age" (the default projectFrom) anchors to the client's
   // CURRENT age so a plan started years ago still projects forward from
