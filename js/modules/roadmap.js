@@ -99,7 +99,10 @@ var ModuleRoadmap = (function () {
       var retirementAgeForPayout = Calc.num((c.retirement || {}).retirementAge) || 55;
       var cpfLifeStartAgeForDisplay = Math.max(retirementAgeForPayout, 65);
       var payoutOverride = rm.retirementPayoutOverride;
-      var payoutActive = payoutOverride != null && payoutOverride !== '';
+      // Matches Calc.roadmapProjection's own override check — a cleared
+      // money field reads back as 0, not blank, so only a positive value
+      // counts as a deliberate override (see calculations.js for why).
+      var payoutActive = Calc.num(payoutOverride) > 0;
       container.appendChild(Dom.el('div', { class: 'section-title' }, ['\ud83d\udcb0 Retirement Payout (monthly)']));
       var payoutCard = Dom.el('div', { class: 'card mb-3' });
       payoutCard.appendChild(Dom.el('div', { class: 'input-row compact-row narrow-row' }, [

@@ -1764,7 +1764,15 @@ var Calc = (function () {
     var interestRate = (rm.interestRate != null && rm.interestRate !== '' ? num(rm.interestRate) : 0.05) / 100;
     var inflationRate = (rm.inflationRate != null && rm.inflationRate !== '' ? num(rm.inflationRate) : 2) / 100;
     var incomeGrowthRate = num((c.cashflow || {}).incomeGrowthRate) / 100;
-    var payoutOverridden = rm.retirementPayoutOverride != null && rm.retirementPayoutOverride !== '';
+    // A MONEY input field (Fields.moneyInput) always commits a number on
+    // clearing it — Store.set(path, Number(raw) || 0) — never null/'',
+    // so a cleared field reads back as 0, not blank. Treating "!= null"
+    // alone as "override active" meant clearing this field locked in a
+    // flat S$0 payout forever (including straight through age 65) instead
+    // of falling back to the auto-suggested split — exactly the "CPF LIFE
+    // also disappears at 65" bug an advisor clearing it to go back to
+    // auto hit. A positive number is still a deliberate override either way.
+    var payoutOverridden = num(rm.retirementPayoutOverride) > 0;
     // An advisor's manual override is their own single all-in assumption,
     // credited in full from Retirement Age same as before — only the
     // AUTO-SUGGESTED figure is split by source, since CPF LIFE specifically
