@@ -53,8 +53,16 @@ var Charts = (function () {
       var elbowLen = opts.elbowLength || 14;
       var horizLen = opts.horizLength || 20;
       var minPct = opts.minPercent != null ? opts.minPercent : 0.3;
+      // Two label lines (name + %) need this much vertical room each —
+      // two slices landing at similar angles (e.g. two small adjacent
+      // categories near the top of the donut) previously got label
+      // anchor points close enough together to overlap, since each
+      // label's position was placed purely from its own slice's angle
+      // with no awareness of any other label nearby.
+      var minGap = opts.minLabelGap || 28;
 
-      ctx.save();
+      // Pass 1: each visible slice's natural (unadjusted) anchor points.
+      var entries = [];
       meta.data.forEach(function (arc, i) {
         var value = Number(data[i]) || 0;
         var pct = (value / total) * 100;
@@ -66,31 +74,58 @@ var Charts = (function () {
         var p1 = { x: cx + cos * r, y: cy + sin * r };
         var p2 = { x: cx + cos * (r + elbowLen), y: cy + sin * (r + elbowLen) };
         var isRight = cos >= -0.02;
-        var p3 = { x: p2.x + (isRight ? horizLen : -horizLen), y: p2.y };
+        entries.push({
+          i: i, pct: pct, label: (chart.data.labels && chart.data.labels[i]) || '',
+          p1: p1, p2: p2, isRight: isRight,
+          x: p2.x + (isRight ? horizLen : -horizLen), y: p2.y
+        });
+      });
 
+      // Pass 2: resolve vertical collisions independently on each side
+      // (left-side and right-side labels never compete with each other
+      // for space) by sorting top-to-bottom and pushing any label that's
+      // closer than minGap to the one above it further down, then
+      // sweeping bottom-to-top the same way so a late push doesn't leave
+      // an earlier pair newly too close together.
+      ['left', 'right'].forEach(function (side) {
+        var group = entries.filter(function (e) { return (side === 'right') === e.isRight; });
+        group.sort(function (a, b) { return a.y - b.y; });
+        for (var pass = 0; pass < 2; pass++) {
+          for (var k = 1; k < group.length; k++) {
+            if (group[k].y - group[k - 1].y < minGap) group[k].y = group[k - 1].y + minGap;
+          }
+          group.reverse();
+          for (var k2 = 1; k2 < group.length; k2++) {
+            if (group[k2 - 1].y - group[k2].y < minGap) group[k2].y = group[k2 - 1].y - minGap;
+          }
+          group.reverse();
+        }
+      });
+
+      ctx.save();
+      entries.forEach(function (e) {
         ctx.strokeStyle = lineColor;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-        ctx.lineTo(p3.x, p3.y);
+        ctx.moveTo(e.p1.x, e.p1.y);
+        ctx.lineTo(e.p2.x, e.p2.y);
+        ctx.lineTo(e.x, e.y);
         ctx.stroke();
 
         ctx.fillStyle = lineColor;
         ctx.beginPath();
-        ctx.arc(p1.x, p1.y, 2, 0, Math.PI * 2);
+        ctx.arc(e.p1.x, e.p1.y, 2, 0, Math.PI * 2);
         ctx.fill();
 
-        var label = (chart.data.labels && chart.data.labels[i]) || '';
-        var tx = p3.x + (isRight ? 5 : -5);
-        ctx.textAlign = isRight ? 'left' : 'right';
+        var tx = e.x + (e.isRight ? 5 : -5);
+        ctx.textAlign = e.isRight ? 'left' : 'right';
         ctx.textBaseline = 'alphabetic';
         ctx.fillStyle = textColor;
         ctx.font = '600 11px ' + fontFamily;
-        ctx.fillText(label, tx, p3.y - 2);
+        ctx.fillText(e.label, tx, e.y - 2);
         ctx.fillStyle = subColor;
         ctx.font = '10px ' + fontFamily;
-        ctx.fillText(pct.toFixed(1) + '%', tx, p3.y + 11);
+        ctx.fillText(e.pct.toFixed(1) + '%', tx, e.y + 11);
       });
       ctx.restore();
     }
@@ -133,6 +168,26 @@ var Charts = (function () {
       ink: dark ? '#F6E9ED' : '#230A16',
       palette: dark ? PALETTE_DARK : PALETTE_LIGHT
     };
+  }
+
+  // Enough distinct colors for ANY category count — a fixed list (the
+  // theme palette plus a handful of extras) ran out for a client with
+  // more categories than the list was long enough for, leaving later
+  // slices with no backgroundColor at all (Chart.js draws those
+  // transparent, reading as "a color is missing" on the donut). Evenly
+  // spaced HSL hues always produce exactly as many distinct colors as
+  // asked for, with no risk of running out or two slices accidentally
+  // sharing an identical color.
+  var EXTRA_PALETTE = ['#E0A458', '#6FA394', '#B98BB0', '#8B7EC8', '#5B8FA8'];
+  function categoryColors(n, basePalette) {
+    var base = (basePalette || PALETTE_LIGHT).concat(EXTRA_PALETTE);
+    var colors = [];
+    for (var i = 0; i < n; i++) {
+      if (i < base.length) { colors.push(base[i]); continue; }
+      var hue = Math.round((360 * i) / n);
+      colors.push('hsl(' + hue + ', 62%, 52%)');
+    }
+    return colors;
   }
 
   function destroy(canvasId) {
@@ -199,7 +254,7 @@ var Charts = (function () {
   function dashboardConfigs(c) {
     var t = themeColors();
     var cats = c.cashflowCategories || [];
-    var colors = t.palette.concat(['#E0A458', '#6FA394', '#B98BB0', '#8B7EC8']);
+    var colors = categoryColors(cats.length, t.palette);
 
     var spendDonut = {
       type: 'doughnut',
@@ -276,5 +331,5 @@ var Charts = (function () {
     return { spendDonut: spendDonut, nwHistory: nwHistory, savingsRate: savingsRateChart, nwGoal: nwGoalChart, investTrend: investTrend };
   }
 
-  return { render: render, destroy: destroy, resizeAll: resizeAll, themeColors: themeColors, available: available, leaderLineDonutOptions: leaderLineDonutOptions, dashboardConfigs: dashboardConfigs };
+  return { render: render, destroy: destroy, resizeAll: resizeAll, themeColors: themeColors, available: available, leaderLineDonutOptions: leaderLineDonutOptions, dashboardConfigs: dashboardConfigs, categoryColors: categoryColors };
 })();
