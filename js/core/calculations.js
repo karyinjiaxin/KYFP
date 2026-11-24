@@ -749,7 +749,7 @@ var Calc = (function () {
 
   function passiveIncomeMonthly(c) {
     var i = c.income || {};
-    var currentAge = num((c.retirement || {}).currentAge);
+    var currentAge = ageFromDob((c.personal || {}).dob) || num((c.retirement || {}).currentAge);
     return num(i.rentalIncome) + totalMonthlyDividendAtAge(c, currentAge) + num(i.investmentIncome) / 12;
   }
   function totalAnnualDividendAtAge(c, age) {
@@ -772,7 +772,7 @@ var Calc = (function () {
 
   function retirementProjection(c) {
     var r = c.retirement || {};
-    var currentAge = num(r.currentAge);
+    var currentAge = ageFromDob((c.personal || {}).dob) || num(r.currentAge);
     var retireAge = num(r.retirementAge);
     var lifeExpectancy = num(r.lifeExpectancy);
     var desiredMonthly = num(r.desiredMonthlyIncome);
@@ -866,7 +866,7 @@ var Calc = (function () {
   // so it curves upward like an actual investment would).
   function retirementAssetTrajectory(c) {
     var r = c.retirement || {};
-    var currentAge = num(r.currentAge);
+    var currentAge = ageFromDob((c.personal || {}).dob) || num(r.currentAge);
     var retireAge = num(r.retirementAge);
     var expectedReturn = num(r.expectedReturn) / 100;
     var currentInvestable = liquidAssets(c) + totalCpfBalance(c);
@@ -893,7 +893,7 @@ var Calc = (function () {
   // whether the client is ahead of or behind the pace they'd need.
   function requiredPortfolioPace(c) {
     var r = c.retirement || {};
-    var currentAge = num(r.currentAge);
+    var currentAge = ageFromDob((c.personal || {}).dob) || num(r.currentAge);
     var retireAge = num(r.retirementAge);
     var years = Math.max(0.0001, retireAge - currentAge);
     var startValue = liquidAssets(c) + totalCpfBalance(c);
@@ -1556,7 +1556,7 @@ var Calc = (function () {
   function netWorthGoalHelper(c) {
     var r = c.retirement || {};
     var monthlyIncome = num(r.desiredMonthlyIncome);
-    var currentAge = num(r.currentAge);
+    var currentAge = ageFromDob((c.personal || {}).dob) || num(r.currentAge);
     var retireAge = num(r.retirementAge);
     var lifeExp = num(r.lifeExpectancy);
     var inflation = num(r.inflation) / 100;
@@ -1913,7 +1913,7 @@ var Calc = (function () {
 
   function retirementAssetSplit(c) {
     var r = c.retirement || {};
-    var currentAge = num(r.currentAge);
+    var currentAge = ageFromDob((c.personal || {}).dob) || num(r.currentAge);
     var homeLifestyle = propertyValueTotal(c) - propertyLoanTotal(c);
     var cpf = c.cpf || {};
     var retirementCpf = num(cpf.oa) + num(cpf.sa) + num(cpf.ra); // excludes MediSave
@@ -1952,7 +1952,7 @@ var Calc = (function () {
   // return, exactly as plotted elsewhere on this page).
   function retirementMilestones(c) {
     var r = c.retirement || {};
-    var currentAge = num(r.currentAge);
+    var currentAge = ageFromDob((c.personal || {}).dob) || num(r.currentAge);
     var retireAge = num(r.retirementAge);
     var trajectory = retirementAssetTrajectory(c);
     var goal = retirementProjection(c).requiredPortfolio;
