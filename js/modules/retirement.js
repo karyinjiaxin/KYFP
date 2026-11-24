@@ -73,7 +73,7 @@ var ModuleRetirement = (function () {
         '. Not an official CPF LIFE quote \u2014 for a precise figure, use the official CPF LIFE Estimator at cpf.gov.sg.'
       ]);
       var basisNote = Dom.el('div', { class: 'text-tertiary mt-1 mb-2', style: 'line-height:1.5' }, [
-        'Enter your desired income in today\u2019s purchasing power \u2014 it\u2019s automatically inflated forward (at the rate above) to what that lifestyle will actually cost in the year you retire, shown alongside. Required Portfolio below is the FULL desired income need (not reduced by CPF LIFE or passive income) \u2014 CPF is already counted inside Projected Assets, so netting it out here too would credit it twice. CPF LIFE Payout is kept here for reference only.'
+        'Enter your desired income in today\u2019s purchasing power \u2014 basic + lifestyle expenses ONLY, since Required Portfolio below also separately adds in insurance premiums (from Insurance Planning, until each policy\u2019s own Payment Term ends) and hospital plan premiums (from Hospital Plan Premiums) still being paid during retirement, so don\u2019t double-count those inside this field too. It\u2019s automatically inflated forward (at the rate above) to what that lifestyle will actually cost in the year you retire, shown alongside. Required Portfolio below is the FULL desired income need (not reduced by CPF LIFE or passive income) \u2014 CPF is already counted inside Projected Assets, so netting it out here too would credit it twice. CPF LIFE Payout is kept here for reference only.'
       ]);
       var row3 = Dom.el('div', { class: 'input-row compact-row narrow-row mt-2', style: 'max-width:220px' }, [
         Fields.numberInput('retirement.expectedReturn', 'Expected Return %', { step: '0.1' })
@@ -82,7 +82,7 @@ var ModuleRetirement = (function () {
       container.appendChild(inputsCard);
 
       container.appendChild(Dom.el('div', { class: 'grid grid-kpi mt-3 mb-3' }, [
-        kpiMini('Required Portfolio', Dom.fmtMoney(rp.requiredPortfolio), 'What\u2019s needed at retirement age to fund the full desired income (inflated forward) for the rest of life expectancy \u2014 gross, not reduced by CPF LIFE or passive income (those are already counted inside Projected Assets)', 'blue'),
+        kpiMini('Required Portfolio', Dom.fmtMoney(rp.requiredPortfolio), 'Desired income (' + Dom.fmtMoney(rp.requiredPortfolioIncomePV) + ') + insurance premiums still due (' + Dom.fmtMoney(rp.requiredPortfolioInsurancePV) + ') + hospital plan premiums (' + Dom.fmtMoney(rp.requiredPortfolioHospitalPV) + ') \u2014 gross, not reduced by CPF LIFE or passive income (those are already counted inside Projected Assets)', 'blue'),
         kpiMini('Projected Assets', Dom.fmtMoney(rp.projectedAssets), 'Client\u2019s existing total portfolio (liquid + investments + full CPF balance), compounded at Expected Return, plus ongoing monthly investment \u2014 see breakdown below', 'burgundy'),
         kpiMini('Retirement Gap', Dom.fmtMoney(rp.retirementGap), 'Required Portfolio minus Projected Assets (future dollars) \u2014 negative means a projected surplus, not a gap', rp.retirementGap > 0 ? 'red' : 'green'),
         kpiMini('Years Remaining', rp.yearsToRetirement + ' yrs', 'Retirement Age minus Current Age', 'indigo'),
@@ -92,21 +92,17 @@ var ModuleRetirement = (function () {
       // ---- How Required Portfolio is actually calculated, step by step ----
       var yearsInRetirement = Math.max(0, Calc.num((c.retirement || {}).lifeExpectancy) - Calc.num((c.retirement || {}).retirementAge));
       var inflationPct = Calc.num((c.retirement || {}).inflation);
-      var expectedReturnPct = Calc.num((c.retirement || {}).expectedReturn);
-      // Fisher equation: the correct way to derive a real (inflation-
-      // adjusted) rate from a nominal one, rather than the simpler but
-      // less accurate "nominal minus inflation" shortcut.
-      var realReturnPct = Math.max(0.1, ((1 + expectedReturnPct / 100) / (1 + inflationPct / 100) - 1) * 100);
       var projectedFutureIncome = Calc.projectedDesiredMonthlyIncome(c);
       container.appendChild(Dom.el('div', { class: 'card mb-3' }, [
         Dom.el('div', { class: 'card-title' }, ['How Required Portfolio Is Calculated']),
-        row('1. Desired Monthly Income (today\u2019s dollars)', Dom.fmtMoney((c.retirement || {}).desiredMonthlyIncome)),
-        row('2. \u00d7 inflated forward ' + rp.yearsToRetirement + ' years @ ' + inflationPct + '%', Dom.fmtMoney(projectedFutureIncome) + '/mo at retirement'),
-        row('3. Years the income needs to last (Life Expectancy \u2212 Retirement Age)', yearsInRetirement + ' years'),
-        row('4. Real return used to discount (Fisher equation: (1+Expected Return)\u00f7(1+Inflation) \u2212 1)', realReturnPct.toFixed(2) + '%'),
-        row('5. Required Portfolio = Step 2 as a ' + yearsInRetirement + '-year annuity, discounted at Step 4\u2019s rate', Dom.fmtMoney(rp.requiredPortfolio)),
+        row('1. Desired Monthly Income \u2014 basic + lifestyle expenses only (today\u2019s dollars)', Dom.fmtMoney((c.retirement || {}).desiredMonthlyIncome)),
+        row('2. \u00d7 inflated forward ' + rp.yearsToRetirement + ' years @ ' + inflationPct + '%, continuing to inflate through retirement', Dom.fmtMoney(projectedFutureIncome) + '/mo at retirement'),
+        row('3. PV of Step 2, every year from Retirement Age to Life Expectancy (' + yearsInRetirement + ' years), discounted at Expected Return', Dom.fmtMoney(rp.requiredPortfolioIncomePV)),
+        row('4. + PV of insurance premiums still being paid during retirement (each policy\u2019s own Start Age + Payment Term from Insurance Planning; Whole-of-Life never stops)', Dom.fmtMoney(rp.requiredPortfolioInsurancePV)),
+        row('5. + PV of hospital plan premiums expected during retirement (cash portion only, from Hospital Plan Premiums)', Dom.fmtMoney(rp.requiredPortfolioHospitalPV)),
+        row('6. Required Portfolio = Step 3 + Step 4 + Step 5', Dom.fmtMoney(rp.requiredPortfolio)),
         Dom.el('div', { class: 'text-tertiary mt-2', style: 'line-height:1.5' }, [
-          'This is the standard "present value of an annuity" formula \u2014 it answers "how big a lump sum, invested and drawn down every month for ' + yearsInRetirement + ' years while still earning a real return, produces exactly the Step 2 income each month, ending at zero by life expectancy?" That\u2019s smaller than simply multiplying Step 2 \u00d7 12 \u00d7 ' + yearsInRetirement + ' years, because the portfolio keeps earning returns while it\u2019s being drawn down.'
+          'Each of the three cash needs above is worked out year by year (not a single flat annuity formula), since insurance and hospital premiums don\u2019t grow at a constant rate the way Desired Monthly Income does \u2014 a policy\u2019s Payment Term ending, or a hospital plan\u2019s own age-based rate table, each has its own schedule. "PV" (present value) answers "how big a lump sum, invested and drawn down to cover exactly this year-by-year cost, ending at zero by Life Expectancy?" for each cash need separately, then the three are added together.'
         ])
       ]));
 

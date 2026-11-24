@@ -396,6 +396,19 @@ table.data-table.compact-table td { padding: 6px 8px; }
   .print-multi-root .print-page { page-break-after: always; }
   .print-multi-root .print-page:last-child { page-break-after: auto; }
   .print-multi-root .print-page-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+
+  /* Chart rows (Dashboard's own 2-chart/3-chart grid, and the Summary
+     report's mirror of it) normally use .grid-2/.grid-3's auto-fit with
+     a minmax floor (340px/260px) so they responsively collapse to fewer
+     columns on a narrow SCREEN. A printed page is narrower than it looks
+     on screen once margins are subtracted, so that same floor collapsed
+     every chart row to one chart per page instead of two/three side by
+     side. Scoped to a dedicated class (not all .grid-2/.grid-3 usage
+     site-wide) since other pages use those same classes for tables/cards
+     that read fine single-column on a printed page and would otherwise
+     get cramped by a forced fixed column count. */
+  .chart-row-2 { grid-template-columns: 1fr 1fr !important; }
+  .chart-row-3 { grid-template-columns: 1fr 1fr 1fr !important; }
 }
 
 /* CPF page: Account Balances vs Monthly Contribution — the contribution

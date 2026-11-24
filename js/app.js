@@ -698,6 +698,11 @@ var App = (function () {
     initBuildStamp();
     Store.init(SampleClient);
     initTheme();
+    // Resize every live chart right before printing — print CSS forces a
+    // real 2/3-column grid (see styles.css), and Chart.js's own
+    // ResizeObserver isn't reliably catching that layout change across
+    // browsers on its own.
+    window.addEventListener('beforeprint', function () { Charts.resizeAll(); });
     syncCurrentAgeFromDob();
     syncAutoCpf();
     syncAutoIncomeTax();

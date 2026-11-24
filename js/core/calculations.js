@@ -189,6 +189,25 @@ var Calc = (function () {
     return (cash || medisave) ? cash : num(p.premium);
   }
   function totalMonthlyPremium(c) { return totalAnnualPremium(c) / 12; }
+  // Total CASH insurance premium still being paid at a given age — only
+  // policies still within their own Payment Term (Start Age + Payment
+  // Term from the Insurance Planning page; a blank/0 term means
+  // Whole-of-Life, so it never stops). Mirrors the exact cutoff rule
+  // app.js's syncAutoExpenseStops already uses for the Roadmap's own
+  // auto "stops at Start Age + Payment Term" badge, so the two can never
+  // disagree about when a given policy's premium actually ends.
+  function insurancePremiumsAnnualAtAge(c, age) {
+    return sum((c.insurance || []).filter(function (p) {
+      var startAge = num(p.startAge);
+      var term = num(p.paymentTerm);
+      if (startAge && age < startAge) return false;
+      if (!term) return true; // Whole-of-Life (no term set) -> never stops
+      return age < startAge + term;
+    }), function (p) {
+      var cash = policyCashPremium(p);
+      return p.premiumFrequency === 'Annually' ? cash : cash * 12;
+    });
+  }
   // A Life policy can bundle Death, TPD and a CI rider under one plan
   // (one premium, one company) rather than needing a separate policy row
   // per benefit. Death and TPD are treated as one Death/TPD need (the TPD
@@ -794,18 +813,50 @@ var Calc = (function () {
     // from the need AND counting the CPF balance as an asset would credit
     // CPF's benefit twice. The gap (Required Portfolio minus Projected
     // Assets) is where CPF's contribution actually shows up.
-    var netMonthlyNeed = futureMonthlyNeed;
-    // Required Portfolio uses the real-return annuity formula, with the
-    // real rate itself computed via the Fisher equation — the proper
-    // way to adjust a nominal return for inflation — rather than the
-    // simpler-but-less-accurate "nominal minus inflation" shortcut,
-    // which understates the real return at higher rates.
-    var realReturn = Math.max(0.001, (1 + expectedReturn) / (1 + inflation) - 1);
-    var monthlyRate = realReturn / 12;
-    var months = yearsInRetirement * 12;
-    var requiredPortfolio = monthlyRate > 0
-      ? netMonthlyNeed * (1 - Math.pow(1 + monthlyRate, -months)) / monthlyRate
-      : netMonthlyNeed * months;
+    //
+    // Required Portfolio = the present value (at Retirement Age, discounted
+    // at Expected Return) of THREE year-by-year cash needs from Retirement
+    // Age to Life Expectancy:
+    //  1) Desired Monthly Income — basic + lifestyle expenses ONLY (per the
+    //     advisor's own definition of this field), continuing to inflate
+    //     through retirement at the same rate used to project it forward
+    //     to Retirement Age above.
+    //  2) Insurance premiums still being paid during retirement — each
+    //     policy's own CASH premium, for exactly as long as it's still
+    //     within its own Start Age + Payment Term (Whole-of-Life policies
+    //     never stop). These are real, ongoing cash outflows that don't
+    //     disappear just because the client has retired.
+    //  3) Hospital plan premiums the client is expected to pay — the CASH
+    //     portion only (MediSave is a separate CPF account, not drawn from
+    //     this portfolio), from the Hospital Plan Premiums page, which
+    //     already prices in the insurer's own age-based rate increases.
+    // Computed as an explicit year-by-year sum rather than a closed-form
+    // annuity formula, since (2) and (3) don't grow at a constant rate the
+    // way (1) does — each has its own schedule (a policy's term ending, a
+    // rate table's own age bands) that a flat-annuity shortcut can't
+    // capture. The desired-income portion alone is mathematically
+    // equivalent to the old real-annuity formula (discounting a nominal
+    // stream growing at the inflation rate, at the nominal Expected
+    // Return, is the same PV as discounting a flat real stream at the
+    // real/Fisher-equation rate) — so this generalizes the old method
+    // rather than replacing its result for that portion.
+    var requiredPortfolio = 0;
+    var requiredPortfolioIncomePV = 0, requiredPortfolioInsurancePV = 0, requiredPortfolioHospitalPV = 0;
+    for (var rpAge = retireAge; rpAge < lifeExpectancy; rpAge++) {
+      var incomeAnnual = desiredMonthly * 12 * Math.pow(1 + inflation, rpAge - currentAge);
+      var insuranceAnnual = insurancePremiumsAnnualAtAge(c, rpAge);
+      var hospitalAnnual = hospitalPlansAnnualAtAge(c, rpAge, currentAge).cash;
+      // Annuity-due convention (undiscounted in the very first retirement
+      // year, as if that year's need is drawn immediately on retiring) —
+      // the more conservative of the two common conventions, since it
+      // never discounts a near-term need more than an ordinary-annuity
+      // convention would.
+      var discount = Math.pow(1 + expectedReturn, rpAge - retireAge);
+      requiredPortfolioIncomePV += incomeAnnual / discount;
+      requiredPortfolioInsurancePV += insuranceAnnual / discount;
+      requiredPortfolioHospitalPV += hospitalAnnual / discount;
+    }
+    requiredPortfolio = requiredPortfolioIncomePV + requiredPortfolioInsurancePV + requiredPortfolioHospitalPV;
 
     // Projected assets at retirement: the client's existing total
     // portfolio (liquid assets, which already reflect Investment
@@ -833,6 +884,9 @@ var Calc = (function () {
       yearsInRetirement: yearsInRetirement,
       futureMonthlyNeed: futureMonthlyNeed,
       requiredPortfolio: requiredPortfolio,
+      requiredPortfolioIncomePV: requiredPortfolioIncomePV,
+      requiredPortfolioInsurancePV: requiredPortfolioInsurancePV,
+      requiredPortfolioHospitalPV: requiredPortfolioHospitalPV,
       projectedAssets: projectedAssets,
       fvLumpSum: fvLumpSum,
       fvContributions: fvContributions,
@@ -2352,7 +2406,7 @@ var Calc = (function () {
     liquidAssets: liquidAssets, investmentAssetsTotal: investmentAssetsTotal, debtRatio: debtRatio,
     propertyValueTotal: propertyValueTotal, propertyLoanTotal: propertyLoanTotal,
     policyAnnualPremium: policyAnnualPremium, totalAnnualPremium: totalAnnualPremium, totalMonthlyPremium: totalMonthlyPremium,
-    policyCashPremium: policyCashPremium,
+    policyCashPremium: policyCashPremium, insurancePremiumsAnnualAtAge: insurancePremiumsAnnualAtAge,
     totalCoverageByType: totalCoverageByType, totalCoverage: totalCoverage, totalDeathOnlyCoverage: totalDeathOnlyCoverage, recommendedLifeCoverage: recommendedLifeCoverage,
     totalSumAssured: totalSumAssured, policyTotalSumAssured: policyTotalSumAssured,
     recommendedDeathTpdCoverage: recommendedDeathTpdCoverage, recommendedCICoverage: recommendedCICoverage,

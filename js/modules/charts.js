@@ -139,6 +139,19 @@ var Charts = (function () {
     if (instances[canvasId]) { instances[canvasId].destroy(); delete instances[canvasId]; }
   }
 
+  // Chart.js's own ResizeObserver (via responsive:true) is meant to catch
+  // a layout change like print's own grid-column override and redraw at
+  // the new size, but that isn't reliable enough across browsers for
+  // print specifically — several charts were still drawn at their old,
+  // wider on-screen size in the printout (one chart per row instead of
+  // two/three side by side matching the print CSS). Called explicitly on
+  // 'beforeprint' instead of relying on that observer alone.
+  function resizeAll() {
+    Object.keys(instances).forEach(function (id) {
+      try { instances[id].resize(); } catch (e) {}
+    });
+  }
+
   function render(canvas, config) {
     if (!available() || !canvas) {
       if (canvas) {
@@ -262,5 +275,5 @@ var Charts = (function () {
     return { spendDonut: spendDonut, nwHistory: nwHistory, savingsRate: savingsRateChart, nwGoal: nwGoalChart, investTrend: investTrend };
   }
 
-  return { render: render, destroy: destroy, themeColors: themeColors, available: available, leaderLineDonutOptions: leaderLineDonutOptions, dashboardConfigs: dashboardConfigs };
+  return { render: render, destroy: destroy, resizeAll: resizeAll, themeColors: themeColors, available: available, leaderLineDonutOptions: leaderLineDonutOptions, dashboardConfigs: dashboardConfigs };
 })();

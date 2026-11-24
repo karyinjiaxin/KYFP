@@ -329,17 +329,19 @@ var ModuleProposals = (function () {
       var r = c.retirement || {};
       var yearsInRetirement = Math.max(0, Calc.num(r.lifeExpectancy) - Calc.num(r.retirementAge));
       var inflationPct = Calc.num(r.inflation);
-      var expectedReturnPct = Calc.num(r.expectedReturn);
-      var realReturnPct = Math.max(0.1, ((1 + expectedReturnPct / 100) / (1 + inflationPct / 100) - 1) * 100);
       var projectedFutureIncome = Calc.projectedDesiredMonthlyIncome(c);
       return Dom.el('div', { class: 'mt-3 pt-2', style: 'border-top:1px solid var(--border);font-size:11.5px;line-height:1.6' }, [
         Dom.el('div', { style: 'font-weight:700;margin-bottom:6px' }, ['How Required Portfolio Is Calculated']),
-        Dom.el('div', { class: 'text-secondary mb-2' }, [
-          'Desired Monthly Income (today’s dollars) is inflated forward ' + rp.yearsToRetirement + ' years at ' + inflationPct + '% to ' + Dom.fmtMoney(projectedFutureIncome) + '/month at retirement, then sized as the lump sum that funds exactly that income every month for the ' + yearsInRetirement + ' years from Retirement Age to Life Expectancy, assuming it keeps earning a ' + realReturnPct.toFixed(2) + '% real (after-inflation) return along the way and reaches exactly S$0 at Life Expectancy — the standard "present value of an annuity" formula, not a simple income × months multiplication (which would overstate the figure, since the portfolio keeps earning returns while being drawn down).'
+        propRow('Desired Monthly Income (today’s dollars — basic + lifestyle expenses only)', Dom.fmtMoney(r.desiredMonthlyIncome)),
+        propRow('— projected at retirement (' + rp.yearsToRetirement + ' years forward @ ' + inflationPct + '%)', Dom.fmtMoney(projectedFutureIncome) + '/mo'),
+        propRow('+ PV of insurance premiums still due during retirement (from Insurance Planning, until each policy’s own Payment Term ends)', Dom.fmtMoney(rp.requiredPortfolioInsurancePV)),
+        propRow('+ PV of hospital plan premiums expected during retirement (cash portion, from Hospital Plan Premiums)', Dom.fmtMoney(rp.requiredPortfolioHospitalPV)),
+        Dom.el('div', { class: 'text-secondary mb-2 mt-1' }, [
+          'Desired Monthly Income is inflated forward to what that lifestyle will cost at retirement, then each of the three cash needs above (desired income, insurance premiums, hospital premiums) is worked out year by year from Retirement Age to Life Expectancy (' + yearsInRetirement + ' years) and sized as the lump sum that funds it exactly, assuming it keeps earning the Expected Return along the way and reaches S$0 at Life Expectancy — the standard "present value" approach, computed separately for each cash need since insurance/hospital premiums don’t grow at a constant rate the way desired income does (a policy’s Payment Term ending, or a hospital plan’s own age-based rate table, each has its own schedule).'
         ]),
         Dom.el('div', { class: 'text-secondary' }, [
           Dom.el('b', {}, ['Why Success Probability can read lower than the Cash Flow Roadmap suggests: ']),
-          'Success Probability is a strict, standalone test — "does this portfolio alone, with no other help, fund the FULL desired income for every year of retirement?" It deliberately does —not— credit CPF LIFE payouts, rental income, or other passive income (those already reduce the actual cash drawn from the portfolio in the Roadmap’s own year-by-year simulation, which is why a lower Success Probability figure can still show a balance that lasts comfortably into the client’s 80s or beyond on the Roadmap). The two aren’t in conflict — Success Probability asks a harder question on purpose, since relying on it less overstates how self-sufficient the portfolio really is.'
+          'Success Probability is a strict, standalone test — "does this portfolio alone, with no other help, fund the FULL desired income (plus ongoing insurance/hospital premiums) for every year of retirement?" It deliberately does —not— credit CPF LIFE payouts, rental income, or other passive income (those already reduce the actual cash drawn from the portfolio in the Roadmap’s own year-by-year simulation, which is why a lower Success Probability figure can still show a balance that lasts comfortably into the client’s 80s or beyond on the Roadmap). The two aren’t in conflict — Success Probability asks a harder question on purpose, since relying on it less overstates how self-sufficient the portfolio really is.'
         ])
       ]);
     }
