@@ -63,12 +63,12 @@ var ModuleDashboard = (function () {
       ]));
 
       // ---- Charts, front and center ----
-      var chartGrid = Dom.el('div', { class: 'grid grid-2 mb-3' });
+      var chartGrid = Dom.el('div', { class: 'grid grid-2 chart-row-2 mb-3' });
       chartGrid.appendChild(chartCard('Annual Spending by Category', 'chartSpendDonut', true));
       chartGrid.appendChild(chartCard('Assets, Debt & Net Worth', 'chartNwHistory', true));
       container.appendChild(chartGrid);
 
-      var chartGrid2 = Dom.el('div', { class: 'grid grid-3 mb-3' });
+      var chartGrid2 = Dom.el('div', { class: 'grid grid-3 chart-row-3 mb-3' });
       chartGrid2.appendChild(chartCard('Saving Rate: Goal vs Actual', 'chartSavingsRate'));
       chartGrid2.appendChild(chartCard('Net Worth Goal vs Current', 'chartNwGoal'));
       chartGrid2.appendChild(chartCard('Investment Balance Trend', 'chartInvestReturns'));
