@@ -190,6 +190,18 @@ var Charts = (function () {
     return chart;
   }
 
+  // Renders normally when there's real data to plot, otherwise shows an
+  // explanatory empty state instead of a technically-valid-but-blank
+  // chart (just default 0–1 axes, no bars/lines, no indication of why) —
+  // a chart with nothing in it reads as broken, not as "no data yet".
+  function renderOrEmpty(canvas, config, hasData, emptyMessage) {
+    if (hasData) return render(canvas, config);
+    if (canvas) {
+      canvas.parentElement.innerHTML = '<div class="empty-state" style="padding:20px"><div class="text-tertiary">' + emptyMessage + '</div></div>';
+    }
+    return null;
+  }
+
   // The five Dashboard charts' configs (data + options, no canvas) — a
   // single source of truth so Dashboard and the Summary report's "Show
   // all Dashboard graphs" section can never drift apart from each other.
@@ -272,8 +284,18 @@ var Charts = (function () {
       options: { plugins: { legend: { display: false } } }
     };
 
-    return { spendDonut: spendDonut, nwHistory: nwHistory, savingsRate: savingsRateChart, nwGoal: nwGoalChart, investTrend: investTrend };
+    return {
+      spendDonut: spendDonut, nwHistory: nwHistory, savingsRate: savingsRateChart, nwGoal: nwGoalChart, investTrend: investTrend,
+      // No investment PLANS entered on Wealth Accumulation Planning (a
+      // Cashflow "Investment" category contribution, e.g. CPF, doesn't
+      // count here) means invLabels/invValues stay empty and Chart.js
+      // renders a blank chart with just default 0–1 axes and no bars —
+      // not an error, but with nothing on screen to say why. Callers
+      // check this before rendering and show an explanatory empty state
+      // instead of a chart with no data in it.
+      investTrendHasData: invLabels.length > 0
+    };
   }
 
-  return { render: render, destroy: destroy, resizeAll: resizeAll, themeColors: themeColors, available: available, leaderLineDonutOptions: leaderLineDonutOptions, dashboardConfigs: dashboardConfigs };
+  return { render: render, renderOrEmpty: renderOrEmpty, destroy: destroy, resizeAll: resizeAll, themeColors: themeColors, available: available, leaderLineDonutOptions: leaderLineDonutOptions, dashboardConfigs: dashboardConfigs };
 })();

@@ -101,7 +101,7 @@ var ModuleProposals = (function () {
       Charts.render(document.getElementById('propNwHistory'), dashCfg.nwHistory);
       Charts.render(document.getElementById('propSavingsRate'), dashCfg.savingsRate);
       Charts.render(document.getElementById('propNwGoal'), dashCfg.nwGoal);
-      Charts.render(document.getElementById('propInvestTrend'), dashCfg.investTrend);
+      Charts.renderOrEmpty(document.getElementById('propInvestTrend'), dashCfg.investTrend, dashCfg.investTrendHasData, 'No investment plans added yet — add one on Wealth Accumulation Planning to see a balance trend here.');
     }
 
     // A plain-English baseline statement, then — if the advisor has

@@ -121,7 +121,7 @@ var ModuleDashboard = (function () {
       Charts.render(document.getElementById('chartNwHistory'), cfg.nwHistory);
       Charts.render(document.getElementById('chartSavingsRate'), cfg.savingsRate);
       Charts.render(document.getElementById('chartNwGoal'), cfg.nwGoal);
-      Charts.render(document.getElementById('chartInvestReturns'), cfg.investTrend);
+      Charts.renderOrEmpty(document.getElementById('chartInvestReturns'), cfg.investTrend, cfg.investTrendHasData, 'No investment plans added yet — add one on Wealth Accumulation Planning to see a balance trend here.');
     }
 
     draw();
