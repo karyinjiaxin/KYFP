@@ -369,6 +369,25 @@ var ModuleCashflow = (function () {
         Fields.moneyInput(base + 'cost', 'Cost'),
         Fields.selectInput(base + 'frequency', 'Frequency', FREQUENCIES)
       ]);
+      // Non-essential items (e.g. a discretionary "Vacations" or "Parents
+      // Contribution" line the household could pause without real
+      // hardship) can be excluded from the Emergency Fund Months
+      // calculation specifically, without removing them from Monthly
+      // Expenses everywhere else (Savings Rate, Cashflow Ratio, etc.).
+      row.appendChild(Dom.el('label', {
+        style: 'display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-secondary);padding-bottom:9px;white-space:nowrap;cursor:pointer',
+        title: 'Exclude from Emergency Fund Months (still counts as a normal expense everywhere else)'
+      }, [
+        Dom.el('input', {
+          type: 'checkbox', checked: item.efExclude ? 'checked' : null,
+          onchange: function (e) {
+            var arr = Store.get('cashflowCategories');
+            arr[catIdx].items[itemIdx].efExclude = e.target.checked;
+            Store.set('cashflowCategories', arr);
+          }
+        }),
+        'Non-essential'
+      ]));
       row.appendChild(Dom.el('button', {
         class: 'btn btn-ghost btn-sm', style: 'font-size:10.5px;padding:5px 9px', onclick: function (e) {
           e.stopPropagation();

@@ -1477,8 +1477,33 @@ var Calc = (function () {
     for (var j = 0; j < n; j++) out.push(intercept + slope * j);
     return out;
   }
+  // The monthly cost an emergency fund actually needs to cover — every
+  // Cashflow item EXCEPT: insurance premiums (whether linked to a policy
+  // via insurancePolicyId, or a manually-entered item in a category named
+  // "Insurance" — premiums aren't a day-to-day survival cost the same way
+  // rent or groceries are), and any item the advisor has specifically
+  // flagged as non-essential (item.efExclude — e.g. a discretionary
+  // "Vacations" or "Parents Contribution" line the household could pause
+  // without real hardship). Deliberately narrower than Monthly Expenses
+  // (used everywhere else, e.g. Savings Rate), which intentionally counts
+  // EVERYTHING entered on Cashflow — Emergency Fund asks a different
+  // question ("how long could this household keep its lights on"), not
+  // "what's the full cash outflow including taxes/CPF/investment
+  // contributions/insurance".
+  function emergencyFundEssentialMonthly(c) {
+    var total = 0;
+    (c.cashflowCategories || []).forEach(function (cat) {
+      var isInsuranceCategory = (cat.name || '').trim().toLowerCase() === 'insurance';
+      if (isInsuranceCategory) return;
+      (cat.items || []).forEach(function (item) {
+        if (item.insurancePolicyId || item.efExclude) return;
+        total += itemMonthly(item);
+      });
+    });
+    return total;
+  }
   function emergencyFundMonths(c) {
-    var exp = monthlyExpenses(c);
+    var exp = emergencyFundEssentialMonthly(c);
     if (exp <= 0) return 0;
     var a = c.assets || {};
     // Money Market Funds are as liquid as cash (same-day/next-day access,
