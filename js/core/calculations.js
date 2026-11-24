@@ -1426,7 +1426,13 @@ var Calc = (function () {
   function emergencyFundMonths(c) {
     var exp = monthlyExpenses(c);
     if (exp <= 0) return 0;
-    return num((c.assets || {}).cash) / exp;
+    var a = c.assets || {};
+    // Money Market Funds are as liquid as cash (same-day/next-day access,
+    // no lock-in) so they count toward an emergency fund the same way —
+    // unlike Stocks/ETFs/Unit Trusts/Crypto, which are liquid in the
+    // sense of being sellable, but not "instantly available without
+    // selling at whatever the market happens to be doing that day".
+    return (num(a.cash) + num(a.moneyMarketFunds)) / exp;
   }
 
   // ---------- GOALS ----------

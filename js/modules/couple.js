@@ -13,9 +13,16 @@ var ModuleCouple = (function () {
     function draw() {
       var c = Store.getAll();
       container.innerHTML = '';
-      container.appendChild(Dom.el('div', { class: 'page-header' }, [
-        Dom.el('h1', {}, ['\ud83d\udc91 Couple Planning']),
-        Dom.el('div', { class: 'sub' }, ['A combined household view when meeting a linked couple together \u2014 each partner\u2019s own data stays fully separate and editable on their own.'])
+      container.appendChild(Dom.el('div', { class: 'page-header no-print flex justify-between items-center' }, [
+        Dom.el('div', {}, [
+          Dom.el('h1', {}, ['\ud83d\udc91 Couple Planning']),
+          Dom.el('div', { class: 'sub' }, ['A combined household view when meeting a linked couple together \u2014 each partner\u2019s own data stays fully separate and editable on their own.'])
+        ]),
+        Dom.el('button', { class: 'btn btn-primary', onclick: function () { window.print(); } }, ['Print / Export PDF'])
+      ]));
+      container.appendChild(Dom.el('div', { class: 'print-only', style: 'text-align:center;margin-bottom:24px' }, [
+        Dom.el('div', { style: 'font-family:var(--font-serif);font-size:20px;font-weight:700' }, ['\ud83d\udc91 Couple Planning \u2014 Combined Household Summary']),
+        Dom.el('div', { class: 'text-secondary', style: 'margin-top:4px' }, [new Date().toLocaleDateString('en-SG', { year: 'numeric', month: 'long', day: 'numeric' })])
       ]));
 
       var partnerId = (c.personal || {}).partnerClientId;
@@ -46,7 +53,7 @@ var ModuleCouple = (function () {
             ])
           ]),
           Dom.el('button', {
-            class: 'btn btn-secondary btn-sm',
+            class: 'btn btn-secondary btn-sm no-print',
             onclick: function () { Store.quickSave(); Store.loadSavedClient(partnerId); window.location.hash = 'profile'; }
           }, ['Switch to ' + partnerName])
         ])
@@ -132,7 +139,7 @@ var ModuleCouple = (function () {
         container.appendChild(roadmapCard);
       }
 
-      container.appendChild(Dom.el('div', { class: 'text-tertiary' }, [
+      container.appendChild(Dom.el('div', { class: 'text-tertiary no-print' }, [
         'To edit either partner\u2019s own numbers, use "Switch to ' + partnerName + '" above, or load either client independently anytime via Settings \u2192 Saved Clients \u2014 nothing about this combined view links or merges their underlying data.'
       ]));
     }

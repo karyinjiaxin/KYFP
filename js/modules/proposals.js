@@ -66,7 +66,8 @@ var ModuleProposals = (function () {
         propRow('Required Portfolio at Retirement', Dom.fmtMoney(rp.requiredPortfolio)),
         propRow('Projected Assets at Retirement', Dom.fmtMoney(rp.projectedAssets)),
         propRow('Retirement Gap', Dom.fmtMoney(rp.retirementGap)),
-        propRow('Success Probability', rp.successProbability.toFixed(0) + '%')
+        propRow('Success Probability', rp.successProbability.toFixed(0) + '%'),
+        requiredPortfolioExplanation(c, rp)
       ]);
 
       section(doc, 'Recommendations — Cashflow', [
@@ -323,6 +324,31 @@ var ModuleProposals = (function () {
       return Dom.el('div', { class: 'flex justify-between items-center', style: 'padding:6px 0;border-bottom:1px solid var(--border)' }, [
         Dom.el('div', { class: 'text-secondary' }, [label]),
         Dom.el('div', { style: 'font-weight:700;font-size:12px' }, [value])
+      ]);
+    }
+
+    // Explains HOW Required Portfolio is derived (same step-by-step logic
+    // as Retirement Planning's own "How Required Portfolio Is Calculated"
+    // card, condensed into client-facing prose) — and clarifies why
+    // Success Probability can read low even when the Cash Flow Roadmap
+    // shows the balance lasting well into retirement: they're answering
+    // different questions, not disagreeing with each other.
+    function requiredPortfolioExplanation(c, rp) {
+      var r = c.retirement || {};
+      var yearsInRetirement = Math.max(0, Calc.num(r.lifeExpectancy) - Calc.num(r.retirementAge));
+      var inflationPct = Calc.num(r.inflation);
+      var expectedReturnPct = Calc.num(r.expectedReturn);
+      var realReturnPct = Math.max(0.1, ((1 + expectedReturnPct / 100) / (1 + inflationPct / 100) - 1) * 100);
+      var projectedFutureIncome = Calc.projectedDesiredMonthlyIncome(c);
+      return Dom.el('div', { class: 'mt-3 pt-2', style: 'border-top:1px solid var(--border);font-size:11.5px;line-height:1.6' }, [
+        Dom.el('div', { style: 'font-weight:700;margin-bottom:6px' }, ['How Required Portfolio Is Calculated']),
+        Dom.el('div', { class: 'text-secondary mb-2' }, [
+          'Desired Monthly Income (today’s dollars) is inflated forward ' + rp.yearsToRetirement + ' years at ' + inflationPct + '% to ' + Dom.fmtMoney(projectedFutureIncome) + '/month at retirement, then sized as the lump sum that funds exactly that income every month for the ' + yearsInRetirement + ' years from Retirement Age to Life Expectancy, assuming it keeps earning a ' + realReturnPct.toFixed(2) + '% real (after-inflation) return along the way and reaches exactly S$0 at Life Expectancy — the standard "present value of an annuity" formula, not a simple income × months multiplication (which would overstate the figure, since the portfolio keeps earning returns while being drawn down).'
+        ]),
+        Dom.el('div', { class: 'text-secondary' }, [
+          Dom.el('b', {}, ['Why Success Probability can read lower than the Cash Flow Roadmap suggests: ']),
+          'Success Probability is a strict, standalone test — "does this portfolio alone, with no other help, fund the FULL desired income for every year of retirement?" It deliberately does —not— credit CPF LIFE payouts, rental income, or other passive income (those already reduce the actual cash drawn from the portfolio in the Roadmap’s own year-by-year simulation, which is why a lower Success Probability figure can still show a balance that lasts comfortably into the client’s 80s or beyond on the Roadmap). The two aren’t in conflict — Success Probability asks a harder question on purpose, since relying on it less overstates how self-sufficient the portfolio really is.'
+        ])
       ]);
     }
 
