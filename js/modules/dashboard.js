@@ -68,10 +68,15 @@ var ModuleDashboard = (function () {
       chartGrid.appendChild(chartCard('Assets, Debt & Net Worth', 'chartNwHistory', true));
       container.appendChild(chartGrid);
 
-      var chartGrid2 = Dom.el('div', { class: 'grid grid-3 chart-row-3 mb-3' });
+      // Investment Balance Trend only has anything to show once at least
+      // one plan exists on Wealth Accumulation Planning — with none, the
+      // chart would just be blank axes with nothing plotted, so the card
+      // is left out entirely rather than shown empty.
+      var hasInvestmentPlans = (c.investments || []).length > 0;
+      var chartGrid2 = Dom.el('div', { class: 'grid ' + (hasInvestmentPlans ? 'grid-3 chart-row-3' : 'grid-2 chart-row-2') + ' mb-3' });
       chartGrid2.appendChild(chartCard('Saving Rate: Goal vs Actual', 'chartSavingsRate'));
       chartGrid2.appendChild(chartCard('Net Worth Goal vs Current', 'chartNwGoal'));
-      chartGrid2.appendChild(chartCard('Investment Balance Trend', 'chartInvestReturns'));
+      if (hasInvestmentPlans) chartGrid2.appendChild(chartCard('Investment Balance Trend', 'chartInvestReturns'));
       container.appendChild(chartGrid2);
 
       // ---- AI panel ----
@@ -121,7 +126,8 @@ var ModuleDashboard = (function () {
       Charts.render(document.getElementById('chartNwHistory'), cfg.nwHistory);
       Charts.render(document.getElementById('chartSavingsRate'), cfg.savingsRate);
       Charts.render(document.getElementById('chartNwGoal'), cfg.nwGoal);
-      Charts.renderOrEmpty(document.getElementById('chartInvestReturns'), cfg.investTrend, cfg.investTrendHasData, 'No investment plans added yet — add one on Wealth Accumulation Planning to see a balance trend here.');
+      var investCanvas = document.getElementById('chartInvestReturns');
+      if (investCanvas) Charts.render(investCanvas, cfg.investTrend);
     }
 
     draw();

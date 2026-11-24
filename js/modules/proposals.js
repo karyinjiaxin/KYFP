@@ -101,7 +101,8 @@ var ModuleProposals = (function () {
       Charts.render(document.getElementById('propNwHistory'), dashCfg.nwHistory);
       Charts.render(document.getElementById('propSavingsRate'), dashCfg.savingsRate);
       Charts.render(document.getElementById('propNwGoal'), dashCfg.nwGoal);
-      Charts.renderOrEmpty(document.getElementById('propInvestTrend'), dashCfg.investTrend, dashCfg.investTrendHasData, 'No investment plans added yet — add one on Wealth Accumulation Planning to see a balance trend here.');
+      var investCanvas = document.getElementById('propInvestTrend');
+      if (investCanvas) Charts.render(investCanvas, dashCfg.investTrend);
     }
 
     // A plain-English baseline statement, then — if the advisor has
@@ -238,10 +239,14 @@ var ModuleProposals = (function () {
       grid2.appendChild(Dom.el('div', { class: 'card' }, [Dom.el('div', { class: 'card-title' }, ['Annual Spending by Category']), Dom.el('div', { class: 'chart-wrap tall' }, [Dom.el('canvas', { id: 'propSpendDonut' })])]));
       grid2.appendChild(Dom.el('div', { class: 'card' }, [Dom.el('div', { class: 'card-title' }, ['Assets, Debt & Net Worth']), Dom.el('div', { class: 'chart-wrap tall' }, [Dom.el('canvas', { id: 'propNwHistory' })])]));
       wrap.appendChild(grid2);
-      var grid3 = Dom.el('div', { class: 'grid grid-3 chart-row-3 mb-3' });
+      // Investment Balance Trend only has anything to show once at least
+      // one plan exists on Wealth Accumulation Planning — left out
+      // entirely rather than shown as a blank chart otherwise.
+      var hasInvestmentPlans = (c.investments || []).length > 0;
+      var grid3 = Dom.el('div', { class: 'grid ' + (hasInvestmentPlans ? 'grid-3 chart-row-3' : 'grid-2 chart-row-2') + ' mb-3' });
       grid3.appendChild(Dom.el('div', { class: 'card' }, [Dom.el('div', { class: 'card-title' }, ['Saving Rate: Goal vs Actual']), Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propSavingsRate' })])]));
       grid3.appendChild(Dom.el('div', { class: 'card' }, [Dom.el('div', { class: 'card-title' }, ['Net Worth Goal vs Current']), Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propNwGoal' })])]));
-      grid3.appendChild(Dom.el('div', { class: 'card' }, [Dom.el('div', { class: 'card-title' }, ['Investment Balance Trend']), Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propInvestTrend' })])]));
+      if (hasInvestmentPlans) grid3.appendChild(Dom.el('div', { class: 'card' }, [Dom.el('div', { class: 'card-title' }, ['Investment Balance Trend']), Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propInvestTrend' })])]));
       wrap.appendChild(grid3);
 
       // Recommendations are intentionally NOT repeated here — Dashboard
