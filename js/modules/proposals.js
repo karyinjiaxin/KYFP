@@ -309,7 +309,7 @@ var ModuleProposals = (function () {
 
     function section(doc, title, children) {
       doc.appendChild(Dom.el('div', { class: 'section-title' }, [title]));
-      var box = Dom.el('div', { class: 'mb-3' }, children);
+      var box = Dom.el('div', { class: 'mb-3 keep-together' }, children);
       doc.appendChild(box);
     }
     function propRow(label, value) {

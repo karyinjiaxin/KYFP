@@ -397,6 +397,29 @@ table.data-table.compact-table td { padding: 6px 8px; }
   .print-multi-root .print-page:last-child { page-break-after: auto; }
   .print-multi-root .print-page-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
 
+  /* Section breaks — a printed page is the one place these matter, since
+     the browser decides where to slice content into pages with no regard
+     for whether that lands mid-list or mid-row. A heading stranded alone
+     at the bottom of a page (its own content pushed to the next, with no
+     heading to re-orient the reader there) is the single most common
+     awkward cut, so headings stay glued to whatever follows them. Small,
+     self-contained blocks (a report section's list of rows, a stat
+     card) are kept whole rather than split arbitrarily partway through.
+     Large content that must legitimately span multiple pages (a 50+-row
+     Roadmap table) is deliberately NOT forced to stay on one page — that
+     would just push the whole table to a fresh page and leave a large
+     blank gap before it — instead each ROW is kept whole (never sliced
+     in half) and the header repeats on every page the table continues
+     onto, so a multi-page table still reads cleanly instead of looking
+     cut off. `:has()` scopes the exception to cards that actually wrap a
+     scrollable table, rather than disabling row/heading protection for
+     the many small stat cards that make up most of the report. */
+  .section-title { break-after: avoid-page; page-break-after: avoid; }
+  .keep-together, .kpi-card { break-inside: avoid-page; page-break-inside: avoid; }
+  .card:not(:has(.table-scroll)) { break-inside: avoid-page; page-break-inside: avoid; }
+  .data-table thead { display: table-header-group; }
+  .data-table tr { break-inside: avoid-page; page-break-inside: avoid; }
+
   /* Chart rows (Dashboard's own 2-chart/3-chart grid, and the Summary
      report's mirror of it) normally use .grid-2/.grid-3's auto-fit with
      a minmax floor (340px/260px) so they responsively collapse to fewer
