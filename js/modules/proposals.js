@@ -244,20 +244,12 @@ var ModuleProposals = (function () {
       grid3.appendChild(Dom.el('div', { class: 'card' }, [Dom.el('div', { class: 'card-title' }, ['Investment Balance Trend']), Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propInvestTrend' })])]));
       wrap.appendChild(grid3);
 
-      // ---- Recommendations (same panel, same order — every rec, not
-      // just the problem ones filtered into "Problems Identified" below) ----
-      wrap.appendChild(Dom.el('div', { class: 'section-title' }, ['Recommendations']));
-      var aiPanel = Dom.el('div', { class: 'ai-panel mb-3' });
-      AI.getRecommendations(c).forEach(function (r) {
-        aiPanel.appendChild(Dom.el('div', { class: 'ai-rec' }, [
-          Dom.el('div', { class: 'ai-dot ' + r.severity }),
-          Dom.el('div', {}, [
-            Dom.el('div', { style: 'font-weight:700;font-size:12px' }, [r.title]),
-            Dom.el('div', { class: 'text-secondary', style: 'margin-top:2px' }, [r.detail])
-          ])
-        ]));
-      });
-      wrap.appendChild(aiPanel);
+      // Recommendations are intentionally NOT repeated here — Dashboard
+      // itself shows them right after this point, but this report already
+      // covers the same findings in full later on ("Problems Identified"
+      // and the per-topic Recommendations sections below), so showing
+      // them a second time here would just be duplicate content earlier
+      // in the same document.
 
       // ---- Full Detail KPI grid ----
       wrap.appendChild(Dom.el('div', { class: 'section-title' }, ['🔍 Full Detail']));
