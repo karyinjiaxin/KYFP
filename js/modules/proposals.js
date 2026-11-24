@@ -30,7 +30,6 @@ var ModuleProposals = (function () {
       doc.appendChild(notesSection(c));
 
       doc.appendChild(dashboardOverview(c, rp));
-      doc.appendChild(dashboardGraphsSection());
       doc.appendChild(scenarioComparisonSection(c));
 
       section(doc, 'Current Situation', [
@@ -90,87 +89,18 @@ var ModuleProposals = (function () {
     // is in the live DOM (canvases need to exist first). Canvas is a real
     // bitmap once rendered, so these print into the PDF/printout fine,
     // same as any other chart in the app.
+    // The same five charts shown on the Dashboard page itself — configs
+    // come from Charts.dashboardConfigs so they can never disagree with
+    // what the advisor sees there, just rendered into this report's own
+    // canvas ids (a multi-tab printout can show Dashboard and Summary
+    // together, so ids can't collide between the two pages).
     function drawOverviewCharts(c, rp) {
-      var t = Charts.themeColors();
-      var monthlyIncome = Calc.monthlyIncome(c), monthlyExpenses = Calc.monthlyExpenses(c);
-      Charts.render(document.getElementById('propIncomeExpenseChart'), {
-        type: 'bar',
-        data: {
-          labels: ['Monthly Income', 'Monthly Expenses', 'Monthly Surplus'],
-          datasets: [{ data: [monthlyIncome, monthlyExpenses, Math.max(0, monthlyIncome - monthlyExpenses)], backgroundColor: [t.palette[2], t.palette[3], t.palette[0]] }]
-        },
-        options: { plugins: { legend: { display: false } } }
-      });
-
-      Charts.render(document.getElementById('propRetirementChart'), {
-        type: 'bar',
-        data: {
-          labels: ['Required Portfolio', 'Projected Assets'],
-          datasets: [{ data: [rp.requiredPortfolio, rp.projectedAssets], backgroundColor: [t.palette[0], rp.projectedAssets >= rp.requiredPortfolio ? (t.good || t.palette[2]) : t.palette[3]] }]
-        },
-        options: { plugins: { legend: { display: false } } }
-      });
-
-      var gapsChartCanvas = document.getElementById('propGapsChart');
-      if (gapsChartCanvas) {
-        var gapLabels = [], gapValues = [];
-        var coverageGap = Calc.coverageGap(c);
-        var efMonths = Calc.emergencyFundMonths(c);
-        var efTarget = (c.emergencyFund || {}).targetMonths || 6;
-        if (coverageGap > 0) { gapLabels.push('Protection Gap'); gapValues.push(coverageGap); }
-        if (rp.retirementGap > 0) { gapLabels.push('Retirement Gap'); gapValues.push(rp.retirementGap); }
-        if (efMonths < efTarget) { gapLabels.push('Emergency Fund Gap'); gapValues.push((efTarget - efMonths) * Calc.monthlyExpenses(c)); }
-        Charts.render(gapsChartCanvas, {
-          type: 'bar',
-          data: { labels: gapLabels, datasets: [{ data: gapValues, backgroundColor: t.palette[3] }] },
-          options: { indexAxis: 'y', plugins: { legend: { display: false } } }
-        });
-      }
-
-      // The same five charts shown on the Dashboard page itself — configs
-      // come from Charts.dashboardConfigs so they can never disagree with
-      // what the advisor sees there, just rendered into this report's own
-      // canvas ids (a multi-tab printout can show Dashboard and Summary
-      // together, so ids can't collide between the two pages).
       var dashCfg = Charts.dashboardConfigs(c);
       Charts.render(document.getElementById('propSpendDonut'), dashCfg.spendDonut);
       Charts.render(document.getElementById('propNwHistory'), dashCfg.nwHistory);
       Charts.render(document.getElementById('propSavingsRate'), dashCfg.savingsRate);
       Charts.render(document.getElementById('propNwGoal'), dashCfg.nwGoal);
       Charts.render(document.getElementById('propInvestTrend'), dashCfg.investTrend);
-    }
-
-    // Same chart set as the Dashboard page, reproduced here so the printed
-    // Summary carries every graph the advisor sees day-to-day, not just
-    // the Dashboard Overview's own 3 summary bars above.
-    function dashboardGraphsSection() {
-      var wrap = Dom.el('div', { class: 'mb-3' });
-      wrap.appendChild(Dom.el('div', { class: 'section-title' }, ['📈 Dashboard Graphs']));
-      var grid2 = Dom.el('div', { class: 'grid grid-2 mb-3' });
-      grid2.appendChild(Dom.el('div', { class: 'card' }, [
-        Dom.el('div', { class: 'card-title' }, ['Annual Spending by Category']),
-        Dom.el('div', { class: 'chart-wrap tall' }, [Dom.el('canvas', { id: 'propSpendDonut' })])
-      ]));
-      grid2.appendChild(Dom.el('div', { class: 'card' }, [
-        Dom.el('div', { class: 'card-title' }, ['Assets, Debt & Net Worth']),
-        Dom.el('div', { class: 'chart-wrap tall' }, [Dom.el('canvas', { id: 'propNwHistory' })])
-      ]));
-      wrap.appendChild(grid2);
-      var grid3 = Dom.el('div', { class: 'grid grid-3 mb-3' });
-      grid3.appendChild(Dom.el('div', { class: 'card' }, [
-        Dom.el('div', { class: 'card-title' }, ['Saving Rate: Goal vs Actual']),
-        Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propSavingsRate' })])
-      ]));
-      grid3.appendChild(Dom.el('div', { class: 'card' }, [
-        Dom.el('div', { class: 'card-title' }, ['Net Worth Goal vs Current']),
-        Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propNwGoal' })])
-      ]));
-      grid3.appendChild(Dom.el('div', { class: 'card' }, [
-        Dom.el('div', { class: 'card-title' }, ['Investment Balance Trend']),
-        Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propInvestTrend' })])
-      ]));
-      wrap.appendChild(grid3);
-      return wrap;
     }
 
     // A plain-English baseline statement, then — if the advisor has
@@ -186,6 +116,8 @@ var ModuleProposals = (function () {
       var wrap = Dom.el('div', { class: 'mb-3' });
       var retirementAge = Calc.num((c.retirement || {}).retirementAge);
       var name = (c.personal || {}).name || 'The client';
+      var gender = (c.personal || {}).gender;
+      var pronoun = gender === 'Male' ? 'he is' : gender === 'Female' ? 'she is' : 'they are';
       var baselineRows = Calc.roadmapProjection(c, { baseline: true });
       var baselineAtRetirement = baselineRows.filter(function (r) { return r.age === retirementAge; })[0] || baselineRows[baselineRows.length - 1];
 
@@ -193,7 +125,7 @@ var ModuleProposals = (function () {
       if (baselineAtRetirement) {
         var monthlyAtRetirement = baselineAtRetirement.retirementPayoutCredited / 12;
         wrap.appendChild(Dom.el('div', { class: 'card mb-3', style: 'font-size:12.5px;line-height:1.7' }, [
-          'If ' + name + ' continues working until age ' + retirementAge + ' — with no home purchase and no other planned life events — they are projected to retire with a savings balance of around ',
+          'If ' + name + ' continues working until age ' + retirementAge + ' — with no home purchase and no other planned life events — ' + pronoun + ' projected to retire with a savings balance of around ',
           Dom.el('b', {}, [Dom.fmtMoney(baselineAtRetirement.balance)]),
           ' and approximately ',
           Dom.el('b', {}, [Dom.fmtMoney(monthlyAtRetirement) + '/month']),
@@ -265,59 +197,93 @@ var ModuleProposals = (function () {
         Dom.el('div', { class: 'kpi-value' }, [value])
       ]);
     }
+    // Reproduces Dashboard's own page EXACTLY — same order, same content,
+    // same labels — rather than a separately hand-built summary that can
+    // silently drift out of step with what the advisor actually sees on
+    // Dashboard day-to-day: Goal Strip -> 2-chart grid -> 3-chart grid ->
+    // Recommendations -> Full Detail KPI grid. Every metric/order here is
+    // copied directly from dashboard.js's own draw() — if that page's
+    // layout changes, mirror the change here too.
     function dashboardOverview(c, rp) {
       var wrap = Dom.el('div', { class: 'mb-3' });
-      var efMonths = Calc.emergencyFundMonths(c);
-      var efTarget = (c.emergencyFund || {}).targetMonths || 6;
       var savingsRate = Calc.savingsRate(c);
+      var nw = Calc.netWorth(c);
+      var invValue = Calc.investmentAssetsTotal(c);
+      var coverage = Calc.totalDeathOnlyCoverage(c);
+      var passiveIncome = Calc.passiveIncomeMonthly(c);
+      var dividendIncome = Calc.totalMonthlyDividendAtAge(c, Calc.num((c.retirement || {}).currentAge));
+      var efMonths = Calc.emergencyFundMonths(c);
+      var fiPct = Calc.financialIndependencePercent(c);
+      var projRetireAge = Calc.projectedRetirementAge(c);
       var nwGoalPct = Calc.netWorthGoalProgress(c);
+      var savingsGoal = Calc.num((c.budgetGoals || {}).savingsRateGoal);
       var targetRetireAge = Calc.num((c.retirement || {}).retirementAge);
 
-      wrap.appendChild(Dom.el('div', { class: 'section-title', style: 'margin-top:0' }, ['📊 Dashboard Overview']));
+      wrap.appendChild(Dom.el('div', { class: 'section-title', style: 'margin-top:0' }, ['📊 Dashboard']));
 
-      wrap.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12px;margin-bottom:6px' }, ['Where You Are Today']));
+      // ---- Goal strip ----
       wrap.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
-        kpiTile('Net Worth', Dom.fmtMoney(Calc.netWorth(c)), 'violet'),
+        goalChip('Net Worth Goal', Dom.fmtMoney(Calc.num((c.budgetGoals || {}).netWorthGoal))),
+        goalChip('Current Net Worth', Dom.fmtMoney(nw)),
+        goalChip('Net Worth Achieved', Dom.fmtPct(nwGoalPct)),
+        goalChip('Saving Rate Goal', Dom.fmtPct(savingsGoal)),
+        goalChip('Saving Rate Actual', Dom.fmtPct(savingsRate))
+      ]));
+
+      // ---- Charts (configs shared with Dashboard via Charts.dashboardConfigs
+      // so the numbers can never disagree; own canvas ids since a multi-tab
+      // printout can show Dashboard and Summary together) ----
+      var grid2 = Dom.el('div', { class: 'grid grid-2 mb-3' });
+      grid2.appendChild(Dom.el('div', { class: 'card' }, [Dom.el('div', { class: 'card-title' }, ['Annual Spending by Category']), Dom.el('div', { class: 'chart-wrap tall' }, [Dom.el('canvas', { id: 'propSpendDonut' })])]));
+      grid2.appendChild(Dom.el('div', { class: 'card' }, [Dom.el('div', { class: 'card-title' }, ['Assets, Debt & Net Worth']), Dom.el('div', { class: 'chart-wrap tall' }, [Dom.el('canvas', { id: 'propNwHistory' })])]));
+      wrap.appendChild(grid2);
+      var grid3 = Dom.el('div', { class: 'grid grid-3 mb-3' });
+      grid3.appendChild(Dom.el('div', { class: 'card' }, [Dom.el('div', { class: 'card-title' }, ['Saving Rate: Goal vs Actual']), Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propSavingsRate' })])]));
+      grid3.appendChild(Dom.el('div', { class: 'card' }, [Dom.el('div', { class: 'card-title' }, ['Net Worth Goal vs Current']), Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propNwGoal' })])]));
+      grid3.appendChild(Dom.el('div', { class: 'card' }, [Dom.el('div', { class: 'card-title' }, ['Investment Balance Trend']), Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propInvestTrend' })])]));
+      wrap.appendChild(grid3);
+
+      // ---- Recommendations (same panel, same order — every rec, not
+      // just the problem ones filtered into "Problems Identified" below) ----
+      wrap.appendChild(Dom.el('div', { class: 'section-title' }, ['Recommendations']));
+      var aiPanel = Dom.el('div', { class: 'ai-panel mb-3' });
+      AI.getRecommendations(c).forEach(function (r) {
+        aiPanel.appendChild(Dom.el('div', { class: 'ai-rec' }, [
+          Dom.el('div', { class: 'ai-dot ' + r.severity }),
+          Dom.el('div', {}, [
+            Dom.el('div', { style: 'font-weight:700;font-size:12px' }, [r.title]),
+            Dom.el('div', { class: 'text-secondary', style: 'margin-top:2px' }, [r.detail])
+          ])
+        ]));
+      });
+      wrap.appendChild(aiPanel);
+
+      // ---- Full Detail KPI grid ----
+      wrap.appendChild(Dom.el('div', { class: 'section-title' }, ['🔍 Full Detail']));
+      wrap.appendChild(Dom.el('div', { class: 'grid grid-kpi' }, [
         kpiTile('Monthly Income', Dom.fmtMoney(Calc.monthlyIncome(c)), 'green'),
         kpiTile('Monthly Expenses', Dom.fmtMoney(Calc.monthlyExpenses(c)), 'orange'),
-        kpiTile('Savings Rate', Dom.fmtPct(savingsRate), savingsRate >= 20 ? 'green' : 'red'),
-        kpiTile('Death Coverage', Dom.fmtMoney(Calc.totalDeathOnlyCoverage(c)), 'red'),
-        kpiTile('Investment Assets', Dom.fmtMoney(Calc.investmentAssetsTotal(c)), 'burgundy'),
-        kpiTile('Emergency Fund', efMonths.toFixed(1) + ' mo', efMonths >= efTarget ? 'green' : 'red')
-      ]));
-      wrap.appendChild(Dom.el('div', { class: 'card mb-3' }, [
-        Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propIncomeExpenseChart' })])
-      ]));
-
-      wrap.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12px;margin-bottom:6px' }, ['Where You’re Headed']));
-      wrap.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
+        kpiTile('Savings Rate', Dom.fmtPct(savingsRate), 'blue'),
+        kpiTile('Net Worth', Dom.fmtMoney(nw), 'violet'),
+        kpiTile('Investment Value (today)', Dom.fmtMoney(invValue), 'burgundy'),
+        kpiTile('Death Coverage', Dom.fmtMoney(coverage), 'red'),
+        kpiTile('Retirement Progress', Dom.fmtPct(rp.requiredPortfolio > 0 ? (rp.projectedAssets / rp.requiredPortfolio) * 100 : 100), 'yellow'),
+        kpiTile('Passive Income / mo', Dom.fmtMoney(passiveIncome), 'cyan'),
+        kpiTile('Dividend Income / mo', Dom.fmtMoney(dividendIncome), 'pink'),
+        kpiTile('Emergency Fund', efMonths.toFixed(1) + ' mo', 'red'),
+        kpiTile('Financial Independence', Dom.fmtPct(fiPct), 'yellow'),
         kpiTile('Target Retirement Age', targetRetireAge || '—', 'indigo'),
-        kpiTile('Required Portfolio', Dom.fmtMoney(rp.requiredPortfolio), 'blue'),
-        kpiTile('Projected Assets', Dom.fmtMoney(rp.projectedAssets), 'burgundy'),
-        kpiTile('Retirement Readiness', rp.successProbability.toFixed(0) + '%', rp.successProbability >= 100 ? 'green' : 'yellow'),
-        kpiTile('Net Worth Goal Progress', Dom.fmtPct(nwGoalPct), nwGoalPct >= 100 ? 'green' : 'yellow')
+        kpiTile('Earliest Possible Retirement Age', projRetireAge ? projRetireAge : 'Not by 85', 'indigo')
       ]));
-      wrap.appendChild(Dom.el('div', { class: 'card mb-3' }, [
-        Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propRetirementChart' })])
-      ]));
-
-      wrap.appendChild(Dom.el('div', { style: 'font-weight:700;font-size:12px;margin-bottom:2px' }, ['Gaps to Note']));
-      var gapRows = [];
-      var coverageGap = Calc.coverageGap(c);
-      if (coverageGap > 0) gapRows.push(propRow('Protection Gap', Dom.fmtMoney(coverageGap)));
-      if (rp.retirementGap > 0) gapRows.push(propRow('Retirement Gap (at age ' + targetRetireAge + ')', Dom.fmtMoney(rp.retirementGap)));
-      if (savingsRate < 20) gapRows.push(propRow('Savings Rate', Dom.fmtPct(savingsRate) + ' vs 20%+ target'));
-      if (efMonths < efTarget) gapRows.push(propRow('Emergency Fund', efMonths.toFixed(1) + ' vs ' + efTarget + ' month target'));
-      var hasDollarGap = coverageGap > 0 || rp.retirementGap > 0 || efMonths < efTarget;
-      if (!gapRows.length) gapRows.push(Dom.el('div', { class: 'text-secondary' }, ['No material gaps identified — current plan is well on track.']));
-      wrap.appendChild(Dom.el('div', { class: 'mb-3' }, gapRows));
-      if (hasDollarGap) {
-        wrap.appendChild(Dom.el('div', { class: 'card mb-3' }, [
-          Dom.el('div', { class: 'chart-wrap' }, [Dom.el('canvas', { id: 'propGapsChart' })])
-        ]));
-      }
 
       return wrap;
+    }
+
+    function goalChip(label, value) {
+      return Dom.el('div', { class: 'card', style: 'padding:14px 16px' }, [
+        Dom.el('div', { class: 'kpi-label', style: 'font-size:10px' }, [label]),
+        Dom.el('div', { style: 'font-family:var(--font-serif);font-size:17px;font-weight:700;margin-top:2px' }, [value])
+      ]);
     }
 
     // Free-text commentary the advisor can personalise per client — e.g. a
