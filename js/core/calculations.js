@@ -1998,6 +1998,15 @@ var Calc = (function () {
   // view entirely.
   function combinedRoadmapProjection(clientA, clientB) {
     var rowsA = roadmapProjection(clientA), rowsB = roadmapProjection(clientB);
+    // Each partner's own first initial reads more naturally in a combined
+    // table than a plain "A"/"B" — falls back to "A"/"B" when a name is
+    // missing, or when both names happen to start with the same letter
+    // (initials alone couldn't tell them apart either).
+    var nameA = ((clientA.personal || {}).name || '').trim();
+    var nameB = ((clientB.personal || {}).name || '').trim();
+    var labelA = nameA ? nameA.charAt(0).toUpperCase() : 'A';
+    var labelB = nameB ? nameB.charAt(0).toUpperCase() : 'B';
+    if (!nameA || !nameB || labelA === labelB) { labelA = 'A'; labelB = 'B'; }
     var byYear = {};
     function addRows(rows, ageLabel) {
       rows.forEach(function (r) {
@@ -2021,8 +2030,8 @@ var Calc = (function () {
         row.hospitalPremiumMedisave += r.hospitalPremiumMedisave;
       });
     }
-    addRows(rowsA, 'A');
-    addRows(rowsB, 'B');
+    addRows(rowsA, labelA);
+    addRows(rowsB, labelB);
     var years = Object.keys(byYear).map(Number).sort(function (a, b) { return a - b; });
     return years.map(function (y) { return byYear[y]; });
   }

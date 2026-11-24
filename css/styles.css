@@ -420,6 +420,17 @@ table.data-table.compact-table td { padding: 6px 8px; }
   .data-table thead { display: table-header-group; }
   .data-table tr { break-inside: avoid-page; page-break-inside: avoid; }
 
+  /* .table-scroll is a fixed-height (420px), scrollable box for ON-SCREEN
+     use — a long table (e.g. a 50+-row Roadmap) scrolls inside it rather
+     than pushing the rest of the page down. A printed page can't scroll,
+     so anything past that 420px was simply never printed at all — not a
+     page-break artifact, an outright content cutoff, with the very last
+     visible row left looking clipped right at the box's edge. Printing
+     needs the opposite of the screen behavior: no height cap, so the
+     full table flows naturally across as many pages as it needs (the
+     thead/tr rules above already handle that pagination cleanly). */
+  .table-scroll { max-height: none !important; overflow: visible !important; }
+
   /* Chart rows (Dashboard's own 2-chart/3-chart grid, and the Summary
      report's mirror of it) normally use .grid-2/.grid-3's auto-fit with
      a minmax floor (340px/260px) so they responsively collapse to fewer
