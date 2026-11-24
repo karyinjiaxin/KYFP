@@ -333,7 +333,12 @@ var App = (function () {
   function syncHousePurchaseImpl() {
     var c = Store.getAll();
     var hp = c.housePurchase || {};
-    var active = Calc.num(hp.purchasePrice) > 0;
+    // "Include in Plan" lets the advisor temporarily take this scenario
+    // out of Net Worth/CPF/Cashflow/Roadmap — e.g. to show "with vs
+    // without this purchase" — without losing every field entered, the
+    // way the old "Clear All" button did. Defaults true (unset !== false)
+    // so existing clients with fields already entered keep syncing.
+    var active = Calc.num(hp.purchasePrice) > 0 && hp.includeInPlan !== false;
     var s = active ? Calc.housePurchaseSummary(c) : null;
     var purchaseAge = active && ModuleHousePurchase ? ModuleHousePurchase.housePurchaseAge(c) : null;
 
@@ -355,8 +360,12 @@ var App = (function () {
     }
 
     // 1) Mortgage Details -> CPF (via syncMortgageCpfDeduction)
+    // Cleared (not just left unwritten) when inactive — either no Purchase
+    // Price yet, or deliberately toggled off via "Include in Plan" — so a
+    // scenario the advisor excludes doesn't leave a stale mortgage behind
+    // that CPF/Net Worth would otherwise keep counting.
+    var md = c.liabilities && c.liabilities.mortgageDetails;
     if (active) {
-      var md = c.liabilities && c.liabilities.mortgageDetails;
       if (!md || md.monthlyCash !== s.monthlyCash || md.monthlyCPF !== s.monthlyCpf ||
         md.tenureYears !== s.tenureYears || md.interestRate !== s.interestRate) {
         Store.set('liabilities.mortgageDetails.monthlyCash', s.monthlyCash);
@@ -364,19 +373,28 @@ var App = (function () {
         Store.set('liabilities.mortgageDetails.tenureYears', s.tenureYears);
         Store.set('liabilities.mortgageDetails.interestRate', s.interestRate);
       }
+    } else if (md && (Calc.num(md.monthlyCash) || Calc.num(md.monthlyCPF) || Calc.num(md.tenureYears) || Calc.num(md.interestRate))) {
+      Store.set('liabilities.mortgageDetails.monthlyCash', 0);
+      Store.set('liabilities.mortgageDetails.monthlyCPF', 0);
+      Store.set('liabilities.mortgageDetails.tenureYears', 0);
+      Store.set('liabilities.mortgageDetails.interestRate', 0);
     }
 
     // 1b) One-time CPF OA downpayment -> CPF's own "Future Home Purchase At
     // Age" / "Est. Downpayment From OA" fields, which cpfProjectionFull
     // already withdraws from the OA balance at that exact age — previously
     // unconnected to this page, so the downpayment's CPF portion never
-    // showed up as reducing the CPF projection at all.
-    if (active) {
-      var cpfData = c.cpf || {};
-      if (purchaseAge != null && (cpfData.homePurchaseAge !== purchaseAge || cpfData.homePurchaseDownpaymentOA !== s.downpaymentCpf)) {
+    // showed up as reducing the CPF projection at all. Cleared when
+    // inactive for the same reason as Mortgage Details above.
+    var cpfData = c.cpf || {};
+    if (active && purchaseAge != null) {
+      if (cpfData.homePurchaseAge !== purchaseAge || cpfData.homePurchaseDownpaymentOA !== s.downpaymentCpf) {
         Store.set('cpf.homePurchaseAge', purchaseAge);
         Store.set('cpf.homePurchaseDownpaymentOA', s.downpaymentCpf);
       }
+    } else if (!active && (cpfData.homePurchaseAge != null && cpfData.homePurchaseAge !== '' || Calc.num(cpfData.homePurchaseDownpaymentOA))) {
+      Store.set('cpf.homePurchaseAge', '');
+      Store.set('cpf.homePurchaseDownpaymentOA', 0);
     }
 
     // 2) Cashflow auto item

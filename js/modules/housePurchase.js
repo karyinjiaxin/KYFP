@@ -65,21 +65,37 @@ var ModuleHousePurchase = (function () {
       var s = Calc.housePurchaseSummary(c);
 
       container.innerHTML = '';
+      var includeInPlan = hp.includeInPlan !== false;
       container.appendChild(Dom.el('div', { class: 'page-header flex justify-between items-center' }, [
         Dom.el('div', {}, [
           Dom.el('h1', {}, ['House Purchase']),
           Dom.el('div', { class: 'sub' }, ['Model the full cost and financing of a property purchase — mortgage and one-off costs feed Net Worth’s Mortgage Details (which feeds CPF), Cashflow, and the Cash Flow Roadmap automatically once a Purchase Price is entered.'])
         ]),
-        s.price > 0 ? Dom.el('button', {
-          class: 'btn btn-secondary', onclick: function () {
-            Dom.modalConfirm(
-              'Clear every House Purchase field on this page, for a fresh simulation? This also removes the mortgage figures it synced into Net Worth’s Mortgage Details, CPF’s Future Home Purchase fields, the auto Cashflow mortgage item, and the Roadmap’s upfront-cash event. Nothing else on the client is touched. This cannot be undone.',
-              function () { clearAll(); },
-              { confirmLabel: 'Clear All', danger: true }
-            );
-          }
-        }, ['Clear All']) : null
-      ].filter(Boolean)));
+        Dom.el('div', { class: 'flex items-center', style: 'gap:12px' }, [
+          s.price > 0 ? Dom.el('label', { style: 'display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;cursor:pointer' }, [
+            Dom.el('input', {
+              type: 'checkbox', checked: includeInPlan ? 'checked' : null,
+              onchange: function (e) { Store.set('housePurchase.includeInPlan', e.target.checked); }
+            }),
+            'Include in Plan'
+          ]) : null,
+          s.price > 0 ? Dom.el('button', {
+            class: 'btn btn-secondary', onclick: function () {
+              Dom.modalConfirm(
+                'Clear every House Purchase field on this page, for a fresh simulation? This also removes the mortgage figures it synced into Net Worth’s Mortgage Details, CPF’s Future Home Purchase fields, the auto Cashflow mortgage item, and the Roadmap’s upfront-cash event. Nothing else on the client is touched. This cannot be undone.',
+                function () { clearAll(); },
+                { confirmLabel: 'Clear All', danger: true }
+              );
+            }
+          }, ['Clear All']) : null
+        ].filter(Boolean))
+      ]));
+
+      if (s.price > 0 && !includeInPlan) {
+        container.appendChild(Dom.el('div', {
+          class: 'mb-3', style: 'padding:10px 12px;border-radius:8px;font-size:11.5px;font-weight:600;background:var(--bad-soft);color:var(--bad)'
+        }, ['⏸ Excluded from Plan — all fields below are kept, but this purchase is temporarily out of Net Worth, CPF, Cashflow and the Roadmap. Tick "Include in Plan" above to bring it back.']));
+      }
 
       if (s.price > 0) {
         container.appendChild(Dom.el('div', { class: 'grid grid-kpi mb-3' }, [
@@ -245,7 +261,9 @@ var ModuleHousePurchase = (function () {
       // ---- Sync status ----
       container.appendChild(Dom.el('div', { class: 'section-title' }, ['🔄 Synced To']));
       var syncCard = Dom.el('div', { class: 'card mb-3' });
-      if (s.price > 0) {
+      if (s.price > 0 && !includeInPlan) {
+        syncCard.appendChild(Dom.el('div', { class: 'text-tertiary' }, ['Excluded from Plan — nothing below is currently synced. Tick "Include in Plan" above to activate syncing again.']));
+      } else if (s.price > 0) {
         syncCard.appendChild(Dom.el('div', { class: 'text-secondary', style: 'line-height:1.7' }, [
           '✓ Net Worth → Mortgage Details: Monthly Payment (Cash) = ' + Dom.fmtMoney(s.monthlyCash) + ', Monthly Payment (CPF/OA) = ' + Dom.fmtMoney(s.monthlyCpf) + ', Loan Tenure = ' + s.tenureYears + ' yrs, Interest Rate = ' + s.interestRate + '%.',
           Dom.el('br'),
