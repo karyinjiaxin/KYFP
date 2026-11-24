@@ -1709,7 +1709,18 @@ var Calc = (function () {
     return multiplier;
   }
 
-  function roadmapRetirementPayoutSuggestion(c) {
+  // Splits the suggested Retirement Payout into CPF LIFE vs everything
+  // else, since they don't actually start at the same age when
+  // Retirement Age is set before 65 — CPF LIFE only starts at 65 (per
+  // CPF Board rules; the Retirement Account funds the annuity premium at
+  // that point, not before), regardless of when the client actually
+  // stops working, while dividends/rental/other passive income can
+  // realistically begin the moment the client retires, whatever age that
+  // is. roadmapProjection uses this split for its own age-gating; the
+  // combined total is what's shown as the single suggested figure on the
+  // Roadmap page itself (and what an advisor's manual override replaces
+  // as one flat number, not split, since that's their own assumption).
+  function roadmapRetirementPayoutBreakdown(c) {
     // Uses dividend/investment income AT RETIREMENT AGE, not today's
     // figure — passiveIncomeMonthly() is tied to current age (correct
     // for showing "passive income today" elsewhere), but investment
@@ -1720,8 +1731,12 @@ var Calc = (function () {
     var i = c.income || {};
     var cpfLifeMonthly = estimatedCpfLifePayout(c);
     var dividendAtRetirement = totalAnnualDividendAtAge(c, retirementAge) / 12;
-    var otherPassive = num(i.rentalIncome) + num(i.investmentIncome) / 12;
-    return cpfLifeMonthly + dividendAtRetirement + otherPassive;
+    var otherPassiveMonthly = num(i.rentalIncome) + num(i.investmentIncome) / 12 + dividendAtRetirement;
+    return { cpfLifeMonthly: cpfLifeMonthly, otherPassiveMonthly: otherPassiveMonthly };
+  }
+  function roadmapRetirementPayoutSuggestion(c) {
+    var b = roadmapRetirementPayoutBreakdown(c);
+    return b.cpfLifeMonthly + b.otherPassiveMonthly;
   }
 
   // opts.baseline strips every Life Event and the auto-added House
@@ -1749,8 +1764,16 @@ var Calc = (function () {
     var interestRate = (rm.interestRate != null && rm.interestRate !== '' ? num(rm.interestRate) : 0.05) / 100;
     var inflationRate = (rm.inflationRate != null && rm.inflationRate !== '' ? num(rm.inflationRate) : 2) / 100;
     var incomeGrowthRate = num((c.cashflow || {}).incomeGrowthRate) / 100;
-    var retirementPayoutMonthly = rm.retirementPayoutOverride != null && rm.retirementPayoutOverride !== ''
-      ? num(rm.retirementPayoutOverride) : roadmapRetirementPayoutSuggestion(c);
+    var payoutOverridden = rm.retirementPayoutOverride != null && rm.retirementPayoutOverride !== '';
+    // An advisor's manual override is their own single all-in assumption,
+    // credited in full from Retirement Age same as before — only the
+    // AUTO-SUGGESTED figure is split by source, since CPF LIFE specifically
+    // only starts at 65 (per CPF Board rules) regardless of Retirement
+    // Age, while dividends/rental/other passive income can realistically
+    // begin the moment the client actually retires, whatever age that is.
+    var retirementPayoutMonthly = payoutOverridden ? num(rm.retirementPayoutOverride) : 0;
+    var payoutBreakdown = payoutOverridden ? null : roadmapRetirementPayoutBreakdown(c);
+    var cpfLifeStartAge = Math.max(retirementAge, 65);
 
     var balance = num((c.assets || {}).cash);
     // At 55, CPF forms the Retirement Account up to the selected
@@ -1843,8 +1866,18 @@ var Calc = (function () {
       if (isWorking) {
         incomeCredited = annualIncome * incomeMultiplier;
         balance += incomeCredited;
-      } else {
+      } else if (payoutOverridden) {
         retirementPayoutCredited = annualRetirementPayout;
+        balance += retirementPayoutCredited;
+      } else {
+        // CPF LIFE only starts at 65 regardless of Retirement Age — a
+        // client retiring at, say, 55 has a gap from 55 to 65 with NO
+        // CPF LIFE payout yet, funded only by dividends/rental/other
+        // passive income (still credited from Retirement Age itself,
+        // since those realistically can start the moment the client
+        // actually stops working).
+        retirementPayoutCredited = payoutBreakdown.otherPassiveMonthly * 12
+          + (age >= cpfLifeStartAge ? payoutBreakdown.cpfLifeMonthly * 12 : 0);
         balance += retirementPayoutCredited;
       }
 
@@ -2428,6 +2461,7 @@ var Calc = (function () {
     combinedNetWorth: combinedNetWorth, combinedRetirementProjection: combinedRetirementProjection,
     combinedRoadmapProjection: combinedRoadmapProjection,
     roadmapProjection: roadmapProjection, roadmapRetirementPayoutSuggestion: roadmapRetirementPayoutSuggestion,
+    roadmapRetirementPayoutBreakdown: roadmapRetirementPayoutBreakdown,
     additionalMonthlyForGap: additionalMonthlyForGap,
     emergencyFundMonths: emergencyFundMonths,
     goalMonthlyRequired: goalMonthlyRequired, goalProgress: goalProgress,

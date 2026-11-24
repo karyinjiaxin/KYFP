@@ -95,22 +95,25 @@ var ModuleRoadmap = (function () {
 
       // ---- Retirement payout override ----
       var payoutSuggestion = Calc.roadmapRetirementPayoutSuggestion(c);
+      var payoutBreakdownForDisplay = Calc.roadmapRetirementPayoutBreakdown(c);
+      var retirementAgeForPayout = Calc.num((c.retirement || {}).retirementAge) || 55;
+      var cpfLifeStartAgeForDisplay = Math.max(retirementAgeForPayout, 65);
       var payoutOverride = rm.retirementPayoutOverride;
       var payoutActive = payoutOverride != null && payoutOverride !== '';
-      container.appendChild(Dom.el('div', { class: 'section-title' }, ['\ud83d\udcb0 Retirement Payout (monthly, from Retirement Age onward)']));
+      container.appendChild(Dom.el('div', { class: 'section-title' }, ['\ud83d\udcb0 Retirement Payout (monthly)']));
       var payoutCard = Dom.el('div', { class: 'card mb-3' });
       payoutCard.appendChild(Dom.el('div', { class: 'input-row compact-row narrow-row' }, [
         Fields.moneyInput('roadmap.retirementPayoutOverride', 'Monthly Retirement Payout')
       ]));
       payoutCard.appendChild(Dom.el('div', { class: 'text-tertiary mt-2' }, [
-        'Auto-suggested from CPF Tab\u2019s CPF LIFE estimate + Wealth Accumulation Planning\u2019s projected dividend income AT Retirement Age (not today\u2019s dividend figure, since investments typically grow substantially by then) + rental/other passive income (currently ' + Dom.fmtMoney(payoutSuggestion) + '/month) \u2014 edit freely, e.g. to model a different CPF LIFE plan or exclude income that won\u2019t actually continue. ',
+        'Auto-suggested (currently ' + Dom.fmtMoney(payoutSuggestion) + '/month total) from two sources that do NOT start at the same age when Retirement Age is set before 65: CPF Tab\u2019s CPF LIFE estimate (' + Dom.fmtMoney(payoutBreakdownForDisplay.cpfLifeMonthly) + '/month, starting at age ' + cpfLifeStartAgeForDisplay + (cpfLifeStartAgeForDisplay > retirementAgeForPayout ? ' \u2014 CPF LIFE only starts at 65 regardless of Retirement Age, so there\u2019s a gap from ' + retirementAgeForPayout + ' to ' + cpfLifeStartAgeForDisplay + ' with no CPF LIFE payout' : '') + '), and Wealth Accumulation Planning\u2019s projected dividend income AT Retirement Age (not today\u2019s dividend figure, since investments typically grow substantially by then) + rental/other passive income (' + Dom.fmtMoney(payoutBreakdownForDisplay.otherPassiveMonthly) + '/month, starting at Retirement Age itself since those can realistically begin the moment the client stops working) \u2014 edit freely below to override with a single flat number instead (e.g. to model a different CPF LIFE plan), which then applies in full from Retirement Age with no age-65 gap, since that\u2019s your own all-in assumption. ',
         Dom.el('a', {
           href: '#', style: 'color:var(--accent);cursor:pointer',
           onclick: function (e) { e.preventDefault(); Store.set('roadmap.retirementPayoutOverride', Math.round(payoutSuggestion * 100) / 100); }
         }, ['Use this suggestion'])
       ]));
       if (payoutActive) {
-        payoutCard.appendChild(Dom.el('div', { class: 'text-secondary mt-2', style: 'font-weight:600' }, ['\u2713 Currently using ' + Dom.fmtMoney(Calc.num(payoutOverride)) + '/month']));
+        payoutCard.appendChild(Dom.el('div', { class: 'text-secondary mt-2', style: 'font-weight:600' }, ['\u2713 Currently using ' + Dom.fmtMoney(Calc.num(payoutOverride)) + '/month, flat from Retirement Age (age ' + retirementAgeForPayout + ')']));
       }
       container.appendChild(payoutCard);
 
