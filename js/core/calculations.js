@@ -136,7 +136,7 @@ var Calc = (function () {
     // — adding investmentValueAtAge() on top would double-count the same
     // money once via these fields and again by recomputing the plans
     // directly.
-    return num(a.cash) + num(a.moneyMarketFunds) + totalCpfBalance(c) + num(a.stocks) + num(a.etfs) + num(a.unitTrusts) +
+    return num(a.cash) + num(a.moneyMarketFunds) + num(a.bonds) + totalCpfBalance(c) + num(a.stocks) + num(a.etfs) + num(a.unitTrusts) +
       num(a.crypto) + propertyValueTotal(c) + num(a.business) + num(a.insuranceCashValue) +
       num(a.cpfIs) + num(a.srsInvestments);
   }
@@ -161,12 +161,51 @@ var Calc = (function () {
     // Investments are genuinely separate holdings (money that left the
     // OA/SA cash balance or SRS cash balance to buy into the market), so
     // no double-counting risk including them here.
-    return num(a.stocks) + num(a.etfs) + num(a.unitTrusts) + num(a.crypto) + num(a.cpfIs) + num(a.srsInvestments);
+    return num(a.bonds) + num(a.stocks) + num(a.etfs) + num(a.unitTrusts) + num(a.crypto) + num(a.cpfIs) + num(a.srsInvestments);
   }
   function debtRatio(c) {
     var ta = totalAssets(c);
     if (ta <= 0) return 0;
     return (totalLiabilities(c) / ta) * 100;
+  }
+
+  // ---------- PORTFOLIO WEIGHTED RATE OF RETURN ----------
+  // Investable/income-producing holdings only (Property and Business are
+  // left out — a "market price growth rate" assumption doesn't apply to
+  // them the same way, and they're not part of a liquid investment
+  // portfolio in the sense this table is analysing). Each row's Annual
+  // Interest % and Market Price Growth Rate % are the advisor's own
+  // forward-looking assumptions (stored per asset class), not anything
+  // the app can derive — Total RoR = Interest + Growth, Weighted RoR =
+  // (this row's % of the total) × Total RoR, and the portfolio's overall
+  // Weighted RoR is the sum of every row's Weighted RoR.
+  var ROR_ASSET_CLASSES = [
+    { key: 'cash', label: 'Cash & Cash Equivalent', amount: function (c) { var a = c.assets || {}; return num(a.cash) + num(a.moneyMarketFunds); } },
+    { key: 'bonds', label: 'Bonds (incl. SSB)', amount: function (c) { return num((c.assets || {}).bonds); } },
+    { key: 'stocks', label: 'Stocks', amount: function (c) { return num((c.assets || {}).stocks); } },
+    { key: 'etfs', label: 'ETFs', amount: function (c) { return num((c.assets || {}).etfs); } },
+    { key: 'unitTrusts', label: 'Unit Trusts', amount: function (c) { return num((c.assets || {}).unitTrusts); } },
+    { key: 'crypto', label: 'Crypto', amount: function (c) { return num((c.assets || {}).crypto); } },
+    { key: 'cpfIs', label: 'CPF Investment Scheme (CPF IS)', amount: function (c) { return num((c.assets || {}).cpfIs); } },
+    { key: 'srsInvestments', label: 'SRS Investments', amount: function (c) { return num((c.assets || {}).srsInvestments); } },
+    { key: 'insuranceCashValue', label: 'Life Insurance (Cash Value)', amount: function (c) { return num((c.assets || {}).insuranceCashValue); } },
+    { key: 'cpfOaSa', label: 'CPF (OA + SA)', amount: function (c) { var cpf = c.cpf || {}; return num(cpf.oa) + num(cpf.sa); } }
+  ];
+  function portfolioWeightedRoR(c) {
+    var assumptions = c.portfolioRoR || {};
+    var rows = ROR_ASSET_CLASSES.map(function (def) {
+      var amount = def.amount(c);
+      var a = assumptions[def.key] || {};
+      var interestPct = num(a.interest);
+      var growthPct = num(a.growth);
+      return { key: def.key, label: def.label, amount: amount, interestPct: interestPct, growthPct: growthPct, totalRoRPct: interestPct + growthPct };
+    });
+    var totalAmount = sum(rows, function (r) { return r.amount; });
+    rows.forEach(function (r) {
+      r.pct = totalAmount > 0 ? (r.amount / totalAmount) * 100 : 0;
+      r.weightedRoRPct = (r.pct / 100) * r.totalRoRPct;
+    });
+    return { rows: rows, totalAmount: totalAmount, weightedTotalRoRPct: sum(rows, function (r) { return r.weightedRoRPct; }) };
   }
 
   // ---------- INSURANCE ----------
@@ -2479,6 +2518,7 @@ var Calc = (function () {
     annualSurplus: annualSurplus, savingsRate: savingsRate, cashflowRatio: cashflowRatio,
     totalAssets: totalAssets, totalLiabilities: totalLiabilities, netWorth: netWorth,
     liquidAssets: liquidAssets, investmentAssetsTotal: investmentAssetsTotal, debtRatio: debtRatio,
+    portfolioWeightedRoR: portfolioWeightedRoR,
     propertyValueTotal: propertyValueTotal, propertyLoanTotal: propertyLoanTotal,
     policyAnnualPremium: policyAnnualPremium, totalAnnualPremium: totalAnnualPremium, totalMonthlyPremium: totalMonthlyPremium,
     policyCashPremium: policyCashPremium, insurancePremiumsAnnualAtAge: insurancePremiumsAnnualAtAge,

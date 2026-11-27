@@ -26,7 +26,7 @@ var ModuleNetWorth = (function () {
   var ASSET_TYPE_SUGGESTION = { 'unitTrusts': 'Unit Trust', 'etfs': 'ETF', 'stocks': 'Shares', 'crypto': 'Crypto' };
 
   var ASSET_FIELDS = [
-    ['cash', 'Cash'], ['moneyMarketFunds', 'Money Market Funds'], ['stocks', 'Stocks'], ['etfs', 'ETFs'],
+    ['cash', 'Cash'], ['moneyMarketFunds', 'Money Market Funds'], ['bonds', 'Bonds (incl. SSB)'], ['stocks', 'Stocks'], ['etfs', 'ETFs'],
     ['unitTrusts', 'Unit Trusts'], ['crypto', 'Crypto'], ['cpfIs', 'CPF Investment Scheme (CPF IS)'], ['srsInvestments', 'SRS Investments'],
     ['business', 'Business'], ['insuranceCashValue', 'Insurance Cash Value']
   ];
@@ -138,15 +138,62 @@ var ModuleNetWorth = (function () {
         Charts.render(document.getElementById('nwAllocChart'), {
           type: 'doughnut',
           data: {
-            labels: ['Cash', 'Money Market Funds', 'CPF', 'Stocks', 'ETFs', 'Unit Trusts', 'Crypto', 'CPF IS', 'SRS Investments', 'Property (net)', 'Business', 'Insurance CV'],
+            labels: ['Cash', 'Money Market Funds', 'Bonds', 'CPF', 'Stocks', 'ETFs', 'Unit Trusts', 'Crypto', 'CPF IS', 'SRS Investments', 'Property (net)', 'Business', 'Insurance CV'],
             datasets: [{
-              data: [Calc.num(a.cash), Calc.num(a.moneyMarketFunds), Calc.totalCpfBalance(c), Calc.num(a.stocks), Calc.num(a.etfs), Calc.num(a.unitTrusts), Calc.num(a.crypto), Calc.num(a.cpfIs), Calc.num(a.srsInvestments), Calc.propertyValueTotal(c) - Calc.propertyLoanTotal(c), Calc.num(a.business), Calc.num(a.insuranceCashValue)],
-              backgroundColor: t.palette.concat(['#E0A458', '#6FA394', '#B98BB0', '#8B7EC8', '#5B8FA8'])
+              data: [Calc.num(a.cash), Calc.num(a.moneyMarketFunds), Calc.num(a.bonds), Calc.totalCpfBalance(c), Calc.num(a.stocks), Calc.num(a.etfs), Calc.num(a.unitTrusts), Calc.num(a.crypto), Calc.num(a.cpfIs), Calc.num(a.srsInvestments), Calc.propertyValueTotal(c) - Calc.propertyLoanTotal(c), Calc.num(a.business), Calc.num(a.insuranceCashValue)],
+              backgroundColor: Charts.categoryColors(13, t.palette)
             }]
           },
           options: Object.assign({ scales: { x: false, y: false } }, Charts.leaderLineDonutOptions(t.text))
         });
       });
+
+      container.appendChild(portfolioRoRSection(c));
+    }
+
+    // Each row's Annual Interest %/Market Price Growth Rate % is the
+    // advisor's own forward-looking assumption for that asset class
+    // (there's nothing the app can derive these from) — Amount and %
+    // of portfolio are read straight from this same page's own fields
+    // above, so this table can never disagree with the asset values
+    // shown there. Property and Business are deliberately left out
+    // (see Calc.portfolioWeightedRoR's own comment) — this is a
+    // portfolio-return analysis, not a full net worth summary.
+    function portfolioRoRSection(c) {
+      var ror = Calc.portfolioWeightedRoR(c);
+      var wrap = Dom.el('div', { class: 'mb-3' });
+      wrap.appendChild(Dom.el('div', { class: 'section-title' }, ['📊 Portfolio Weighted Rate of Return']));
+      wrap.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, [
+        'Annual Interest % and Market Price Growth Rate % are your own return assumptions per asset class — Total RoR is simply the two added together, and Weighted RoR is that asset class’s share of the total portfolio (shown as %) multiplied by its Total RoR. The portfolio’s overall Weighted RoR (bottom right) is the sum of every row’s Weighted RoR.'
+      ]));
+      var card = Dom.el('div', { class: 'card' });
+      var tableWrap = Dom.el('div', { class: 'table-scroll' });
+      var table = Dom.el('table', { class: 'data-table' });
+      table.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, ['Assets', 'Amount', '%', 'Annual Interest %', 'Market Price Growth Rate %', 'Total RoR', 'Weighted RoR'].map(function (h) { return Dom.el('th', {}, [h]); }))]));
+      var tbody = Dom.el('tbody');
+      ror.rows.forEach(function (r) {
+        tbody.appendChild(Dom.el('tr', {}, [
+          Dom.el('td', { style: 'font-weight:600' }, [r.label]),
+          Dom.el('td', {}, [Dom.fmtMoney(r.amount)]),
+          Dom.el('td', {}, [Dom.fmtPct(r.pct)]),
+          Dom.el('td', { style: 'min-width:110px' }, [Fields.numberInput('portfolioRoR.' + r.key + '.interest', '', { step: '0.1' })]),
+          Dom.el('td', { style: 'min-width:110px' }, [Fields.numberInput('portfolioRoR.' + r.key + '.growth', '', { step: '0.1' })]),
+          Dom.el('td', {}, [Dom.fmtPct(r.totalRoRPct)]),
+          Dom.el('td', { style: 'font-weight:600' }, [Dom.fmtPct(r.weightedRoRPct)])
+        ]));
+      });
+      tbody.appendChild(Dom.el('tr', {}, [
+        Dom.el('td', { style: 'font-weight:700' }, ['Total']),
+        Dom.el('td', { style: 'font-weight:700' }, [Dom.fmtMoney(ror.totalAmount)]),
+        Dom.el('td', { style: 'font-weight:700' }, ['100%']),
+        Dom.el('td', {}, ['']),
+        Dom.el('td', {}, ['']),
+        Dom.el('td', {}, ['']),
+        Dom.el('td', { style: 'font-weight:700' }, [Dom.fmtPct(ror.weightedTotalRoRPct)])
+      ]));
+      table.appendChild(tbody); tableWrap.appendChild(table); card.appendChild(tableWrap);
+      wrap.appendChild(card);
+      return wrap;
     }
 
     function mortgageDetails(c) {
