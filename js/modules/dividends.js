@@ -45,12 +45,38 @@ var ModuleDividends = (function () {
         table.appendChild(tbody); wrap.appendChild(table); container.appendChild(wrap);
       }
 
+      // Endowment is a participating insurance product, not a market
+      // investment — shown alongside Participating Policies (also
+      // dividend/cash-value driven), not mixed into Investment Plan
+      // Dividends with unit trusts, ETFs, shares, etc.
+      var endowmentPlans = (c.investments || []).filter(function (plan) { return plan.assetType === 'Endowment'; });
+      var nonEndowmentPlans = (c.investments || []).filter(function (plan) { return plan.assetType !== 'Endowment'; });
+
+      container.appendChild(Dom.el('div', { class: 'section-title' }, ['💰 Endowment Plans (Cash Value)']));
+      if (endowmentPlans.length === 0) {
+        container.appendChild(Dom.el('div', { class: 'card empty-state' }, [Dom.el('div', {}, ['No endowment plans on record.'])]));
+      } else {
+        var wrapE = Dom.el('div', { class: 'table-scroll' });
+        var tableE = Dom.el('table', { class: 'data-table' });
+        tableE.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, ['Plan', 'Accumulated / Maturity Value', 'Annual Dividend', 'Monthly Dividend', 'Yield on Cost'].map(function (h) { return Dom.el('th', {}, [h]); }))]));
+        var tbodyE = Dom.el('tbody');
+        endowmentPlans.forEach(function (plan) {
+          var s = Calc.planSummary(plan);
+          tbodyE.appendChild(Dom.el('tr', {}, [
+            Dom.el('td', {}, [plan.name]), Dom.el('td', {}, [Dom.fmtMoney(s.accumulatedValue)]),
+            Dom.el('td', {}, [Dom.fmtMoney(s.annualDividend)]), Dom.el('td', {}, [Dom.fmtMoney(s.monthlyDividend)]),
+            Dom.el('td', {}, [Dom.fmtPct(s.yieldOnCost)])
+          ]));
+        });
+        tableE.appendChild(tbodyE); wrapE.appendChild(tableE); container.appendChild(wrapE);
+      }
+
       container.appendChild(Dom.el('div', { class: 'section-title' }, ['💹 Investment Plan Dividends']));
       var wrap2 = Dom.el('div', { class: 'table-scroll' });
       var table2 = Dom.el('table', { class: 'data-table' });
       table2.appendChild(Dom.el('thead', {}, [Dom.el('tr', {}, ['Plan', 'Accumulated Value', 'Annual Dividend', 'Monthly Dividend', 'Yield on Cost'].map(function (h) { return Dom.el('th', {}, [h]); }))]));
       var tbody2 = Dom.el('tbody');
-      (c.investments || []).forEach(function (plan) {
+      nonEndowmentPlans.forEach(function (plan) {
         var s = Calc.planSummary(plan);
         tbody2.appendChild(Dom.el('tr', {}, [
           Dom.el('td', {}, [plan.name]), Dom.el('td', {}, [Dom.fmtMoney(s.accumulatedValue)]),

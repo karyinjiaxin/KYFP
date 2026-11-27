@@ -94,6 +94,13 @@ var ModuleInvestments = (function () {
           Fields.numberInput(base + 'expectedReturn', 'Expected Return %', { step: '0.1' }),
           Fields.numberInput(base + 'inflation', 'Inflation %', { step: '0.1' })
         ]));
+        card.appendChild(Dom.el('div', { class: 'input-row compact-row mt-2' }, [
+          Fields.moneyInput(base + 'maturityValue', 'Projected Maturity Value'),
+          Fields.numberInput(base + 'maturityAge', '@ Age')
+        ]));
+        card.appendChild(Dom.el('div', { class: 'text-tertiary mt-2', style: 'line-height:1.5' }, [
+          'Enter the Projected Maturity Value straight from the insurer’s benefit illustration and the age it matures at — the projection is grounded to that exact figure at that age instead of back-computing it from Dividend Yield/Expected Return.'
+        ]));
       } else {
         var f3 = Dom.el('div', { class: 'input-row compact-row mt-2' }, [
           Fields.moneyInput(base + 'welcomeBonus', 'Welcome Bonus'),

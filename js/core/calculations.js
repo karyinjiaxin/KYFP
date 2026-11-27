@@ -737,6 +737,15 @@ var Calc = (function () {
     // compounding forward from there for all subsequent years.
     var currentValue = plan.currentValue != null && plan.currentValue !== '' ? num(plan.currentValue) : null;
     var currentValueAge = plan.currentValueAge != null && plan.currentValueAge !== '' ? num(plan.currentValueAge) : null;
+    // Endowment plans are typically quoted a Projected Maturity Value
+    // directly by the insurer at a specific policy year/age — a FUTURE
+    // figure, unlike "Current Investment Value" which grounds to a
+    // value observed today. When set, the balance at that age is
+    // overridden to match the insurer's own illustration instead of
+    // relying on this generic dividendYield/expectedReturn formula to
+    // back into the same number.
+    var maturityValue = plan.maturityValue != null && plan.maturityValue !== '' ? num(plan.maturityValue) : null;
+    var maturityAge = plan.maturityAge != null && plan.maturityAge !== '' ? num(plan.maturityAge) : null;
 
     var rows = [];
     var accumulated = 0;
@@ -766,6 +775,7 @@ var Calc = (function () {
       var totalBonus = thisYearWelcomeBonus + thisYearLoyaltyBonus;
       accumulated += totalBonus;
       if (currentValue !== null && currentValueAge !== null && age === currentValueAge) accumulated = currentValue;
+      if (maturityValue !== null && maturityAge !== null && age === maturityAge) accumulated = maturityValue;
 
       var hasSwitched = dividendSwitchAge != null && age >= dividendSwitchAge;
       var effectiveDividendYield = hasSwitched ? postSwitchDividendYield : dividendYield;

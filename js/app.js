@@ -563,6 +563,35 @@ var App = (function () {
     });
   }
 
+  // "Current Investment Value" grounds the projection to a real account
+  // balance, but ONLY at the exact age given in "As of Age" — if that age
+  // is left blank, the whole figure is silently ignored and the
+  // projection just keeps compounding from $0/Start Age instead, with
+  // nothing on screen hinting why. Auto-filling "As of Age" to the
+  // client's current age the moment a Current Value is entered (while it's
+  // still blank) means the grounding always actually takes effect; still
+  // fully editable afterward for a value observed at a different age.
+  var syncingInvestmentCurrentValueAge = false;
+  function syncInvestmentCurrentValueAge() {
+    if (syncingInvestmentCurrentValueAge) return;
+    syncingInvestmentCurrentValueAge = true;
+    try {
+      var c = Store.getAll();
+      var currentAge = Calc.ageFromDob((c.personal || {}).dob) || Calc.num((c.retirement || {}).currentAge);
+      if (!currentAge) return;
+      var arr = Store.get('investments') || [];
+      var changed = false;
+      arr.forEach(function (plan) {
+        var hasValue = Calc.num(plan.currentValue) > 0;
+        var hasAge = plan.currentValueAge != null && plan.currentValueAge !== '';
+        if (hasValue && !hasAge) { plan.currentValueAge = currentAge; changed = true; }
+      });
+      if (changed) Store.set('investments', arr);
+    } finally {
+      syncingInvestmentCurrentValueAge = false;
+    }
+  }
+
   // CPF's "Retirement Sum Growth Assumption %" defaults to 3.5%/year
   // (matching the confirmed 2026->2027 BRS increase) — auto-filled
   // visibly here rather than silently applied only internally when left
@@ -716,6 +745,7 @@ var App = (function () {
     syncCpfTopUpLinks();
     syncMortgageCpfDeduction();
     syncInvestmentAssets();
+    syncInvestmentCurrentValueAge();
     syncRetirementSumGrowthDefault();
     syncGapClosingDefaults();
     syncHousePurchase();
@@ -739,6 +769,7 @@ var App = (function () {
       syncCpfTopUpLinks();
       syncMortgageCpfDeduction();
       syncInvestmentAssets();
+      syncInvestmentCurrentValueAge();
       syncRetirementSumGrowthDefault();
       syncGapClosingDefaults();
       syncHousePurchase();
@@ -775,6 +806,8 @@ var App = (function () {
     // Planning" button on the Net Worth page.
     Store.subscribe('investments', syncInvestmentAssets);
     Store.subscribe('personal.dob', syncInvestmentAssets);
+    Store.subscribe('investments', syncInvestmentCurrentValueAge);
+    Store.subscribe('personal.dob', syncInvestmentCurrentValueAge);
 
     Sidebar.init(document.getElementById('sidebar'));
 
