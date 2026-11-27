@@ -179,6 +179,20 @@ var Calc = (function () {
   // the app can derive — Total RoR = Interest + Growth, Weighted RoR =
   // (this row's % of the total) × Total RoR, and the portfolio's overall
   // Weighted RoR is the sum of every row's Weighted RoR.
+  // Starting assumptions per asset class — a reasonable, commonly-used
+  // default (interest-bearing vs. market-growth split), NOT a guarantee;
+  // the advisor can edit either field freely per client. Asset classes
+  // with no widely-agreed default (ETFs/Crypto/CPF IS/SRS Investments —
+  // too dependent on what's actually held) are left at 0/0 for the
+  // advisor to fill in themselves rather than guessing.
+  var ROR_DEFAULTS = {
+    cash: { interest: 1.0, growth: 0 },
+    bonds: { interest: 3.0, growth: 0 },
+    stocks: { interest: 0, growth: 6.0 },
+    unitTrusts: { interest: 0, growth: 6.0 },
+    insuranceCashValue: { interest: 0, growth: 3.0 },
+    cpfOaSa: { interest: 3.3, growth: 0 }
+  };
   var ROR_ASSET_CLASSES = [
     { key: 'cash', label: 'Cash & Cash Equivalent', amount: function (c) { var a = c.assets || {}; return num(a.cash) + num(a.moneyMarketFunds); } },
     { key: 'bonds', label: 'Bonds (incl. SSB)', amount: function (c) { return num((c.assets || {}).bonds); } },
@@ -196,8 +210,14 @@ var Calc = (function () {
     var rows = ROR_ASSET_CLASSES.map(function (def) {
       var amount = def.amount(c);
       var a = assumptions[def.key] || {};
-      var interestPct = num(a.interest);
-      var growthPct = num(a.growth);
+      var defaults = ROR_DEFAULTS[def.key] || { interest: 0, growth: 0 };
+      // Auto-fill once (field never touched, i.e. still null/blank) —
+      // same "show the real default, not a misleading blank-reads-as-0"
+      // pattern used elsewhere (House Purchase's Interest Rate, etc.).
+      // Once the advisor edits a field — including typing in 0 — that's
+      // a real stored value from then on, never reset back to default.
+      var interestPct = a.interest != null && a.interest !== '' ? num(a.interest) : defaults.interest;
+      var growthPct = a.growth != null && a.growth !== '' ? num(a.growth) : defaults.growth;
       return { key: def.key, label: def.label, amount: amount, interestPct: interestPct, growthPct: growthPct, totalRoRPct: interestPct + growthPct };
     });
     var totalAmount = sum(rows, function (r) { return r.amount; });

@@ -161,6 +161,19 @@ var ModuleNetWorth = (function () {
     // portfolio-return analysis, not a full net worth summary.
     function portfolioRoRSection(c) {
       var ror = Calc.portfolioWeightedRoR(c);
+      // Auto-fill once per row — Calc.portfolioWeightedRoR already
+      // returns the right default whenever a field's never been touched,
+      // but the raw Store value (what the input itself displays) stays
+      // blank until written. Writing it back in means the input shows
+      // the real default instead of a misleading blank-reads-as-0, and
+      // it's still freely editable (including down to a real 0) from
+      // here on — same pattern as other auto-filled defaults elsewhere.
+      var storedRoR = c.portfolioRoR || {};
+      ror.rows.forEach(function (r) {
+        var stored = storedRoR[r.key] || {};
+        if (stored.interest == null || stored.interest === '') Store.set('portfolioRoR.' + r.key + '.interest', r.interestPct);
+        if (stored.growth == null || stored.growth === '') Store.set('portfolioRoR.' + r.key + '.growth', r.growthPct);
+      });
       var wrap = Dom.el('div', { class: 'mb-3' });
       wrap.appendChild(Dom.el('div', { class: 'section-title' }, ['📊 Portfolio Weighted Rate of Return']));
       wrap.appendChild(Dom.el('div', { class: 'text-tertiary mb-2' }, [
