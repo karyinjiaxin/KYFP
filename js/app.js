@@ -829,6 +829,7 @@ var App = (function () {
     registerModule('houseplan', 'ModuleHousePurchase');
     registerModule('couple', 'ModuleCouple');
     registerModule('roadmap', 'ModuleRoadmap');
+    registerModule('scenarios', 'ModuleScenarios');
     registerModule('cashflow', 'ModuleCashflow');
     registerModule('buckets', 'ModuleBuckets');
     registerModule('networth', 'ModuleNetWorth');

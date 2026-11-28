@@ -19,6 +19,7 @@ var Sidebar = (function () {
       { key: 'hospital', label: 'Hospital Plan Premiums', ic: 'cross', col: 'pink' },
       { key: 'retirement', label: 'Retirement Planning', ic: 'sun', col: 'yellow' },
       { key: 'roadmap', label: 'Cash Flow Roadmap', ic: 'roadmap', col: 'burgundy' },
+      { key: 'scenarios', label: 'Scenario Planning', ic: 'compass', col: 'teal' },
       { key: 'dividends', label: 'Insurance + Dividends', ic: 'coin', col: 'orange' },
       { key: 'cpf', label: 'CPF', ic: 'building', col: 'orange' },
       { key: 'tax', label: 'Tax Planning', ic: 'doc', col: 'yellow' },
@@ -56,7 +57,8 @@ var Sidebar = (function () {
     bucket: '<path d="M4 8h16l-1.7 11.2a2 2 0 01-2 1.8H7.7a2 2 0 01-2-1.8L4 8z"/><path d="M2 8h20M8 8V6a4 4 0 018 0v2"/>',
     couple: '<circle cx="8.5" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M2.5 21c0-3.5 3-5.5 6-5.5s6 2 6 5.5"/><path d="M14 21c0-2.5 1.8-4.2 4-4.2s4.5 1.5 4.5 4.2"/>',
     roadmap: '<path d="M3 20l6-16 4 10 3-6 5 12"/><circle cx="9" cy="4" r="1.5"/><circle cx="20" cy="20" r="1.5"/>',
-    home: '<path d="M4 11l8-7 8 7"/><path d="M6 10v9a1 1 0 001 1h3v-6h4v6h3a1 1 0 001-1v-9"/>'
+    home: '<path d="M4 11l8-7 8 7"/><path d="M6 10v9a1 1 0 001 1h3v-6h4v6h3a1 1 0 001-1v-9"/>',
+    compass: '<circle cx="12" cy="12" r="9"/><path d="M15 9l-2 6-4 2 2-6z"/>'
   };
 
   function iconSvg(name, colorClass) {
